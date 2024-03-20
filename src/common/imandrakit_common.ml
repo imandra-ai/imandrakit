@@ -1,4 +1,3 @@
-
 (** Common aliases and  basic functions *)
 
 module Fmt = CCFormat
@@ -6,7 +5,6 @@ module Atomic = Atomic
 module Vec = CCVector
 
 let ( let@ ) = ( @@ )
-
 let spf = Printf.sprintf
 
 (** list with spaces **)

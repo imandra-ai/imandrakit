@@ -12,6 +12,12 @@ test:
 doc:
 	@dune build $(DUNE_OPTS) @doc
 
+format:
+	@dune build $(DUNE_OPTS) @fmt --auto-promote
+
+format-check:
+	@dune build $(DUNE_OPTS) @fmt --display=quiet
+
 WATCH?= @check @runtest
 watch:
 	dune build $(DUNE_OPTS) -w $(WATCH)

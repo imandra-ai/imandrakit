@@ -21,7 +21,5 @@ val run_shell : ?env:string array -> string -> t
 (** Run subprocess with given command *)
 
 val wait : t -> int
-
 val kill : t -> unit
-
 val signal : t -> int -> unit

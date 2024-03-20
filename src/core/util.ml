@@ -1,5 +1,4 @@
 let ptime_now () = Ptime_clock.now () |> Ptime.to_float_s
-
 let mtime_now () = Mtime_clock.now ()
 
 let[@inline] time_since_start () =
@@ -45,9 +44,7 @@ let remove_dups_with (type k) (module Tbl : CCHashtbl.S with type key = k) lst =
     lst
 
 let pp_text_newlines = Fmt.string_lines
-
 let pp_quoted out s = Fmt.fprintf out "%S" s
-
 let pp_atomic ppx out a = ppx out (Atomic.get a)
 
 let pp_list ?(sep = "") ppx out l =

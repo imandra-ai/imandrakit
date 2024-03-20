@@ -39,7 +39,6 @@ module type S = sig
   (** Empty bitfields (all bits 0). *)
 
   val ( lor ) : t -> t -> t
-
   val ( land ) : t -> t -> t
 
   type field

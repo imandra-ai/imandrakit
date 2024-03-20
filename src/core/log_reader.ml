@@ -14,7 +14,6 @@ class type t =
 class dummy : t =
   object
     method name = "dummy"
-
     method read_events ~only_above_level:_ ~filter_meta:_ () = Iter.empty
   end
 

@@ -5,7 +5,6 @@
    add them to {!Stats.t} when asked to.
  *)
 
-
 type t = {
   mutable stats:
     (int Str_map.t[@ser int_str_map_to_cbpack] [@deser int_str_map_of_cbpack]);
@@ -17,7 +16,6 @@ let pp out (self : t) : unit =
   Fmt.fprintf out "@]}"
 
 let create () : t = { stats = Str_map.empty }
-
 let add (self : t) name i : unit = self.stats <- Str_map.add name i self.stats
 
 (** Iterate on all stats *)

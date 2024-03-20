@@ -18,7 +18,6 @@ let append x y =
   | _ -> App (x, y)
 
 let[@inline] cons x self = append (return x) self
-
 let[@inline] snoc self x = append self (return x)
 
 let rec of_list = function
@@ -26,7 +25,6 @@ let rec of_list = function
   | x :: tl -> cons x (of_list tl)
 
 let of_iter i = Iter.fold snoc empty i
-
 let append_l a l = append a (of_list l)
 
 let map_opt f = function
@@ -99,7 +97,6 @@ let fold_right f b acc =
   aux acc b
 
 let length self = fold_left (fun n _ -> n + 1) 0 self
-
 let to_list b = fold_right List.cons b []
 
 module Infix = struct

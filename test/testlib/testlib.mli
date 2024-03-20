@@ -1,5 +1,4 @@
 type 'a eq = 'a -> 'a -> bool
-
 type 'a print = 'a -> string
 
 module Test : sig
@@ -10,9 +9,7 @@ module type S = sig
   module Q = QCheck
 
   val t : ?name:string -> (unit -> bool) -> unit
-
   val eq : ?name:string -> ?cmp:'a eq -> ?printer:'a print -> 'a -> 'a -> unit
-
   val neq : ?name:string -> ?cmp:'a eq -> ?printer:'a print -> 'a -> 'a -> unit
 
   val q :
@@ -35,11 +32,8 @@ module type S = sig
     unit
 
   val assert_bool : string -> bool -> unit
-
   val assert_failure : string -> 'a
-
   val assert_raises : (exn -> bool) -> (unit -> 'b) -> unit
-
   val get : unit -> Test.t list
 end
 

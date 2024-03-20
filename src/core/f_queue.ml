@@ -18,13 +18,9 @@ let[@inline] make_ hd tl =
   | _ :: _ -> { hd; tl }
 
 let empty = { hd = []; tl = [] }
-
 let[@inline] is_empty self = list_is_empty_ self.hd
-
 let[@inline] push self x : _ t = make_ self.hd (x :: self.tl)
-
 let[@inline] length self = List.length self.hd + List.length self.tl
-
 let push_l self l : _ t = make_ self.hd (List.rev_append l self.tl)
 
 (** Iterate on a list in reverse *)

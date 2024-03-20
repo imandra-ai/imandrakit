@@ -1,6 +1,5 @@
 module type ARG = sig
   type t
-
   type node
 
   val children : t -> node -> node Iter.t

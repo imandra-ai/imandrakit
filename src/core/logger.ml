@@ -54,7 +54,6 @@ module Output = struct
   type t = { emit: Log_event.t -> unit } [@@unboxed]
 
   let to_event ~emit_ev () : t = { emit = emit_ev }
-
   let () = Fmt.set_color_default true
 
   let to_str_ (ev : Log_event.t) : string =
@@ -101,7 +100,6 @@ module Output = struct
       ()
 
   let stdout () = to_chan stdout
-
   let stderr () = to_chan stderr
 
   let filter_level pred (self : t) : t =
@@ -145,7 +143,6 @@ type t = {
 }
 
 let[@inline] as_reporter self = self.reporter
-
 let[@inline] events self = self.events
 
 let shutdown self =

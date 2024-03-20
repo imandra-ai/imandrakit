@@ -17,7 +17,6 @@ module Parser : sig
   type t
 
   val make : string -> t
-
   val next : t -> tok
 end = struct
   type t = {
@@ -26,9 +25,7 @@ end = struct
   }
 
   let make s = { s; i = 0 }
-
   let[@inline] eof_ self = self.i >= String.length self.s
-
   let junk_ self = self.i <- self.i + 1
 
   let get_or_err_ self =

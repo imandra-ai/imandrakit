@@ -22,5 +22,4 @@ val run_every_s : t -> ?initial:float -> float -> (unit -> unit) -> unit
     [f ()] can raise [Stop_timer] to stop the loop. *)
 
 val create : unit -> t
-
 val terminate : t -> unit

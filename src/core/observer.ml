@@ -1,5 +1,4 @@
 type 'a cb = 'a -> unit
-
 type handle = int
 
 type 'a t = {
@@ -8,7 +7,6 @@ type 'a t = {
 }
 
 let create () : _ t = { gen = Atomic.make 0; map = Atomic.make Int_map.empty }
-
 let[@inline] n_subscribers self : int = Int_map.cardinal (Atomic.get self.map)
 
 let[@inline] has_subscribers self : bool =

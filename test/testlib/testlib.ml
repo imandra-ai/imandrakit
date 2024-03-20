@@ -4,7 +4,6 @@ module Fmt = CCFormat
 let spf = Printf.sprintf
 
 type 'a eq = 'a -> 'a -> bool
-
 type 'a print = 'a -> string
 
 let () =
@@ -166,9 +165,7 @@ module type S = sig
   module Q = QCheck
 
   val t : ?name:string -> (unit -> bool) -> unit
-
   val eq : ?name:string -> ?cmp:'a eq -> ?printer:'a print -> 'a -> 'a -> unit
-
   val neq : ?name:string -> ?cmp:'a eq -> ?printer:'a print -> 'a -> 'a -> unit
 
   val q :
@@ -191,11 +188,8 @@ module type S = sig
     unit
 
   val assert_bool : string -> bool -> unit
-
   val assert_failure : string -> 'a
-
   val assert_raises : (exn -> bool) -> (unit -> 'b) -> unit
-
   val get : unit -> Test.t list
 end
 
@@ -206,9 +200,7 @@ struct
   module Q = QCheck
 
   let all_ : Test.t list ref = ref []
-
   let add_ t = all_ := t :: !all_
-
   let n_ = ref 0
 
   let mk ?name run : Test.t =
@@ -251,7 +243,6 @@ struct
     )
 
   let assert_bool what b = if not b then failwith what
-
   let assert_failure s = failwith s
 
   let assert_raises check f =
@@ -285,7 +276,6 @@ let env_true s =
   | _ -> false
 
 let long = env_true "LONG"
-
 let verbose = env_true "VERBOSE"
 
 let run_all ?seed:seed_hex ?(long = long) ~descr (l : Test.t list list) : unit =

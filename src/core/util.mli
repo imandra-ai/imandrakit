@@ -33,16 +33,13 @@ val remove_dups_with :
   (module CCHashtbl.S with type key = 'a) -> 'a list -> 'a list
 
 val pp_text_newlines : string Fmt.printer
-
 val pp_list : ?sep:string -> 'a Fmt.printer -> 'a list Fmt.printer
-
 val pp_iter : ?sep:string -> 'a Fmt.printer -> 'a Iter.t Fmt.printer
 
 val pp_backquote : 'a Fmt.printer -> 'a Fmt.printer
 (** print between "`" *)
 
 val pp_quoted : string Fmt.printer
-
 val pp_atomic : 'a Fmt.printer -> 'a Atomic.t Fmt.printer
 
 val str_contains : string -> string -> bool
@@ -76,7 +73,6 @@ val format_byte_size : int -> string
 (** Human friendly size (in Bytes) printer *)
 
 val pp_byte_size : int Fmt.printer
-
 val reset_line_ansi : string
 
 module List : sig
@@ -90,5 +86,4 @@ type ('a, 'b) either = ('a, 'b) CCEither.t =
   | Right of 'b
 
 val pp_either : 'a Fmt.printer -> 'b Fmt.printer -> ('a, 'b) either Fmt.printer
-
 val min_opt_int : int option -> int option -> int option

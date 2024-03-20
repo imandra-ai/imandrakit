@@ -12,7 +12,6 @@ type t = {
 (** A sub-process *)
 
 let pp out self = Fmt.fprintf out "<pid=%d>" self.pid
-
 let show self = spf "<pid=%d>" self.pid
 
 let kill_and_close_ (self : t) =
@@ -63,11 +62,8 @@ let run_ ?(env = Unix.environment ()) cmd args : t =
   p
 
 let run ?env cmd args : t = run_ ?env cmd (Array.of_list (cmd :: args))
-
 let run_shell ?env cmd : t = run_ ?env "/bin/sh" [| "/bin/sh"; "-c"; cmd |]
-
 let kill self = kill_and_close_ self
-
 let signal self s = Unix.kill self.pid s
 
 let wait (self : t) : int =

@@ -8,7 +8,6 @@ type 'a t
 (** Observer of events of type ['a] *)
 
 val create : unit -> 'a t
-
 val emit : 'a t -> 'a -> unit
 
 type handle

@@ -33,9 +33,7 @@ module LockRef : sig
   type 'a t
 
   val as_ref : 'a t -> 'a ref
-
   val get : 'a t -> 'a
-
   val set : 'a t -> 'a -> unit
 end
 

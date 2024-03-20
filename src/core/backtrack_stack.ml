@@ -6,9 +6,7 @@ type 'a t = {
 }
 
 let create () : _ t = { vec = Vec.create (); lvls = Vec.create () }
-
 let[@inline] n_levels self : int = Vec.size self.lvls
-
 let[@inline] push self x : unit = Vec.push self.vec x
 
 let[@inline] push_if_nonzero_level self x : unit =
@@ -19,8 +17,7 @@ let[@inline] push_level (self : _ t) : unit =
 
 let pop_levels (self : _ t) (n : int) ~f : unit =
   if n > n_levels self then
-    failwith @@ spf
-      "Backtrack_stack.pop_levels %d (size: %d)" n (n_levels self);
+    failwith @@ spf "Backtrack_stack.pop_levels %d (size: %d)" n (n_levels self);
   if n > 0 then (
     let new_lvl = n_levels self - n in
     let i = Vec.get self.lvls new_lvl in

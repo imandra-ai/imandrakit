@@ -6,17 +6,12 @@
 
 module type S = sig
   type key
-
   type 'v t
 
   val create : max_size:int -> unit -> _ t
-
   val size : _ t -> int
-
   val clear : _ t -> unit
-
   val get : 'v t -> key -> 'v option
-
   val set : 'v t -> key -> 'v -> unit
 end
 

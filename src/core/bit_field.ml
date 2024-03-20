@@ -1,7 +1,6 @@
 (* NOTE: taken from containers *)
 
 exception TooManyFields
-
 exception Frozen
 
 let max_width = Sys.word_size - 2
@@ -15,7 +14,6 @@ module type S = sig
   (** Empty bitfields (all bits 0) *)
 
   val ( lor ) : t -> t -> t
-
   val ( land ) : t -> t -> t
 
   type field
@@ -58,17 +56,13 @@ module Make () : S = struct
   type t = int
 
   let empty = 0
-
   let width_ = ref 0
-
   let frozen_ = ref false
 
   type field = int (* a mask *)
 
   let ( lor ) = ( lor )
-
   let ( land ) = ( land )
-
   let get field x = x land field <> 0
 
   let set field b x =
@@ -85,8 +79,6 @@ module Make () : S = struct
     mask
 
   let freeze () = frozen_ := true
-
   let total_width () = !width_
-
   let unsafe_of_int i = i
 end

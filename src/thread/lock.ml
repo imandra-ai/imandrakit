@@ -17,7 +17,6 @@ let with_lock l f =
     Printexc.raise_with_backtrace e bt
 
 let mutex l = l.mutex
-
 let update l f = with_lock l (fun x -> l.content <- f x)
 
 let update_map l f =
@@ -44,7 +43,6 @@ module LockRef = struct
   }
 
   let as_ref self = self.l
-
   let get self = !(self.l)
 
   let set self x =

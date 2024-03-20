@@ -22,9 +22,7 @@ val on_turn_off : t -> (unit -> unit) -> unit
     {b NOTE} [f] really should not fail. *)
 
 val is_on : t -> bool
-
 val is_off : t -> bool
-
 val turn_off : ?trace:bool -> t -> unit
 
 val turn_off' : ?trace:bool -> t -> [ `Was_off | `Was_on ]

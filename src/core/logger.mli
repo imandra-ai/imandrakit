@@ -15,13 +15,9 @@ module Output : sig
       writes/sends them somewhere. *)
 
   val stdout : unit -> t
-
   val stderr : unit -> t
-
   val to_event : emit_ev:(Log_event.t -> unit) -> unit -> t
-
   val filter_level : (level -> bool) -> t -> t
-
   val to_str : emit_str:(string -> unit) -> unit -> t
 
   val to_chan : out_channel -> t
@@ -36,13 +32,9 @@ type t
     writes them to the current set of {!Output.t}. *)
 
 val shutdown : t -> unit
-
 val as_reporter : t -> Logs.reporter
-
 val events : t -> Log_event.t Observer.t
-
 val null : unit -> t
-
 val add_output : t -> Output.t -> unit
 
 val to_outputs : Output.t list -> t

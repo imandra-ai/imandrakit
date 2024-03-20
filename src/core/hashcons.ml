@@ -20,13 +20,9 @@ module Make (A : ARG) : sig
   type t
 
   val create : ?size:int -> unit -> t
-
   val hashcons : t -> A.t -> A.t
-
   val size : t -> int
-
   val remove : t -> A.t -> unit
-
   val to_iter : t -> A.t Iter.t
 end = struct
   module W = Weak.Make (A)
@@ -37,7 +33,6 @@ end = struct
   }
 
   let create ?(size = 1_024) () = { tbl = W.create size; n = 0 }
-
   let size self = W.count self.tbl
 
   (* hashcons terms *)
@@ -50,6 +45,5 @@ end = struct
     t'
 
   let[@inline] remove st u : unit = W.remove st.tbl u
-
   let to_iter st yield = W.iter yield st.tbl
 end

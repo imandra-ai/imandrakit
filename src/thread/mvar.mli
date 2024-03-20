@@ -9,16 +9,13 @@
 type 'a t
 
 val create_empty : unit -> 'a t
-
 val create_full : 'a -> 'a t
 
 val clear : _ t -> unit
 (** Remove content, if any *)
 
 val take_block : 'a t -> 'a
-
 val try_take : 'a t -> 'a option
-
 val put_block : 'a t -> 'a -> unit
 
 val peek : 'a t -> 'a option

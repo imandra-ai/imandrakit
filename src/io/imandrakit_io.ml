@@ -2,7 +2,6 @@ module Popen = Popen
 module Xdg = Xdg
 
 let str_of_file = CCIO.File.read_exn
-
 let write_to_file filename s = CCIO.File.write_exn filename s
 
 type resolved_file = string
@@ -178,7 +177,6 @@ let read_fd_ ~cb (stop : bool Atomic.t) (fd : Unix.file_descr) : unit =
   with Unix.Unix_error (_, _, _) -> ()
 
 let catch_ignore f = try f () with _ -> ()
-
 let _cb_ignore _ _ _ = ()
 
 let with_capture_stdio_string ?(on_stdout = _cb_ignore)

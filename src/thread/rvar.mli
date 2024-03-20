@@ -45,15 +45,10 @@ val on_change : 'a t -> 'a cb -> unit
 (** {2 Combinators} *)
 
 val map : f:('a -> 'b) -> 'a t -> 'b t
-
 val map2 : f:('a -> 'b -> 'c) -> 'a t -> 'b t -> 'c t
-
 val flatten : 'a t t -> 'a t
-
 val flat_map : f:('a -> 'b t) -> 'a t -> 'b t
-
 val of_fut : 'a Fut.t -> 'a option t
-
 val of_fut_or_error : 'a Fut.t -> 'a Fut.or_error option t
 
 val pick : 'a t list -> 'a t
@@ -71,7 +66,6 @@ module Monoid : sig
   type 'a t = 'a * ('a -> 'a -> 'a)
 
   val empty : 'a t -> 'a
-
   val merge : 'a t -> 'a -> 'a -> 'a
 end
 
@@ -85,11 +79,8 @@ val monoid_merge_l : 'm Monoid.t -> f:('a -> 'm) -> 'a t list -> 'm t
 
 module Infix : sig
   val ( let+ ) : 'a t -> ('a -> 'b) -> 'b t
-
   val ( let* ) : 'a t -> ('a -> 'b t) -> 'b t
-
   val ( and+ ) : 'a t -> 'b t -> ('a * 'b) t
-
   val ( and* ) : 'a t -> 'b t -> ('a * 'b) t
 end
 

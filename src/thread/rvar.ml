@@ -16,7 +16,6 @@ type 'a st = {
 type 'a t = { st: 'a st Lock.t } [@@unboxed]
 
 let[@inline] get (self : 'a t) : 'a = (Lock.get self.st).v
-
 let[@inline] pp ppx out self : unit = ppx out (get self)
 
 let[@inline] return x =
@@ -198,7 +197,6 @@ module Monoid = struct
   type 'a t = 'a * ('a -> 'a -> 'a)
 
   let empty = fst
-
   let merge = snd
 end
 
@@ -235,11 +233,8 @@ let monoid_merge_l (m : 'm Monoid.t) ~f (l : _ t list) : 'm t =
 
 module Infix = struct
   let[@inline] ( let+ ) x f = map ~f x
-
   let[@inline] ( let* ) x f = flat_map ~f x
-
   let[@inline] ( and+ ) a b = map2 a b ~f:(fun x y -> x, y)
-
   let ( and* ) = ( and+ )
 end
 
