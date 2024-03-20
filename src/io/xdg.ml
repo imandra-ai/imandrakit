@@ -1,4 +1,3 @@
-let name_of_project = ref "imandrax"
 let getenv_or_empty s = try Sys.getenv s with _ -> ""
 
 let ( <+> ) x y =
@@ -41,4 +40,15 @@ let cache_dir () =
   getenv_or_empty "XDG_CACHE_HOME" <+> fun () -> get_home () ^ "/.cache/"
 
 let runtime_dir () = Sys.getenv_opt "XDG_RUNTIME_DIR"
-let default_storage_dir () = Filename.concat (state_dir ()) !name_of_project
+
+module type ARG = Xdg_sig.ARG
+module type S = Xdg_sig.S
+
+module Make (A : ARG) : S = struct
+  let default_storage_dir () = Filename.concat (state_dir ()) A.project_name
+
+  let default_runtime_dir () =
+    match runtime_dir () with
+    | Some d -> Filename.concat d A.project_name
+    | None -> Filename.concat (cache_dir ()) A.project_name
+end

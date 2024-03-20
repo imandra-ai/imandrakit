@@ -3,8 +3,6 @@
     We follow losely
     https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html *)
 
-val name_of_project : string ref
-
 val get_home : unit -> string
 (** Main home directory for the user. *)
 
@@ -31,5 +29,7 @@ val runtime_dir : unit -> string option
 (** Where to store runtime files such as unix sockets.
     This might fail. *)
 
-val default_storage_dir : unit -> string
-(** Default storage dir for imandrax *)
+module type ARG = Xdg_sig.ARG
+module type S = Xdg_sig.S
+
+module Make (_ : ARG) : S
