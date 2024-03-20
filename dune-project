@@ -36,6 +36,7 @@
   (zarith
    (>= 1.12))
   ppx_deriving
+  (qcheck-core (and (>= 0.18) :with-test))
   (trace :with-test)
   (trace-tef :with-test)
   (ocaml-lsp-server :with-dev-setup)

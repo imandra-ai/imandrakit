@@ -1,0 +1,30 @@
+(test
+ (name run_tests)
+ (package imandrakit)
+ (modules :standard \ test_redirect_stdin)
+ (libraries imandrakit.io imandrakit containers testlib)
+ (flags :standard -open Testlib -open Imandrakit))
+
+(executable
+ (name test_redirect_stdin)
+ (modules test_redirect_stdin)
+ (libraries imandrakit.io imandrakit containers)
+ (flags :standard -open Imandrakit))
+
+(rule
+ (targets test_redirect_stdin.ml.out)
+ (deps
+  (:bin ./test_redirect_stdin.exe))
+ (package imandrakit)
+ (action
+  (with-stdin-from
+   test_redirect_stdin.in
+   (with-stdout-to
+    test_redirect_stdin.ml.out
+    (run %{bin})))))
+
+(rule
+ (alias runtest)
+ (package imandrakit)
+ (action
+  (diff test_redirect_stdin.ml.expected test_redirect_stdin.ml.out)))

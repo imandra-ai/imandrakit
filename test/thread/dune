@@ -1,0 +1,5 @@
+(test
+ (name run_tests)
+ (package imandrakit)
+ (libraries imandrakit.thread imandrakit containers testlib)
+ (flags :standard -open Testlib -open Imandrakit))
