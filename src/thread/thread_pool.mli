@@ -1,4 +1,6 @@
-(** Thread Pool *)
+(** Thread Pool.
+
+ This is a wrapper around moonpool's thread pools. *)
 
 type t = Executor.t
 

@@ -1,5 +1,3 @@
-module I_map = Int_map
-
 type cb = unit -> unit
 
 type state =
@@ -80,7 +78,5 @@ let[@inline] is_on self : bool =
   | Off -> false
 
 let[@inline] is_off self = not (is_on self)
-
 let pp out self = Fmt.fprintf out "<switch on=%B>" (is_on self)
-
 let show = Fmt.to_string pp

@@ -28,7 +28,6 @@ let map_iter ~f (it : _ Iter.t) : _ Iter.t t =
   Iter.of_array arr
 
 let[@inline] map_l ~f l : _ list t = CCList.map f l |> join_list
-let delay ~(on : Executor.t) (f : unit -> 'a t) : 'a t = spawn ~on f |> join
 
 let protect ~finally f : _ t =
   let fut, promise = make () in

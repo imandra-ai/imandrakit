@@ -1,5 +1,3 @@
-module SQ = Sync_queue
-
 type t = Executor.t
 
 let pp out _self = Fmt.string out "<background thread>"
