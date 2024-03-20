@@ -22,7 +22,6 @@
    (>= 3.4))
   (iter
    (>= 1.0))
-  cryptokit
   logs
   base64
   uuidm

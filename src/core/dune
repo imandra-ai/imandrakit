@@ -10,7 +10,6 @@
   containers
   iter
   logs
-  cryptokit
   ppx_deriving.runtime
   base64
   mtime
