@@ -1,0 +1,8 @@
+(library
+ (name imandrakit_io)
+ (public_name imandrakit.io)
+ (synopsis "Utils around IO/unix")
+ (libraries imandrakit threads unix)
+ (preprocess
+  (pps ppx_deriving.std))
+ (flags :standard -open Imandrakit))

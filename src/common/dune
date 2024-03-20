@@ -1,0 +1,7 @@
+
+(library
+ (public_name imandrakit.common)
+ (name imandrakit_common)
+ (libraries
+  containers
+  iter))

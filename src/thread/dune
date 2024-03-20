@@ -1,0 +1,18 @@
+(library
+ (name imandrakit_thread)
+ (public_name imandrakit.thread)
+ (flags :standard -safe-string -open Imandrakit)
+ (synopsis "Threading and concurrency utils (building on Moonpool)")
+ (private_modules domain_)
+ (preprocess
+  (pps ppx_deriving.std))
+ (libraries
+  containers
+  threads.posix
+  moonpool
+  moonpool.fib
+  imandrakit
+  hmap
+  ptime
+  ptime.clock.os
+  unix))

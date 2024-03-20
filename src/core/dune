@@ -1,0 +1,28 @@
+(library
+ (public_name imandrakit)
+ (name imandrakit)
+ (preprocess
+  (pps ppx_deriving.std))
+ (flags :standard -open Imandrakit_common)
+ (private_modules internal_)
+ (libraries
+  imandrakit.common
+  containers
+  iter
+  logs
+  cryptokit
+  ppx_deriving.runtime
+  base64
+  mtime
+  mtime.clock.os
+  ptime
+  ptime.clock.os
+  uuidm
+  unix
+  threads
+  moonpool.fib
+  camlzip
+  trace.core
+  thread-local-storage
+  moonpool
+  yojson))
