@@ -12,6 +12,7 @@
   containers
   threads.posix
   moonpool
+  moonpool.fib
   imandrakit
   hmap
   ptime
