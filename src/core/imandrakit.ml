@@ -34,5 +34,6 @@ module Trace_async = Trace_async
 module Util = Util
 module Util_b64 = Util_b64
 module Util_gzip = Util_gzip
+module Util_sockaddr = Util_sockaddr
 module Util_zip = Util_zip
 module Util_zlib = Util_zlib
