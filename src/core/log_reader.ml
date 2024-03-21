@@ -62,7 +62,7 @@ module File_json_l = struct
 end
 
 class of_file_jsonl (file : string) : t =
-  let open File_json_l in
+  let open! File_json_l in
   object
     method name = spf "file(%S)" file
 
