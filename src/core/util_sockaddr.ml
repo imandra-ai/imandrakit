@@ -17,6 +17,10 @@ let parse_or_resolve_inet_addr (s : string) ~port : t =
     | [] -> failwith @@ spf "Cannot resolve address for %S." s
     | a :: _ -> a.Unix.ai_addr)
 
+let kind = function
+  | Unix.ADDR_INET _ -> Unix.PF_INET
+  | Unix.ADDR_UNIX _ -> Unix.PF_UNIX
+
 (** Parse address *)
 let parse : string -> (t, [ `msg of string ]) result =
  fun s ->
