@@ -19,7 +19,6 @@
   uuidm
   unix
   threads
-  moonpool.fib
   camlzip
   trace.core
   thread-local-storage
