@@ -33,9 +33,6 @@ depends: [
   "ocamlformat" {= "0.24.1" & with-dev-setup}
   "odoc" {with-doc}
 ]
-depopts: [
-  "trace" {>= "0.6"}
-]
 build: [
   ["dune" "subst"] {dev}
   [

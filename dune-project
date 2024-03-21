@@ -42,8 +42,6 @@
   (ocaml-lsp-server :with-dev-setup)
   (ocamlformat (and (= 0.24.1) :with-dev-setup))
   (odoc :with-doc))
- (depopts
-   (trace (>= 0.6)))
  (tags
   (moonpool multicore thread logs logging)))
 
