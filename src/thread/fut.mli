@@ -1,4 +1,7 @@
+(** Future *)
+
 include module type of Moonpool.Fut
+(** @inline *)
 
 type backtrace = Printexc.raw_backtrace
 type exn_with_bt = exn * Printexc.raw_backtrace

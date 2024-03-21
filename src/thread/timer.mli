@@ -1,6 +1,8 @@
 (** Timer.
 
-    Keep track of multiple timers.
+    Keep track of multiple timers, using a background thread.
+    The timer is thread-safe. It runs callbacks from within
+    its own background thread.
 *)
 
 type t = {

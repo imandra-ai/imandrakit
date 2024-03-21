@@ -1,4 +1,4 @@
-(** Reactive variable.rvar
+(** Reactive variable.
 
     A reactive variable holds state, and can change state over time.
     One can subscribe to changes or just get the current value. *)

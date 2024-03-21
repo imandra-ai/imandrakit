@@ -1,4 +1,7 @@
+(** Blocking queue *)
+
 include Moonpool.Blocking_queue
+(** @inline *)
 
 let pp out (self : _ t) : unit =
   Fmt.fprintf out "<sync queue (%d elts)>" (size self)
