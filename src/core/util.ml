@@ -187,7 +187,7 @@ let pp_either pp1 pp2 out = function
 
 let min_opt_int (a : int option) (b : int option) : int option =
   match a, b with
-  | Some x, Some y -> Some (Int.min x y)
+  | Some x, Some y -> Some (min x y)
   | Some x, None -> Some x
   | None, Some y -> Some y
   | _ -> None
