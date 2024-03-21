@@ -29,6 +29,7 @@
   atomic
   hmap
   thread-local-storage
+  (yojson (>= 1.6))
   camlzip
   (mtime
    (>= 2.0))
