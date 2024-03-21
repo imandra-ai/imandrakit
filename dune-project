@@ -37,7 +37,7 @@
    (>= 1.12))
   ppx_deriving
   (qcheck-core (and (>= 0.18) :with-test))
-  (trace :with-test)
+  (trace (>= 0.7))
   (trace-tef :with-test)
   (ocaml-lsp-server :with-dev-setup)
   (ocamlformat (and (= 0.24.1) :with-dev-setup))
