@@ -33,11 +33,9 @@
   camlzip
   (mtime
    (>= 2.0))
-  (zarith
-   (>= 1.12))
   ppx_deriving
-  (qcheck-core (and (>= 0.18) :with-test))
   (trace (>= 0.7))
+  (qcheck-core (and (>= 0.18) :with-test))
   (trace-tef :with-test)
   (ocaml-lsp-server :with-dev-setup)
   (ocamlformat (and (= 0.24.1) :with-dev-setup))
