@@ -15,7 +15,7 @@
  (name imandrakit)
  (synopsis "Core utils library for Imandra")
  (depends
-  (ocaml (>= 4.12))
+  (ocaml (>= 4.13))
   dune
   (moonpool (>= 0.6))
   (containers
