@@ -1,4 +1,3 @@
-
 pin-depends: [
   ["moonpool.dev" "git+https://github.com/c-cube/moonpool#main"]
 ]

@@ -47,7 +47,6 @@ build: [
   ]
 ]
 dev-repo: "git+https://github.com/imandra-ai/imandrakit.git"
-
 pin-depends: [
   ["moonpool.dev" "git+https://github.com/c-cube/moonpool#main"]
 ]

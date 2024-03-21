@@ -8,4 +8,5 @@ val compress_str : ?buf:Buffer.t -> string -> string
 val decompress : ?buf:Buffer.t -> bytes -> bytes
 (** Decompress the bytes. *)
 
+val decompress_slice : ?buf:Buffer.t -> bytes -> int -> int -> bytes
 val decompress_str : ?buf:Buffer.t -> string -> string
