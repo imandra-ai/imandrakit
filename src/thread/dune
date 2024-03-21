@@ -6,6 +6,8 @@
  (private_modules domain_)
  (preprocess
   (pps ppx_deriving.std))
+ (enabled_if
+  (>= %{ocaml_version} 5.0))
  (libraries
   containers
   threads.posix
