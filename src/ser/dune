@@ -1,0 +1,11 @@
+
+(library
+ (public_name imandrakit.ser)
+ (name imandrakit_ser)
+ (preprocess
+  (pps ppx_deriving.std))
+ (flags :standard -open Imandrakit_common)
+ (synopsis "Serialization and deserialization in imandrakit")
+ (libraries
+  imandrakit.common
+  containers))
