@@ -15,6 +15,8 @@ type t = {
 
 exception Stop_timer
 
+val timer_error : Error_kind.t
+
 val run_after_s : t -> float -> (unit -> unit) -> unit
 (** [run_after_s t f] waits [t] seconds and then runs [f] *)
 

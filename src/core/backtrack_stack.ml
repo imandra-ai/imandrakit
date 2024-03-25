@@ -1,4 +1,4 @@
-module Vec = CCVector
+module Err = Imandrakit_error.Error
 
 type 'a t = {
   vec: 'a Vec.vector;
@@ -17,7 +17,8 @@ let[@inline] push_level (self : _ t) : unit =
 
 let pop_levels (self : _ t) (n : int) ~f : unit =
   if n > n_levels self then
-    failwith @@ spf "Backtrack_stack.pop_levels %d (size: %d)" n (n_levels self);
+    Err.failf ~kind:Err.Kind.generic_internal_error
+      "Backtrack_stack.pop_levels %d (size: %d)" n (n_levels self);
   if n > 0 then (
     let new_lvl = n_levels self - n in
     let i = Vec.get self.lvls new_lvl in

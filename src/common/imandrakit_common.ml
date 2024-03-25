@@ -3,6 +3,7 @@
 module Fmt = CCFormat
 module Atomic = Atomic
 module Vec = CCVector
+module Trace = Trace_core
 
 let ( let@ ) = ( @@ )
 let spf = Printf.sprintf

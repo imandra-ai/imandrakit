@@ -34,6 +34,7 @@
   (mtime
    (>= 2.0))
   ppx_deriving
+  ;(ppxlib (>= 0.25.0))
   (trace (>= 0.7))
   (qcheck-core (and (>= 0.18) :with-test))
   (trace-tef :with-test)

@@ -5,6 +5,16 @@
 
 include Imandrakit_common
 
+(** {2 Re-exports} *)
+
+module Error = Imandrakit_error.Error
+module Error_kind = Imandrakit_error.Kind
+module Error_data = Imandrakit_error.Data
+module Ser = Imandrakit_ser
+module Ser_value = Imandrakit_ser.Value
+module Ser_decode = Imandrakit_ser.Decode
+module Codec = Imandrakit_ser.Codec
+
 (** {2 Local modules} *)
 
 module Ansi_clean = Ansi_clean

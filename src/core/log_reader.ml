@@ -1,4 +1,5 @@
 module Log = (val Logger.mk_log_str "x.log-reader")
+module Err = Imandrakit_error.Error
 
 class type t =
   object
@@ -51,8 +52,8 @@ module File_json_l = struct
         None
     | Error err ->
       Log.warn (fun k ->
-          k "Log_event could not parse line %d of file %S:@ %s" line_idx st.file
-            err);
+          k "Log_event could not parse line %d of file %S:@ %a" line_idx st.file
+            Err.pp err);
       None
     | exception exn ->
       Log.warn (fun k ->

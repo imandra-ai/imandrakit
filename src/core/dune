@@ -3,10 +3,12 @@
  (name imandrakit)
  (preprocess
   (pps ppx_deriving.std))
- (flags :standard -open Imandrakit_common)
+ (flags :standard -open Imandrakit_common -open Imandrakit_error)
  (private_modules internal_)
  (libraries
   imandrakit.common
+  imandrakit.ser
+  imandrakit.error
   containers
   iter
   logs

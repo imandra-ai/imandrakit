@@ -1,4 +1,5 @@
 (library
  (public_name imandrakit.common)
  (name imandrakit_common)
- (libraries containers iter))
+ (synopsis "Common foundation for imandrakit")
+ (libraries containers iter trace.core))

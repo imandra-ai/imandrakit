@@ -10,6 +10,9 @@ let get_home : unit -> string =
   let s = lazy (getenv_or_empty "HOME" <+> fun () -> "/tmp") in
   fun () -> Lazy.force s
 
+(** Errors in XDG *)
+let xdg_error = Error_kind.make ~name:"XdgError" ()
+
 let interpolate_home ?(f = fun _ -> None) s =
   let buf = Buffer.create (String.length s) in
   Buffer.add_substitute buf
@@ -19,11 +22,8 @@ let interpolate_home ?(f = fun _ -> None) s =
         (match f s with
         | Some u -> u
         | None ->
-          failwith
-          @@ spf
-               "Xdg: interpolating home directory: couldn't find variable: \
-                '%s'."
-               s))
+          Error.failf ~kind:xdg_error
+            "Xdg: interpolating home directory: couldn't find variable: '%s'." s))
     s;
   Buffer.contents buf
 

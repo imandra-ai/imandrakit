@@ -1,5 +1,7 @@
 module Log = (val Logger.mk_log_str "x.thread.timer")
 
+let timer_error = Error_kind.make ~name:"TimerError" ()
+
 exception Stop_timer
 
 type t = {
@@ -114,7 +116,8 @@ let run_after_s (self : state) t f =
   if is_earlier_than_current_first then (
     (* need to wake up the thead, if it's in [Unix.select] *)
     let n = Unix.write_substring self.p_write "t" 0 1 in
-    if n = 0 then failwith "Timer: cannot wake up timer thread"
+    if n = 0 then
+      Error.fail ~kind:timer_error "Timer: cannot wake up timer thread"
   )
 
 let terminate_ (self : state) : unit =

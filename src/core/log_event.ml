@@ -3,6 +3,8 @@
     The log reporter emits events, which can then be written to
     various outputs. *)
 
+module Err = Imandrakit_error.Error
+
 type t = {
   lvl: Log_level.t;  (** Log level. *)
   ts: float;  (** Timestamp, in seconds, since the UNIX epoch. *)
@@ -35,15 +37,17 @@ let to_yojson : t -> json =
         "src", `String src;
       ])
 
-let of_yojson (j : json) : (t, _) result =
+let json_error = Err.Kind.make ~name:"LogJsonError" ()
+
+let of_yojson (j : json) : t Err.result =
   let module JU = Yojson.Safe.Util in
   let unwrap_ ctx = function
     | Ok x -> x
-    | Error s -> failwith (ctx ^ s)
+    | Error s -> Err.failf ~kind:json_error "%s: %s" ctx s
   in
   try
     let lvl =
-      JU.member "lvl" j |> Log_level.of_yojson |> unwrap_ "parsing level: "
+      JU.member "lvl" j |> Log_level.of_yojson |> unwrap_ "parsing level"
     in
     let ts = JU.member "ts" j |> JU.to_float in
     let msg = JU.member "msg" j |> JU.to_string in
@@ -53,9 +57,16 @@ let of_yojson (j : json) : (t, _) result =
       | exception _ -> []
       | `Null -> []
       | `Assoc l -> List.map (fun (k, v) -> k, JU.to_string v) l
-      | _ -> failwith "expected null or object for meta"
+      | _ -> Err.fail ~kind:json_error "expected null or object for 'meta'"
     in
     Ok { lvl; ts; msg; src; meta }
   with
-  | Failure e -> Error (spf "invalid log event: %s" e)
-  | _e -> Error (spf "invalid log event: %s" (Printexc.to_string _e))
+  | Failure e ->
+    Error (Err.mk_errorf ~kind:json_error "invalid log event: %s" e)
+  | _e ->
+    let bt = Printexc.get_raw_backtrace () in
+    let err =
+      Err.of_exn_ ~bt ~kind:json_error _e
+      |> Err.add_ctx (Err.message "decoding log event from JSON")
+    in
+    Error err
