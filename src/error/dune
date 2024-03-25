@@ -1,0 +1,14 @@
+
+(library
+ (public_name imandrakit.error)
+ (name imandrakit_error)
+ (preprocess
+  (pps ppx_deriving.std))
+ (flags :standard -open Imandrakit_common -open Imandrakit_ser)
+ (synopsis "Error library for imandrakit")
+ (libraries
+  imandrakit.common
+  imandrakit.ser
+  hmap
+  logs
+  containers))
