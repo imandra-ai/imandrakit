@@ -12,3 +12,4 @@ let codec : t Codec.t =
     ()
 
 let generic_internal_error : t = make ~name:"GenericInternalError" ()
+let timeout : t = make ~name:"Timeout" ()
