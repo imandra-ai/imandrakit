@@ -42,7 +42,7 @@ let try_catch ~kind () f : _ result =
   | E err -> Error err
   | exn ->
     let bt = Printexc.get_raw_backtrace () in
-    let err = of_exn_ ~kind ~bt exn in
+    let err = of_exn ~kind ~bt exn in
     Error err
 
 let unwrap_opt = function

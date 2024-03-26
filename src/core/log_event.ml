@@ -66,7 +66,7 @@ let of_yojson (j : json) : t Err.result =
   | _e ->
     let bt = Printexc.get_raw_backtrace () in
     let err =
-      Err.of_exn_ ~bt ~kind:json_error _e
+      Err.of_exn ~bt ~kind:json_error _e
       |> Err.add_ctx (Err.message "decoding log event from JSON")
     in
     Error err

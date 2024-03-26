@@ -46,7 +46,7 @@ let parse : string -> t Error.result =
        | None -> Ok (parse_or_resolve_inet_addr s ~port:0)
      with exn ->
        let bt = Printexc.get_raw_backtrace () in
-       let err = Error.of_exn_ ~bt ~kind:parse_error exn in
+       let err = Error.of_exn ~bt ~kind:parse_error exn in
        Error err)
 
 let parse_exn : string -> t = fun s -> parse s |> Error.unwrap
