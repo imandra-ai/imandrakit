@@ -25,7 +25,7 @@ let failf ?stack ?process ?bt ~kind fmt =
 let message ?bt msg : message = { msg; data = Data.empty; bt }
 let messagef ?bt fmt = Format.kasprintf (message ?bt) fmt
 
-let of_exn_ ?bt ~kind exn : t =
+let of_exn ?bt ~kind exn : t =
   match exn with
   | E e -> e
   | _ ->

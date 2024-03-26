@@ -53,7 +53,7 @@ val guardf :
 (** [guardf ~loc k f] behaves like [f()], but will call [k] to produce a
     contextual message in case of error. *)
 
-val of_exn_ : ?bt:Printexc.raw_backtrace -> kind:Kind.t -> exn -> t
+val of_exn : ?bt:Printexc.raw_backtrace -> kind:Kind.t -> exn -> t
 (** Turn exception into an error. *)
 
 val try_catch : kind:Kind.t -> unit -> (unit -> 'a) -> 'a result
