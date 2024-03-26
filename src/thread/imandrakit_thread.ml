@@ -14,6 +14,7 @@ module Mvar = Mvar
 module Once = Once
 module Rvar = Rvar
 module Switch = Switch
+module Supervisor = Supervisor
 module Sync_queue = Sync_queue
 module Thread_pool = Thread_pool
 module Timer = Timer
