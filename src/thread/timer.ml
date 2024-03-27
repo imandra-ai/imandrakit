@@ -4,19 +4,30 @@ let timer_error = Error_kind.make ~name:"TimerError" ()
 
 exception Stop_timer
 
-type t = {
-  run_after_s: float -> (unit -> unit) -> unit;
-      (** [run_after_s t f] waits [t] seconds and then runs [f] *)
-  run_every_s: ?initial:float -> float -> (unit -> unit) -> unit;
-      (** [run_every ~initial t f] waits [initial] seconds and then runs [f] every [t] seconds *)
-  terminate: unit -> unit;
-}
-
 let now_ = Util.mtime_now_s
 
+type task_state =
+  | St_once
+  | St_repeat of { period: float }
+  | St_cancelled
+
 type task = {
-  deadline: float;
-  run: unit -> unit;
+  mutable deadline: float;
+  state: task_state Atomic.t;
+  mutable run: unit -> unit;
+}
+
+module Handle = struct
+  type t = task
+
+  let dummy : t =
+    { deadline = 0.; state = Atomic.make St_cancelled; run = ignore }
+end
+
+type t = {
+  run_after_s: float -> (unit -> unit) -> Handle.t;
+  run_every_s: ?initial:float -> float -> (unit -> unit) -> Handle.t;
+  terminate: unit -> unit;
 }
 
 module T_heap = CCHeap.Make (struct
@@ -32,7 +43,7 @@ type state = {
   p_read: Unix.file_descr;  (** use a fifo to be able to notify the thread *)
   p_write: Unix.file_descr;  (** Notify by writing into fifo *)
   buf: bytes;  (** Tiny writing buffer, len=1 *)
-  mutable t_loop: Thread.t option;
+  mutable t_loop: Thread.t option;  (** Background thread *)
 }
 
 let create_state () : state =
@@ -49,68 +60,19 @@ let create_state () : state =
     t_loop = None;
   }
 
-type next_step =
-  | Wait of float
-  | Run of task
-
-let timer_thread_loop_ (self : state) : unit =
-  let named = ref false in
-
-  while not (Atomic.get self.closed) do
-    (* next thing to do *)
-    let next_step =
-      Lock.with_lock self.mutex @@ fun () ->
-      match T_heap.find_min self.events with
-      | None -> Wait 1.
-      | Some task ->
-        let now = now_ () in
-        let delay = task.deadline -. now in
-        if delay <= 1e-6 then (
-          (* run task now *)
-          let events', _ = T_heap.take_exn self.events in
-          self.events <- events';
-          Run task
-        ) else
-          Wait delay
-    in
-
-    if not !named then (
-      (* we run this that late, to make sure the trace collector (if any)
-         is setup *)
-      named := true;
-      Trace.set_thread_name "x.timer"
-    );
-
-    match next_step with
-    | Wait delay ->
-      assert (delay > 0.);
-      let _ = Unix.select [ self.p_read ] [] [ self.p_read ] delay in
-      (* drain pipe *)
-      (try
-         while Unix.read self.p_read self.buf 0 1 > 0 do
-           ()
-         done
-       with _ -> ())
-    | Run t ->
-      (try t.run ()
-       with e ->
-         Log.err (fun k -> k "error in task:@.%s" (Printexc.to_string e)))
-  done
-
-let run_after_s (self : state) t f =
-  let deadline = now_ () +. t in
+let add_task_ (self : state) (task : task) : unit =
   (* is the new task [f()] scheduled earlier than whatever the
-     thread is waiting for? *)
+     thread is waiting for? In this case the thread needs awakening
+     so it can adjust its sleeping delay. *)
   let is_earlier_than_current_first =
-    Lock.with_lock self.mutex (fun () ->
-        let task = { deadline; run = f } in
-        let is_first =
-          match T_heap.find_min self.events with
-          | Some task2 -> task2.deadline > deadline
-          | _ -> true
-        in
-        self.events <- T_heap.add self.events task;
-        is_first)
+    let@ () = Lock.with_lock self.mutex in
+    let is_first =
+      match T_heap.find_min self.events with
+      | Some task2 -> task2.deadline > task.deadline
+      | None -> true
+    in
+    self.events <- T_heap.add self.events task;
+    is_first
   in
 
   if is_earlier_than_current_first then (
@@ -120,6 +82,98 @@ let run_after_s (self : state) t f =
       Error.fail ~kind:timer_error "Timer: cannot wake up timer thread"
   )
 
+type next_step =
+  | Wait of float
+  | Run of task
+
+let next_step_ (self : state) : next_step =
+  let@ () = Lock.with_lock self.mutex in
+  match T_heap.find_min self.events with
+  | None -> Wait 10.
+  | Some task ->
+    let now = now_ () in
+    let delay = task.deadline -. now in
+    if delay <= 1e-6 then (
+      (* run task now *)
+      let events', _ = T_heap.take_exn self.events in
+      self.events <- events';
+      Run task
+    ) else
+      Wait delay
+
+let wait_ (self : state) delay =
+  assert (delay > 0.);
+  let _ = Unix.select [ self.p_read ] [] [ self.p_read ] delay in
+  (* drain pipe *)
+  try
+    while Unix.read self.p_read self.buf 0 1 > 0 do
+      ()
+    done
+  with _ -> ()
+
+let run_task_ (self : state) (task : task) : unit =
+  let run () =
+    try task.run ()
+    with e ->
+      let bt = Printexc.get_raw_backtrace () in
+      let err = Error.of_exn ~bt ~kind:timer_error e in
+      Log.err (fun k -> k "error in task:@ %a" Error.pp err)
+  in
+
+  match Atomic.get task.state with
+  | St_cancelled -> ()
+  | St_once -> run ()
+  | St_repeat { period } ->
+    let continue =
+      try
+        run ();
+        true
+      with Stop_timer -> false
+    in
+
+    if continue then (
+      task.deadline <- now_ () +. period;
+      add_task_ self task
+    )
+
+(** The loop running in the background thread *)
+let background_thread_loop_ (self : state) : unit =
+  let named = ref false in
+
+  while not (Atomic.get self.closed) do
+    (* next thing to do *)
+    let next_step = next_step_ self in
+
+    if not !named then (
+      (* we run this that late, to make sure the trace collector (if any)
+         is setup *)
+      named := true;
+      Trace.set_thread_name "x.timer"
+    );
+
+    match next_step with
+    | Wait delay -> wait_ self delay
+    | Run t -> run_task_ self t
+  done
+
+let cancel (_self : t) (h : Handle.t) : unit =
+  match Atomic.exchange h.state St_cancelled with
+  | St_cancelled -> ()
+  | St_once | St_repeat _ ->
+    (* release memory *)
+    h.run <- ignore
+
+let run_after_s' (self : state) t f : Handle.t =
+  if t > 0. then (
+    let deadline = now_ () +. t in
+    let task = { deadline; state = Atomic.make St_once; run = f } in
+    add_task_ self task;
+    task
+  ) else (
+    f ();
+    Handle.dummy
+  )
+
 let terminate_ (self : state) : unit =
   if not (Atomic.exchange self.closed true) then (
     let _n = Unix.write_substring self.p_write "t" 0 1 in
@@ -127,26 +181,43 @@ let terminate_ (self : state) : unit =
     Option.iter Thread.join self.t_loop
   )
 
-let run_every_s (self : state) ?(initial = 0.) period f : unit =
-  let rec loop () =
-    match f () with
-    | () ->
-      (* schedule next iteration *)
-      run_after_s self period loop
-    | exception Stop_timer -> ()
+let run_every_s' (self : state) ?initial period f : Handle.t =
+  if period <= 0. then invalid_arg "Timer.run_every_s: delay must be > 0.";
+  let initial = Option.value ~default:period initial in
+  let deadline = now_ () +. initial in
+  let task =
+    { run = f; state = Atomic.make (St_repeat { period }); deadline }
   in
-  run_after_s self initial loop
+
+  if initial = 0. then (
+    f ();
+    task.deadline <- now_ () +. period
+  );
+
+  add_task_ self task;
+  task
 
 let create () : t =
   let st = create_state () in
-  let t_loop = Moonpool.start_thread_on_some_domain timer_thread_loop_ st in
+  let t_loop =
+    Moonpool.start_thread_on_some_domain background_thread_loop_ st
+  in
   st.t_loop <- Some t_loop;
   {
-    run_after_s = run_after_s st;
-    run_every_s = run_every_s st;
+    run_after_s = run_after_s' st;
+    run_every_s = run_every_s' st;
     terminate = (fun () -> terminate_ st);
   }
 
-let[@inline] run_every_s (self : t) ?initial s f = self.run_every_s ?initial s f
-let[@inline] run_after_s (self : t) s f = self.run_after_s s f
+let[@inline] run_after_s' (self : t) s f = self.run_after_s s f
+
+let[@inline] run_after_s self t f : unit =
+  ignore (run_after_s' self t f : Handle.t)
+
+let[@inline] run_every_s' (self : t) ?initial s f =
+  self.run_every_s ?initial s f
+
+let[@inline] run_every_s self ?initial t f : unit =
+  ignore (run_every_s' self ?initial t f : Handle.t)
+
 let[@inline] terminate self = self.terminate ()
