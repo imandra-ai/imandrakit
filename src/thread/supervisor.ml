@@ -1,4 +1,4 @@
-module Log = (val Logger.mk_log_str "imandrakit.supervisor")
+module Log = (val Logger.mk_log_str "x.supervisor")
 
 let retry_loop (type a) ?(max = 10) ?(initial_delay_before_restart_s = 0.001)
     ?(max_delay_before_restart_s = 60.) f : a =
