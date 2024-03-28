@@ -1,0 +1,6 @@
+(library
+ (name imandrakit_ser_cbor)
+ (libraries imandrakit imandrakit.ser)
+ (synopsis "CBOR for imandrakit")
+ (flags :standard -open Imandrakit)
+ (public_name imandrakit.ser.cbor))

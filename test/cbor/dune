@@ -1,0 +1,12 @@
+(executable
+ (name t_appendix_a)
+ (modules t_appendix_a)
+ (flags :standard -open Imandrakit)
+ (libraries yojson containers imandrakit.ser imandrakit.ser.cbor))
+
+(rule
+ (alias runtest)
+ (deps t_appendix_a.exe appendix_a.json)
+ (package imandrakit)
+ (action
+  (run ./t_appendix_a.exe ./appendix_a.json)))
