@@ -31,6 +31,7 @@ jobs:
           dune-cache: true
           allow-prerelease-opam: true
 
+      - run: opam pin moonpool --dev -y -n
       - run: opam install -t imandrakit --deps-only
       - run: opam exec -- dune build @install
 
