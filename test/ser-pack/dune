@@ -1,6 +1,10 @@
 (tests
  (names t1 t2 t3 t4 t5 t6 t7 t8)
- (libraries imandrakit.ser-pack imandrakit.ser imandrakit.ser.cbor ppx_deriving.runtime)
+ (libraries
+  imandrakit.ser-pack
+  imandrakit.ser
+  imandrakit.ser.cbor
+  ppx_deriving.runtime)
  (package imandrakit)
  (preprocess
   (pps imandrakit.ser-pack.ppx ppx_deriving.show)))

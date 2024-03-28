@@ -5,4 +5,10 @@
   (pps ppx_deriving.std imandrakit.ser-pack.ppx))
  (flags :standard -open Imandrakit_common)
  (synopsis "Error library for imandrakit")
- (libraries imandrakit.common imandrakit.ser imandrakit.ser-pack hmap logs containers))
+ (libraries
+  imandrakit.common
+  imandrakit.ser
+  imandrakit.ser-pack
+  hmap
+  logs
+  containers))
