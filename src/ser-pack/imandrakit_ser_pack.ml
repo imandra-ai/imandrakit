@@ -2,7 +2,13 @@ module V = Imandrakit_ser.Value
 
 type value = V.t
 
-let error : Error_kind.t = Error_kind.make ~name:"SerPackError" ()
+exception Error of string
+
+type nonrec 'a result = ('a, string) result
+
+let unwrap = function
+  | Ok x -> x
+  | Error msg -> raise (Error msg)
 
 (** Tag for pointers.
     [6] is not used, and fits in a single byte:
@@ -173,7 +179,7 @@ module Deser = struct
   type 'a t = state -> value -> 'a
 
   let[@inline] return x _st _c = x
-  let[@inline] fail s = Error.fail ~kind:error s
+  let[@inline] fail s = raise (Error s)
   let[@inline] failf s = Printf.ksprintf fail s
 
   type ptr = int64
@@ -302,18 +308,15 @@ module Deser = struct
     let cache = V_tbl.create 8 in
     { entries; key; cache }
 
-  let parse s : state Error.result =
+  let parse s : state result =
     try
       let c = Imandrakit_ser_cbor.decode_exn s in
       Ok (of_value_ c)
     with
-    | Error.E err -> Error err
-    | exn ->
-      let bt = Printexc.get_raw_backtrace () in
-      let err = Error.of_exn ~kind:error ~bt exn in
-      Error err
+    | Error err -> Error err
+    | exn -> Error (Printexc.to_string exn)
 
-  let parse_exn s = parse s |> Error.unwrap
+  let parse_exn s = parse s |> unwrap
 
   let pp_diagnostic out self =
     Format.fprintf out "{@[<hv>h=[@[<hv>";
@@ -353,11 +356,8 @@ let of_value_exn deser h =
 
 let of_value deser h =
   try Ok (of_value_exn deser h) with
-  | Error.E err -> Error err
-  | exn ->
-    let bt = Printexc.get_raw_backtrace () in
-    let err = Error.of_exn ~bt ~kind:error exn in
-    Error err
+  | Error err -> Error err
+  | exn -> Error (Printexc.to_string exn)
 
 let of_cbor_string_exn deser h =
   let st = Deser.parse_exn h in
@@ -366,8 +366,5 @@ let of_cbor_string_exn deser h =
 
 let of_cbor_string deser h =
   try Ok (of_cbor_string_exn deser h) with
-  | Error.E err -> Error err
-  | exn ->
-    let bt = Printexc.get_raw_backtrace () in
-    let err = Error.of_exn ~bt ~kind:error exn in
-    Error err
+  | Error err -> Error err
+  | exn -> Error (Printexc.to_string exn)

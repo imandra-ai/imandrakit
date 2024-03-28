@@ -2,7 +2,7 @@
  (name t_appendix_a)
  (modules t_appendix_a)
  (flags :standard -open Imandrakit)
- (libraries yojson containers imandrakit.ser imandrakit.ser.cbor))
+ (libraries yojson containers imandrakit.ser imandrakit imandrakit.ser.cbor))
 
 (rule
  (alias runtest)

@@ -3,16 +3,17 @@ module V = Ser.Value
 
 type t = Ser.Value.t
 
-let error = Error_kind.make ~name:"SerCbor.Decode" ()
-
+exception Error of string
 exception Indefinite
+
+let[@inline] fail msg = raise (Error msg)
 
 let[@inline] i64_to_int i =
   let j = Int64.to_int i in
   if Int64.(of_int j = i) then
     j
   else
-    Error.fail ~kind:error "int64 does not fit in int"
+    fail "int64 does not fit in int"
 
 let decode_exn (s : string) : t =
   let b = Bytes.unsafe_of_string s in
@@ -47,8 +48,7 @@ let decode_exn (s : string) : t =
 
   let reserve_n n =
     let j = !i in
-    if j + n > String.length s then
-      Error.fail ~kind:error "cbor: cannot extract slice";
+    if j + n > String.length s then fail "cbor: cannot extract slice";
     i := !i + n;
     j
   in
@@ -56,18 +56,18 @@ let decode_exn (s : string) : t =
   (* read integer value from least significant bits *)
   let read_int ~allow_indefinite low : int64 =
     match low with
-    | _ when low < 0 -> Error.fail ~kind:error "cbor: invalid length"
+    | _ when low < 0 -> fail "cbor: invalid length"
     | _ when low < 24 -> Int64.of_int low
     | 24 -> Int64.of_int (read_i8 ())
     | 25 -> Int64.of_int (read_i16 ())
     | 26 -> Int64.of_int32 (read_i32 ())
     | 27 -> read_i64 ()
-    | 28 | 29 | 30 -> Error.fail ~kind:error "cbor: invalid length"
+    | 28 | 29 | 30 -> fail "cbor: invalid length"
     | 31 ->
       if allow_indefinite then
         raise_notrace Indefinite
       else
-        Error.fail ~kind:error "cbor: invalid integer 31 in this context"
+        fail "cbor: invalid integer 31 in this context"
     | _ -> assert false
   in
 
@@ -175,8 +175,8 @@ let decode_exn (s : string) : t =
       | 27 ->
         (* float 64 *)
         V.float (Int64.float_of_bits i)
-      | 28 | 29 | 30 -> Error.fail ~kind:error "cbor: malformed"
-      | 31 -> Error.fail ~kind:error "uncaught 'break' stop code"
+      | 28 | 29 | 30 -> fail "cbor: malformed"
+      | 31 -> fail "uncaught 'break' stop code"
       | _ -> assert false (* unreachable *))
     | _ ->
       (* unreachable *)
@@ -188,9 +188,7 @@ let decode_exn (s : string) : t =
       while not (is_break_stop_code ()) do
         match read_value (), ty with
         | Str s, `String | Bytes s, `Bytes -> Buffer.add_string buf s
-        | _ ->
-          Error.fail ~kind:error
-            "cbor: invalid chunk in indefinite length string/byte"
+        | _ -> fail "cbor: invalid chunk in indefinite length string/byte"
       done;
       incr i;
       (* consume stop code *)
@@ -204,7 +202,7 @@ let decode_exn (s : string) : t =
     let k =
       match k with
       | V.Str k -> k
-      | _ -> Error.fail ~kind:error "dictionary must have string keys"
+      | _ -> fail "dictionary must have string keys"
     in
     k, v
   in

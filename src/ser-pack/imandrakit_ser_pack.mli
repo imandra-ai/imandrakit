@@ -17,7 +17,9 @@
 
 type value = Imandrakit_ser.Value.t
 
-val error : Error_kind.t
+exception Error of string
+
+type nonrec 'a result = ('a, string) result
 
 (** Serialization *)
 module Ser : sig
@@ -190,7 +192,7 @@ module Deser : sig
   val delay : (unit -> 'a t) -> 'a t
   (** [delay f] is like [f()], but [f] is only called when needed. *)
 
-  val parse : string -> state Error.result
+  val parse : string -> state result
 
   val parse_exn : string -> state
   (** @raise Error if it fails *)
@@ -236,10 +238,10 @@ val of_value_exn : 'a Deser.t -> value -> 'a
 (** [of_value_exn deser value] deserializes an object using [deser]
     from the shared heap [value.h], starting at [value.key]. *)
 
-val of_value : 'a Deser.t -> value -> 'a Error.result
+val of_value : 'a Deser.t -> value -> 'a result
 (** Deserialize a pack into a value of type ['a] *)
 
 val of_cbor_string_exn : 'a Deser.t -> string -> 'a
 (** Parse value and deserialize it *)
 
-val of_cbor_string : 'a Deser.t -> string -> 'a Error.result
+val of_cbor_string : 'a Deser.t -> string -> 'a result

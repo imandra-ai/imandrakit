@@ -2,8 +2,8 @@
  (name imandrakit_ser_pack)
  (synopsis "Serialization format with sharing on top of `imandrakit.ser`")
  (public_name imandrakit.ser-pack)
- (flags :standard -open Imandrakit)
+ (flags :standard -open Imandrakit_common)
  (libraries
-  imandrakit
+  imandrakit.common
   (re_export imandrakit.ser.cbor)
   (re_export imandrakit.ser)))
