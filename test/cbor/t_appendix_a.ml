@@ -1,5 +1,12 @@
 let verbose = try Sys.getenv "VERBOSE" = "1" with _ -> false
 
+(* NOTE:
+   we remove a few cases from appendix_a.json, namely:
+     - undefined
+     - simple
+     - a dictionary with integer-keys (we only support string keys)
+*)
+
 module J = Yojson.Safe
 module Cbor = Imandrakit_ser_cbor
 module V = Imandrakit_ser.Value
