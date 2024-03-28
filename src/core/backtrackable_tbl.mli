@@ -10,6 +10,9 @@ module type S = sig
   (** @raise Not_found if the key is not present *)
 
   val get : 'a t -> key -> 'a option
+  val get_or : default:'a -> 'a t -> key -> 'a
+  val get_or_add : 'a t -> f:(key -> 'a) -> k:key -> 'a
+  val update : 'a t -> f:(key -> 'a option -> 'a option) -> k:key -> unit
   val mem : _ t -> key -> bool
   val length : _ t -> int
   val iter : (key -> 'a -> unit) -> 'a t -> unit

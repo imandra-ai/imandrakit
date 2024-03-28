@@ -8,6 +8,9 @@ module type S = sig
   (** @raise Not_found if the key is not present *)
 
   val get : 'a t -> key -> 'a option
+  val get_or : default:'a -> 'a t -> key -> 'a
+  val get_or_add : 'a t -> f:(key -> 'a) -> k:key -> 'a
+  val update : 'a t -> f:(key -> 'a option -> 'a option) -> k:key -> unit
   val mem : _ t -> key -> bool
   val length : _ t -> int
   val iter : (key -> 'a -> unit) -> 'a t -> unit
@@ -51,6 +54,7 @@ module Make (A : ARG) = struct
 
   let[@inline] find (self : _ t) k = M.find self.tbl k
   let[@inline] get (self : _ t) k : _ option = M.get self.tbl k
+  let[@inline] get_or ~default (self : _ t) k = M.get_or ~default self.tbl k
   let[@inline] mem self k = M.mem self.tbl k
   let[@inline] length self = M.length self.tbl
   let[@inline] iter f self = M.iter f self.tbl
@@ -80,6 +84,20 @@ module Make (A : ARG) = struct
       with Not_found -> ()
     ) else
       M.remove self.tbl k
+
+  let get_or_add tbl ~f ~k =
+    try find tbl k
+    with Not_found ->
+      let v = f k in
+      add tbl k v;
+      v
+
+  let update tbl ~f ~k =
+    let v = get tbl k in
+    match v, f k v with
+    | None, None -> ()
+    | Some _, None -> remove tbl k
+    | _, Some v' -> add tbl k v'
 
   let[@inline] to_iter self yield = M.iter (fun k v -> yield (k, v)) self.tbl
 end
