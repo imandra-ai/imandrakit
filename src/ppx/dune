@@ -1,0 +1,9 @@
+(library
+ (name imandrakit_ser_pack_ppx)
+ (public_name imandrakit.ser-pack.ppx)
+ (optional)
+ (kind ppx_deriver)
+ (ppx_runtime_libraries imandrakit.ser imandrakit.ser-pack)
+ (libraries ppxlib ppxlib.astlib)
+ (preprocess
+  (pps ppxlib.metaquot)))
