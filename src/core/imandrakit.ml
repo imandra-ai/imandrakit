@@ -21,6 +21,7 @@ module Apool = Apool
 module Backtrack_stack = Backtrack_stack
 module Backtrackable_tbl = Backtrackable_tbl
 module Bag = Bag
+module Basic_bv = Basic_bv
 module Bidir_tbl = Bidir_tbl
 module Bit_field = Bit_field
 module Codec = Codec
