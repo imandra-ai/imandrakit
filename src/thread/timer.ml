@@ -42,7 +42,7 @@ type state = {
   mutable events: T_heap.t;
   p_read: Unix.file_descr;  (** use a fifo to be able to notify the thread *)
   p_write: Unix.file_descr;  (** Notify by writing into fifo *)
-  buf: bytes;  (** Tiny writing buffer, len=1 *)
+  buf4: bytes;  (** Tiny writing buffer, len=4 *)
   mutable t_loop: Thread.t option;  (** Background thread *)
 }
 
@@ -56,15 +56,20 @@ let create_state () : state =
     events = T_heap.empty;
     p_read;
     p_write;
-    buf = Bytes.make 1 ' ';
+    buf4 = Bytes.create 4;
     t_loop = None;
   }
+
+let wakeup_thread_ (self : state) : unit =
+  let n = Unix.write_substring self.p_write "!" 0 1 in
+  if n = 0 then
+    Error.fail ~kind:timer_error "Timer: cannot wake up timer thread"
 
 let add_task_ (self : state) (task : task) : unit =
   (* is the new task [f()] scheduled earlier than whatever the
      thread is waiting for? In this case the thread needs awakening
      so it can adjust its sleeping delay. *)
-  let is_earlier_than_current_first =
+  let is_earlier_than_all_current_tasks =
     let@ () = Lock.with_lock self.mutex in
     let is_first =
       match T_heap.find_min self.events with
@@ -75,12 +80,9 @@ let add_task_ (self : state) (task : task) : unit =
     is_first
   in
 
-  if is_earlier_than_current_first then (
-    (* need to wake up the thead, if it's in [Unix.select] *)
-    let n = Unix.write_substring self.p_write "t" 0 1 in
-    if n = 0 then
-      Error.fail ~kind:timer_error "Timer: cannot wake up timer thread"
-  )
+  if is_earlier_than_all_current_tasks then
+    (* need to wake up the thead, if it's asleep in [Unix.select] *)
+    wakeup_thread_ self
 
 type next_step =
   | Wait of float
@@ -106,7 +108,7 @@ let wait_ (self : state) delay =
   let _ = Unix.select [ self.p_read ] [] [ self.p_read ] delay in
   (* drain pipe *)
   try
-    while Unix.read self.p_read self.buf 0 1 > 0 do
+    while Unix.read self.p_read self.buf4 0 4 > 0 do
       ()
     done
   with _ -> ()
@@ -176,7 +178,7 @@ let run_after_s' (self : state) t f : Handle.t =
 
 let terminate_ (self : state) : unit =
   if not (Atomic.exchange self.closed true) then (
-    let _n = Unix.write_substring self.p_write "t" 0 1 in
+    wakeup_thread_ self;
     (* wait for timer thread to terminate *)
     Option.iter Thread.join self.t_loop
   )
