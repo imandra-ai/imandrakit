@@ -57,18 +57,20 @@ let bool =
     deser =
       (function
       | V.Bool b -> b
-      | V.Int 1 -> true
-      | V.Int 0 -> false
+      | V.Int 1L -> true
+      | V.Int 0L -> false
       | v -> fail_ "expected bool" v);
   }
 
-let int =
+let int64 =
   {
     deser =
       (function
       | V.Int i -> i
       | v -> fail_ "expected int" v);
   }
+
+let int = { deser = (fun v -> Int64.to_int (int64.deser v)) }
 
 let string =
   {
