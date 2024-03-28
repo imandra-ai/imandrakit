@@ -1,5 +1,6 @@
 (library
- (name testlib)
+ (name imandrakit_testlib)
+ (public_name imandrakit.testlib)
  (synopsis "Test library for imandrakit")
  (preprocess
   (pps ppx_deriving.std))

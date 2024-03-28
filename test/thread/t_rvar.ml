@@ -1,4 +1,4 @@
-include (val Testlib.make ~__FILE__ ())
+include (val Imandrakit_testlib.make ~__FILE__ ())
 module Fut = Imandrakit_thread.Fut
 module RV = Imandrakit_thread.Rvar
 

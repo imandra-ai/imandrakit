@@ -2,8 +2,8 @@
  (name run_tests)
  (package imandrakit)
  (modules :standard \ test_redirect_stdin)
- (libraries imandrakit.io imandrakit containers testlib)
- (flags :standard -open Testlib -open Imandrakit))
+ (libraries imandrakit.io imandrakit containers imandrakit.testlib)
+ (flags :standard -open Imandrakit_testlib -open Imandrakit))
 
 (executable
  (name test_redirect_stdin)

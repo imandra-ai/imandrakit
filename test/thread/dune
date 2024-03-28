@@ -1,7 +1,7 @@
 (test
  (name run_tests)
  (package imandrakit)
- (libraries imandrakit.thread imandrakit containers testlib)
+ (libraries imandrakit.thread imandrakit containers imandrakit.testlib)
  (enabled_if
   (>= %{ocaml_version} 5.0))
- (flags :standard -open Testlib -open Imandrakit))
+ (flags :standard -open Imandrakit))

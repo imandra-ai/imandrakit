@@ -1,4 +1,4 @@
-include (val Testlib.make ~__FILE__ ())
+include (val Imandrakit_testlib.make ~__FILE__ ())
 module Fut = Imandrakit_thread.Fut
 
 let () = eq 42 (Fut.wait_block_exn (Fut.return 42))

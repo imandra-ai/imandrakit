@@ -1,4 +1,4 @@
-include (val Testlib.make ~__FILE__ ())
+include (val Imandrakit_testlib.make ~__FILE__ ())
 module T = Imandrakit_thread.Timer
 
 let ( ! ) = Atomic.get
