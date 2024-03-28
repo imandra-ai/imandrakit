@@ -149,6 +149,10 @@ module Ser = struct
 
   let finalize_cbor_string (self : state) ~key : string =
     Imandrakit_ser_cbor.encode @@ finalize_value self ~key
+
+  let result fok ferr st = function
+    | Ok x -> list [ string "Ok"; fok st x ]
+    | Error e -> list [ string "Err"; ferr st e ]
 end
 
 let to_value (ser : 'a Ser.t) x : value =
@@ -343,6 +347,18 @@ module Deser = struct
     let buf = Buffer.create 32 in
     Format.fprintf (Format.formatter_of_buffer buf) "%a@?" pp_diagnostic self;
     Buffer.contents buf
+
+  let result fok ferr : _ Stdlib.result t =
+   fun st c ->
+    let l = to_list st c in
+    match l with
+    | [ Str "Ok"; x ] ->
+      let x = fok st x in
+      Ok x
+    | [ Str "Err"; e ] ->
+      let e = ferr st e in
+      Error e
+    | _ -> fail "expected result"
 end
 
 let pp_diagnostic out (v : value) =

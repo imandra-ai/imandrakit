@@ -98,6 +98,8 @@ module Ser : sig
       for recursive cases and must use it to implement the serialization
       for the current value. *)
 
+  val result : 'a t -> 'b t -> ('a, 'b) Stdlib.result t
+
   type 'a cache_key
 
   val create_cache_key :
@@ -224,6 +226,8 @@ module Deser : sig
   (** [fix f] is a recursive deserializer. [f] receives a deserializer
       for recursive cases and must use it to implement the deserialization
       for the current value. *)
+
+  val result : 'a t -> 'b t -> ('a, 'b) Stdlib.result t
 
   val entry_key : state -> value
   (** Entrypoint for the pack, as used in {!Ser.finalize_value}

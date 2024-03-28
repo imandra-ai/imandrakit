@@ -63,7 +63,14 @@ let add_data k v (self : t) : t =
   let msg = { self.msg with data = Data.add k v self.msg.data } in
   { self with msg }
 
-type !'a result = ('a, t) Stdlib.result
+module Result_ = struct
+  type nonrec ('a, 'b) t = ('a, 'b) result
+
+  let to_serpack = Imandrakit_ser_pack.Ser.result
+  let of_serpack = Imandrakit_ser_pack.Deser.result
+end
+
+type !'a result = ('a, t) Result_.t [@@deriving serpack]
 
 let map_result = CCResult.map
 let iter_result = CCResult.iter
