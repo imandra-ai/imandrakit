@@ -61,6 +61,7 @@ module Ser = struct
   let bool = V.bool
   let float = V.float
   let list = V.list
+  let dict = V.dict
   let map = V.dict_of_list
   let string = V.string
   let bytes = V.bytes
@@ -232,12 +233,12 @@ module Deser = struct
     | List x -> List.map (f state) x
     | _ -> fail "expected array"
 
-  let to_map_no_deref_ = function
+  let to_dict_no_deref_ = function
     | V.Dict l -> l
     | _ -> fail "expected map"
 
-  let to_map state c = to_map_no_deref_ @@ deref_if_ptr state c
-  let to_map_as_list state v = to_map state v |> Str_map.to_list
+  let to_dict state c = to_dict_no_deref_ @@ deref_if_ptr state c
+  let to_map state v = to_dict state v |> Str_map.to_list
 
   let to_text state c =
     match deref_if_ptr state c with
@@ -274,11 +275,11 @@ module Deser = struct
     Lazy.force _self
 
   let map_entry_no_deref_ ~k (c : value) : value =
-    let m = to_map_no_deref_ c in
+    let m = to_dict_no_deref_ c in
     try Str_map.find k m with Not_found -> fail "cannot find key in map"
 
   let map_entry ~k state (c : value) : value =
-    let m = to_map state c in
+    let m = to_dict state c in
     try Str_map.find k m with Not_found -> fail "cannot find key in map"
 
   let create_cache_key (type a) () : a cache_key =

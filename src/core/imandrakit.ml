@@ -13,7 +13,6 @@ module Error_data = Imandrakit_error.Data
 module Ser = Imandrakit_ser
 module Ser_value = Imandrakit_ser.Value
 module Ser_decode = Imandrakit_ser.Decode
-module Codec = Imandrakit_ser.Codec
 
 (** {2 Local modules} *)
 
@@ -24,6 +23,7 @@ module Backtrackable_tbl = Backtrackable_tbl
 module Bag = Bag
 module Bidir_tbl = Bidir_tbl
 module Bit_field = Bit_field
+module Codec = Codec
 module Core_classes = Core_classes
 module Dot = Dot
 module Duration_s = Duration_s
@@ -44,6 +44,7 @@ module Trace_async = Trace_async
 module Util = Util
 module Util_b64 = Util_b64
 module Util_gzip = Util_gzip
+module Util_serpack = Util_serpack
 module Util_sockaddr = Util_sockaddr
 module Util_zip = Util_zip
 module Util_zlib = Util_zlib

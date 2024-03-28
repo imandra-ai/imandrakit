@@ -1,12 +1,13 @@
 (** Extensible fields for errors *)
 
-module Ser = Imandrakit_ser
+module Ser_pack = Imandrakit_ser_pack
 
 (** Information embedded in keys *)
 module Key_info = struct
   type 'a t = {
     field_name: string;
-    codec: 'a Ser.Codec.t;
+    enc: 'a Ser_pack.Ser.t;
+    dec: 'a Ser_pack.Deser.t;
   }
 end
 
@@ -18,8 +19,8 @@ module Key = struct
 
   let all_ : any Str_map.t Atomic.t = Atomic.make Str_map.empty
 
-  let make ~field_name ~codec () : _ t =
-    let key_info = { Key_info.field_name; codec } in
+  let make ~field_name ~enc ~dec () : _ t =
+    let key_info = { Key_info.field_name; enc; dec } in
     let key = M.Key.create key_info in
     (* add to the map *)
     while
@@ -44,28 +45,27 @@ let get = M.find
 let add = M.add
 let fold = M.fold
 
-let encode (self : t) : Ser.Value.t =
+let to_serpack : t Ser_pack.Ser.t =
+ fun st self ->
   let m =
     fold
       (fun (B (key, value)) (m : _ Str_map.t) ->
-        let { Key_info.field_name; codec } = M.Key.info key in
-        Str_map.add field_name (Ser.Codec.encode codec value) m)
+        let { Key_info.field_name; enc; dec = _ } = M.Key.info key in
+        Str_map.add field_name (enc st value) m)
       self Str_map.empty
   in
-  Ser.Value.dict m
+  Ser_pack.Ser.dict m
 
-let decode : t Ser.Decode.t =
-  Ser.Decode.(
-    let* d = dict_as_list in
-    fold_l
-      (fun m (k, v) ->
-        match Key.find k with
-        | None -> failf "cannot find error field named %S" k
-        | Some (Key.Any k) ->
-          let key_info = M.Key.info k in
-          let+ v = apply key_info.codec.dec v in
-          add k v m)
-      empty d)
-
-let codec : t Ser.Codec.t =
-  Ser.Codec.create ~name:"error_fields" ~enc:encode ~dec:decode ()
+let of_serpack : t Ser_pack.Deser.t =
+  Ser_pack.Deser.(
+    fun st c ->
+      let d = to_map st c in
+      List.fold_left
+        (fun m (k, v) ->
+          match Key.find k with
+          | None -> failf "cannot find error field named %S" k
+          | Some (Key.Any k) ->
+            let key_info = M.Key.info k in
+            let v = key_info.dec st v in
+            add k v m)
+        empty d)

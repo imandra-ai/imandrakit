@@ -3,31 +3,17 @@ type message = {
   data: Data.t;
   bt: string option; [@key "bt"]
 }
+[@@deriving serpack]
 
-type stack = message list
+type stack = message list [@@deriving serpack]
 
 type t = {
   process: string; [@key "p"]
-  kind: Kind.t;
+  kind: Kind.t; [@key "k"]
   msg: message; [@key "msg"]
-  stack: stack;
+  stack: stack; [@key "st"]
 }
-
-let encode_message (self : message) =
-  Value.(
-    let d = Str_map.singleton "msg" (string self.msg) in
-    let d =
-      if Data.is_empty self.data then
-        d
-      else
-        Str_map.add "data" (Codec.encode Data.codec self.data) d
-    in
-    let d =
-      match self.bt with
-      | None -> d
-      | Some bt -> Str_map.add "bt" (string bt) d
-    in
-    dict d)
+[@@deriving serpack]
 
 exception E of t
 

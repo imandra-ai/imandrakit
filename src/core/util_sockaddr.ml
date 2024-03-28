@@ -1,5 +1,7 @@
 (** Socket addresses *)
 
+open Imandrakit_error
+
 type t = Unix.sockaddr
 
 let show : t -> string = function

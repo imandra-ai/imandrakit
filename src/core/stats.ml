@@ -5,10 +5,21 @@
    add them to {!Stats.t} when asked to.
  *)
 
+open struct
+  module Ser_pack = Imandrakit_ser_pack
+
+  let int_str_map_to_serpack =
+    Ser_pack.Ser.(Util_serpack.Str_map.to_serpack (fun _ x -> int x))
+
+  let int_str_map_of_serpack =
+    Ser_pack.Deser.(Util_serpack.Str_map.of_serpack to_int)
+end
+
 type t = {
   mutable stats:
-    (int Str_map.t[@ser int_str_map_to_cbpack] [@deser int_str_map_of_cbpack]);
+    (int Str_map.t[@ser int_str_map_to_serpack] [@deser int_str_map_of_serpack]);
 }
+[@@deriving serpack]
 
 let pp out (self : t) : unit =
   Fmt.fprintf out "{ @[";

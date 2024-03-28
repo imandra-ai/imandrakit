@@ -7,6 +7,7 @@ type message = {
   data: Data.t;
   bt: string option;  (** Backtrace *)
 }
+[@@deriving serpack]
 (** A message.
 
     An error message is emitted at a particular place in the code.
@@ -20,7 +21,7 @@ type t = {
   msg: message;
   stack: stack;
 }
-[@@deriving show]
+[@@deriving show, serpack]
 
 exception E of t
 (** Internal error *)

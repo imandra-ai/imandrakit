@@ -61,6 +61,8 @@ module Ser : sig
   val list : value list -> value
   (** Build a value list *)
 
+  val dict : value Str_map.t -> value
+
   val map : (string * value) list -> value
   (** Build a value map *)
 
@@ -163,8 +165,8 @@ module Deser : sig
   val to_float : float t
   val to_list : value list t
   val to_list_of : 'a t -> 'a list t
-  val to_map_as_list : (string * value) list t
-  val to_map : value Str_map.t t
+  val to_map : (string * value) list t
+  val to_dict : value Str_map.t t
   val to_ptr : value -> ptr
   val map_entry : k:string -> state -> value -> value
 

@@ -1,6 +1,6 @@
 (** Timestamp, in seconds *)
 
-type t = (float[@printer Util.pp_duration_s]) [@@deriving show, eq]
+type t = (float[@printer Util.pp_duration_s]) [@@deriving show, eq, serpack]
 (** Timestamps *)
 
 let to_string_rfc3339 ?tz_offset_s (self : t) : string =
