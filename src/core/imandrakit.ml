@@ -8,6 +8,7 @@ include Imandrakit_common
 (** {2 Re-exports} *)
 
 module Error = Imandrakit_error.Error
+module Error_core = Imandrakit_error.Error_core
 module Error_kind = Imandrakit_error.Kind
 module Error_data = Imandrakit_error.Data
 module Ser_value = Imandrakit_ser.Value
