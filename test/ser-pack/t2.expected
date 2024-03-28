@@ -1,0 +1,80 @@
+start with myx2:
+{ a = (A 42);
+  b =
+  [|[[]; [C {x = (Some 3); z = [(true, 'a'); (false, 'c')]}]];
+    [[B; B; B]; [C {x = (Some 3); z = [(true, 'a'); (false, 'c')]}];
+      [C {x = (Some 3); z = [(true, 'a'); (false, 'c')]};
+        (D (C {x = (Some 3); z = [(true, 'a'); (false, 'c')]},
+           C {x = (Some 3); z = [(true, 'a'); (false, 'c')]}))
+        ]
+      ]
+    |];
+  c = None }
+serialized to "\162ak\198\004ah\133\131ac\129\003\130\130\245\024a\130\244\024cab\131ad\198\000\198\000\130\000\024*\163aa\198\003ab\130\130\128\129\198\000\131\131\198\001\198\001\198\001\129\198\000\130\198\000\198\002ac\128"
+len: 67
+len with marshal: 118
+deserialized CBOR value: {h=[0: ["c", [3], [[true, 97], [false, 99]]];
+                             1: "b";
+                             2: ["d", 6(0), 6(0)];
+                             3: [0, 42];
+                             4: {"a": 6(3), "b": [[[], [6(0)]], [[6(1), 6(1), 6(1)], [6(0)], [6(0), 6(2)]]], "c": []};
+                             ];
+                          k=6(4)}
+deref cbor ptr: {"a": 6(3), "b": [[[], [6(0)]], [[6(1), 6(1), 6(1)], [6(0)], [6(0), 6(2)]]], "c": []}
+myx2 after roundtrip:
+{ a = (A 42);
+  b =
+  [|[[]; [C {x = (Some 3); z = [(true, 'a'); (false, 'c')]}]];
+    [[B; B; B]; [C {x = (Some 3); z = [(true, 'a'); (false, 'c')]}];
+      [C {x = (Some 3); z = [(true, 'a'); (false, 'c')]};
+        (D (C {x = (Some 3); z = [(true, 'a'); (false, 'c')]},
+           C {x = (Some 3); z = [(true, 'a'); (false, 'c')]}))
+        ]
+      ]
+    |];
+  c = None }
+len: 90
+len(big) with marshal: 258
+deser(myx2_big):
+{ a = B;
+  b =
+  [|[[];
+      [C {x = (Some 3); z = [(true, 'a'); (false, 'c')]};
+        C {x = (Some 3); z = [(true, 'a'); (false, 'c')]}]
+      ]
+    |];
+  c =
+  (Some [{ a = (A 42);
+           b =
+           [|[[]; [C {x = (Some 3); z = [(true, 'a'); (false, 'c')]}]];
+             [[B; B; B]; [C {x = (Some 3); z = [(true, 'a'); (false, 'c')]}];
+               [C {x = (Some 3); z = [(true, 'a'); (false, 'c')]};
+                 (D (C {x = (Some 3); z = [(true, 'a'); (false, 'c')]},
+                    C {x = (Some 3); z = [(true, 'a'); (false, 'c')]}))
+                 ]
+               ]
+             |];
+           c = None };
+          { a = (A 42);
+            b =
+            [|[[]; [C {x = (Some 3); z = [(true, 'a'); (false, 'c')]}]];
+              [[B; B; B];
+                [C {x = (Some 3); z = [(true, 'a'); (false, 'c')]}];
+                [C {x = (Some 3); z = [(true, 'a'); (false, 'c')]};
+                  (D (C {x = (Some 3); z = [(true, 'a'); (false, 'c')]},
+                     C {x = (Some 3); z = [(true, 'a'); (false, 'c')]}))
+                  ]
+                ]
+              |];
+            c = None }
+          ])
+  }
+myx2_big CBOR is:
+{h=[0: ["c", [3], [[true, 97], [false, 99]]];
+    1: "b";
+    2: ["d", 6(0), 6(0)];
+    3: [0, 42];
+    4: {"a": 6(3), "b": [[[], [6(0)]], [[6(1), 6(1), 6(1)], [6(0)], [6(0), 6(2)]]], "c": []};
+    5: {"a": 6(1), "b": [[[], [6(0), 6(0)]]], "c": [[6(4), 6(4)]]};
+    ];
+ k=6(5)}

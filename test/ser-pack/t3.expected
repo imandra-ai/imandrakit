@@ -1,0 +1,27 @@
+without hashcons
+myt1: { T3.M1.foos =
+        [{ T3.M1.x = 0; y = false }; { T3.M1.x = 0; y = false };
+          { T3.M1.x = 2; y = true }; { T3.M1.x = 0; y = false };
+          { T3.M1.x = 2; y = true }]
+        }
+pack1: {h=[0: {"X": 0, "Y": false};
+           1: {"X": 0, "Y": false};
+           2: {"X": 2, "Y": true};
+           3: {"X": 0, "Y": false};
+           4: {"X": 2, "Y": true};
+           5: {0: [6(0), 6(1), 6(2), 6(3), 6(4)]};
+           ];
+        k=6(5)}
+len1: 56
+with hashcons
+myt1': { T3.M2.foos =
+         [{ T3.M2.x = 0; y = false }; { T3.M2.x = 0; y = false };
+           { T3.M2.x = 2; y = true }; { T3.M2.x = 0; y = false };
+           { T3.M2.x = 2; y = true }]
+         }
+pack1: {h=[0: {"x0": 0, "y": false};
+           1: {"x0": 2, "y": true};
+           2: {0: [6(0), 6(0), 6(1), 6(0), 6(1)]};
+           ];
+        k=6(2)}
+len1: 37

@@ -1,0 +1,3 @@
+x: "\162ak\198\000ah\129\130\000lhello\0000world"
+len: 23
+deser: (T4.F "hello\0000world")
