@@ -151,8 +151,7 @@ let rec ser_expr_of_ty (e : expression) ~(ty : core_type) : expression =
       Imandrakit_ser_pack.Ser.int64 (Int64.of_nativeint i)]
   | [%type: string] ->
     if is_some_ @@ Attribute.get ~mark_as_seen:false attr_use_bytes ty then
-      [%expr
-        Imandrakit_ser_pack.Ser.add_bytes ser (Bytes.unsafe_of_string [%e e])]
+      [%expr Imandrakit_ser_pack.Ser.add_bytes ser [%e e]]
     else
       [%expr Imandrakit_ser_pack.Ser.add_string ser [%e e]]
   | [%type: bytes] -> [%expr Imandrakit_ser_pack.Ser.add_bytes ser [%e e]]
@@ -272,10 +271,7 @@ let rec deser_expr_of_ty (e : expression) ~(ty : core_type) : expression =
       | _ -> Imandrakit_ser_pack.Deser.fail "expected nativeint"]
   | [%type: string] ->
     if is_some_ @@ Attribute.get ~mark_as_seen:false attr_use_bytes ty then
-      [%expr
-        Bytes.unsafe_to_string
-        @@ Imandrakit_ser_pack.Deser.to_bytes deser
-        @@ [%e e]]
+      [%expr Imandrakit_ser_pack.Deser.to_bytes deser @@ [%e e]]
     else
       by_full_deser [%expr Imandrakit_ser_pack.Deser.to_text]
   | [%type: bytes] -> by_full_deser [%expr Imandrakit_ser_pack.Deser.to_bytes]

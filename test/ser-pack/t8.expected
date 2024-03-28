@@ -16,9 +16,9 @@ big_tree: 7:=T (6:=T (4:=T (3:=T (0:=N {x=41, y=None},
                                   3:=T (0:=N {x=41, y=None},
                                         1:=N {x=2, y=Some "hello"})),
                             2:=N {x=3, y=Some "world"})))
-ser(big_tree): {h=[0: {("x", 3),  ("y", ["world"])};
+ser(big_tree): {h=[0: {("x", 3),  ("y", [(bytes "world")])};
                    1: [2;["N";6(0)]];
-                   2: {("x", 2),  ("y", ["hello"])};
+                   2: {("x", 2),  ("y", [(bytes "hello")])};
                    3: [1;["N";6(2)]];
                    4: {("x", 41),  ("y", [])};
                    5: [0;["N";6(4)]];

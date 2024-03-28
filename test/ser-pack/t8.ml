@@ -2,7 +2,7 @@ module CP = Imandrakit_ser_pack
 
 type foo = {
   x: int;
-  y: string option;
+  y: (string[@use_bytes]) option;
 }
 [@@deriving serpack]
 
