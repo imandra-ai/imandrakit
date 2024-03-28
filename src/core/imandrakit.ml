@@ -10,9 +10,9 @@ include Imandrakit_common
 module Error = Imandrakit_error.Error
 module Error_kind = Imandrakit_error.Kind
 module Error_data = Imandrakit_error.Data
-module Ser = Imandrakit_ser
 module Ser_value = Imandrakit_ser.Value
 module Ser_decode = Imandrakit_ser.Decode
+module Ser_pack = Imandrakit_ser_pack
 
 (** {2 Local modules} *)
 
