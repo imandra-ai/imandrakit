@@ -41,7 +41,7 @@ module File_json_l = struct
   (** read a single line *)
   let read_line (st : st) ~line_idx line : _ option =
     Buffer.clear st.buf;
-    match Yojson.Safe.from_string ~buf:st.buf line |> Log_event.of_yojson with
+    match Yojson.Safe.from_string ~buf:st.buf line |> Log_event.of_yojson_ with
     | Ok ev ->
       if
         accept_ev ~only_above_level:st.only_above_level
