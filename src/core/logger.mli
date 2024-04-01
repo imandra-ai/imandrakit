@@ -44,11 +44,13 @@ val with_no_logger : unit -> (unit -> 'a) -> 'a
 (** [with_no_logger () f] calls [f()] in a context where there
   is no logger. Useful to avoid logging loops. *)
 
-val setup_level : ?debug:bool -> ?log_level:level -> unit -> unit
+val setup_level :
+  ?default_level:level -> ?debug:bool -> ?log_level:level -> unit -> unit
 (** Setup log level. It will use [Info]  by default, unless
     the env var ["DEBUG"] is set or [~debug] or [~log_level] is passed.
 
-    [debug] takes precedence over [log_level] which takes precedence over the env. *)
+    [debug] takes precedence over [log_level] which takes precedence over the env.
+    @param default_level the level used if nothing is specified *)
 
 val setup_logger_to_stdout : unit -> unit
 (** Setup a logger that emits on stdout *)

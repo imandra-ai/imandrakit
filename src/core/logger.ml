@@ -3,14 +3,14 @@ module Sync_queue = Moonpool.Blocking_queue
 
 type level = Log_level.t [@@deriving show, eq]
 
-let setup_level ?debug ?log_level () =
+let setup_level ?(default_level = Info) ?debug ?log_level () =
   let lvl =
     match debug, log_level, Sys.getenv_opt "DEBUG" with
     | Some true, _, _ -> Debug
     | _, Some lvl, _ -> lvl
-    | Some false, _, _ -> Info
+    | Some false, _, _ -> default_level
     | None, None, Some _ -> Debug
-    | _ -> Info
+    | _ -> default_level
   in
   Logs.set_level ~all:true (Some lvl)
 
