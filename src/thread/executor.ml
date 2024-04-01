@@ -5,6 +5,7 @@ type t = Moonpool.Runner.t
 let pp out _ = Fmt.string out "<executor>"
 let run = Moonpool.Runner.run_async
 let shutdown = Moonpool.Runner.shutdown
+let shutdown_without_waiting = Moonpool.Runner.shutdown_without_waiting
 
 (** Default exception handler, logs the error *)
 let default_exn_handler exn bt =
