@@ -39,7 +39,7 @@ let to_yojson : t -> json =
 
 let json_error = Err.Kind.make ~name:"LogJsonError" ()
 
-let of_yojson (j : json) : t Err.result =
+let of_yojson_ (j : json) : t Err.result =
   let module JU = Yojson.Safe.Util in
   let unwrap_ ctx = function
     | Ok x -> x
@@ -70,3 +70,6 @@ let of_yojson (j : json) : t Err.result =
       |> Err.add_ctx (Err.message "decoding log event from JSON")
     in
     Error err
+
+let of_yojson (j : json) : (t, string) result =
+  of_yojson_ j |> Result.map_error Err.show
