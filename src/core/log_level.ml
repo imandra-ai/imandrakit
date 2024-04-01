@@ -8,7 +8,7 @@ type t = Logs.level =
   | Warning
   | Info
   | Debug
-[@@deriving show { with_path = false }, enum, eq, ord]
+[@@deriving show { with_path = false }, enum, eq, ord, serpack]
 
 let to_yojson : t -> json = function
   | App -> `String "app"
