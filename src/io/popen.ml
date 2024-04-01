@@ -1,6 +1,11 @@
+open Moonpool
 module Log = (val Logger.mk_log_str "x.popen")
 
-type state = { stopped: bool Atomic.t } [@@unboxed]
+type state = {
+  stopped: bool Atomic.t;
+  res_code: int Fut.t;
+  promise_code: int Fut.promise;
+}
 
 type t = {
   stdin: out_channel;
@@ -30,8 +35,10 @@ let kill_and_close_ (self : t) =
            try Unix.kill self.pid 9 with _ -> ())
          ()
         : Thread.t);
+
     (* kill zombies *)
-    try ignore (Unix.waitpid [] self.pid) with _ -> ()
+    let code = try fst @@ Unix.waitpid [] self.pid with _ -> max_int in
+    Fut.fulfill_idempotent self._st.promise_code @@ Ok code
   )
 
 let run_ ?(env = Unix.environment ()) cmd args : t =
@@ -49,6 +56,7 @@ let run_ ?(env = Unix.environment ()) cmd args : t =
   let stderr = Unix.in_channel_of_descr stderr in
   let stdin = Unix.out_channel_of_descr stdin in
   let pid = Unix.create_process_env cmd args env p_stdin p_stdout p_stderr in
+  let res_code, promise_code = Fut.make () in
   Log.debug (fun k ->
       k "opened subprocess pid=%d cmd=%S args=[…%d]" pid cmd (Array.length args));
   (* close the subprocess ends in here *)
@@ -56,12 +64,19 @@ let run_ ?(env = Unix.environment ()) cmd args : t =
   Unix.close p_stdin;
   Unix.close p_stderr;
   let p =
-    { stdin; stdout; stderr; pid; _st = { stopped = Atomic.make false } }
+    {
+      stdin;
+      stdout;
+      stderr;
+      pid;
+      _st = { stopped = Atomic.make false; res_code; promise_code };
+    }
   in
   Gc.finalise kill_and_close_ p;
   p
 
 let run ?env cmd args : t = run_ ?env cmd (Array.of_list (cmd :: args))
+let res_code self = self._st.res_code
 let run_shell ?env cmd : t = run_ ?env "/bin/sh" [| "/bin/sh"; "-c"; cmd |]
 let kill self = kill_and_close_ self
 let signal self s = Unix.kill self.pid s

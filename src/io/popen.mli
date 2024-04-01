@@ -4,7 +4,7 @@
 
 type state
 
-type t = {
+type t = private {
   stdin: out_channel;
   stdout: in_channel;
   stderr: in_channel;
@@ -20,6 +20,7 @@ val run : ?env:string array -> string -> string list -> t
 val run_shell : ?env:string array -> string -> t
 (** Run subprocess with given command *)
 
+val res_code : t -> int Moonpool.Fut.t
 val wait : t -> int
 val kill : t -> unit
 val signal : t -> int -> unit
