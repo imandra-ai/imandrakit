@@ -39,8 +39,14 @@ module Message = struct
       match self.bt with
       | None | Some "" -> ()
       | Some bt -> Fmt.fprintf out "@ backtrace:@ %a" Fmt.string_lines bt
+    and pp_data out d =
+      Data.iter d (fun (Data.B (k, v)) -> Data.Key.pp k out v)
     in
-    Fmt.fprintf out "@[<v>%a%a@]" Fmt.string_lines self.msg pp_bt ()
+    if Data.is_empty self.data then
+      Fmt.fprintf out "@[<v>%a%a@]" Fmt.string_lines self.msg pp_bt ()
+    else
+      Fmt.fprintf out "@[<v>%a@,%a%a@]" Fmt.string_lines self.msg pp_data
+        self.data pp_bt ()
 
   let show = Fmt.to_string pp
 end

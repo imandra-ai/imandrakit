@@ -8,6 +8,7 @@ module Key_info = struct
     field_name: string;
     enc: 'a Ser_pack.Ser.t;
     dec: 'a Ser_pack.Deser.t;
+    pp: 'a Fmt.printer;
   }
 end
 
@@ -18,9 +19,10 @@ module Key = struct
   type any = Any : _ t -> any
 
   let all_ : any Str_map.t Atomic.t = Atomic.make Str_map.empty
+  let[@inline] pp (self : _ t) = (M.Key.info self).pp
 
-  let make ~field_name ~enc ~dec () : _ t =
-    let key_info = { Key_info.field_name; enc; dec } in
+  let make ~field_name ~enc ~dec ~pp () : _ t =
+    let key_info = { Key_info.field_name; enc; dec; pp } in
     let key = M.Key.create key_info in
     (* add to the map *)
     while
@@ -50,7 +52,7 @@ let to_serpack : t Ser_pack.Ser.t =
   let m =
     fold
       (fun (B (key, value)) (m : _ Str_map.t) ->
-        let { Key_info.field_name; enc; dec = _ } = M.Key.info key in
+        let { Key_info.field_name; enc; dec = _; pp = _ } = M.Key.info key in
         Str_map.add field_name (enc st value) m)
       self Str_map.empty
   in
@@ -69,3 +71,7 @@ let of_serpack : t Ser_pack.Deser.t =
             let v = key_info.dec st v in
             add k v m)
         empty d)
+
+type binding = M.binding = B : 'a Key.t * 'a -> binding
+
+let[@inline] iter self : binding Iter.t = fun k -> M.iter k self
