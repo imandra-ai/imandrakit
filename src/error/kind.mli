@@ -6,6 +6,7 @@ type t = private { name: string }
 
 val hash : t -> int
 val make : name:string -> unit -> t
+val name : t -> string
 
 (** {2 Some standard error kinds} *)
 
@@ -14,6 +15,9 @@ val generic_internal_error : t
 
 val timeout : t
 (** Timeout *)
+
+val todo : t
+(** Not implemented yet *)
 
 module Tbl : CCHashtbl.S with type key = t
 module Map : CCMap.S with type key = t

@@ -2,8 +2,9 @@ module Ser_pack = Imandrakit_ser_pack
 
 type t = { name: string } [@@unboxed] [@@deriving show, ord, eq]
 
-let hash self = CCHash.string self.name
+let[@inline] hash self = CCHash.string self.name
 let make ~name () : t = { name }
+let[@inline] name self = self.name
 let to_serpack _st self = Ser_pack.Ser.string self.name
 
 let of_serpack st v =
@@ -12,6 +13,7 @@ let of_serpack st v =
 
 let generic_internal_error : t = make ~name:"GenericInternalError" ()
 let timeout : t = make ~name:"Timeout" ()
+let todo : t = make ~name:"Todo" ()
 
 module As_key = struct
   type nonrec t = t
