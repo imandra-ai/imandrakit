@@ -4,6 +4,7 @@ type t = private { name: string }
 [@@unboxed] [@@deriving show, eq, ord, serpack]
 (** The kind of an error, ie a category the error belongs to *)
 
+val hash : t -> int
 val make : name:string -> unit -> t
 
 (** {2 Some standard error kinds} *)
@@ -13,3 +14,7 @@ val generic_internal_error : t
 
 val timeout : t
 (** Timeout *)
+
+module Tbl : CCHashtbl.S with type key = t
+module Map : CCMap.S with type key = t
+module Set : CCSet.S with type elt = t
