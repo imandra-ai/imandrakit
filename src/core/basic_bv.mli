@@ -3,17 +3,11 @@
 type t
 
 val create : int -> t
-
 val get : t -> int -> bool
-
 val set : t -> int -> unit
-
 val length : t -> int
-
 val of_list : int list -> t
-
 val to_bytes : t -> bytes
-
 val of_bytes : bytes -> t
 
 val all_ones : int -> t

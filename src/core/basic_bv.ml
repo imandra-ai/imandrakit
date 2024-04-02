@@ -5,9 +5,7 @@ let create n =
   { b = Bytes.make len '\x00' }
 
 let to_bytes self = self.b
-
 let of_bytes b : t = { b }
-
 let[@inline] length self = Bytes.length self.b lsl 3
 
 let[@inline] get (self : t) i =
