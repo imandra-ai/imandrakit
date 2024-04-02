@@ -7,6 +7,8 @@
 
 module Handle : sig
   type t
+
+  val dummy : t
 end
 
 type t = {
