@@ -2,6 +2,7 @@
  (name imandrakit_testlib)
  (public_name imandrakit.testlib)
  (synopsis "Test library for imandrakit")
+ (optional) ; test deps
  (preprocess
   (pps ppx_deriving.std))
  (libraries containers qcheck-core mtime mtime.clock.os))
