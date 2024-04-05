@@ -13,6 +13,10 @@ module Counter : sig
   val create_float : string -> float t
   val set : 'a t -> 'a -> unit
   val incr : int t -> unit
+
+  val incr_by : int t -> int -> unit
+  (** [incr_by c n] adds [n] to counter [c].
+      @raise Assert_failure if [n < 0] *)
 end
 
 (** A gauge, representing some value fluctuating over time *)

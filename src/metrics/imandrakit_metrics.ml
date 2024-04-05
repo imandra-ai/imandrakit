@@ -21,7 +21,6 @@ type state = {
 }
 
 let empty : state = { ints = []; floats = []; updates = []; gc_metrics = false }
-
 let global : state Immlock.t = Immlock.create empty
 
 let add_int_ c =
@@ -53,17 +52,18 @@ module Counter = struct
   include M_
 
   let create_int = create_int Counter
-
   let create_float = create_float Counter
-
   let[@inline] incr self = A.incr self.v
+
+  let[@inline] incr_by self n =
+    assert (n >= 0);
+    ignore (A.fetch_and_add self.v n : int)
 end
 
 module Gauge = struct
   include M_
 
   let create_int = create_int Gauge
-
   let create_float = create_float Gauge
 end
 
