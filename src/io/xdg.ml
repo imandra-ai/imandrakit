@@ -51,4 +51,6 @@ module Make (A : ARG) : S = struct
     match runtime_dir () with
     | Some d -> Filename.concat d A.project_name
     | None -> Filename.concat (cache_dir ()) A.project_name
+
+  let default_config_dir () = Filename.concat (config_dir ()) A.project_name
 end
