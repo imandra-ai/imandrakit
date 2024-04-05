@@ -82,7 +82,10 @@ let kill self = kill_and_close_ self
 let signal self s = Unix.kill self.pid s
 
 let wait (self : t) : int =
-  let _, res = Unix.waitpid [ Unix.WUNTRACED ] self.pid in
+  let res =
+    try snd @@ Unix.waitpid [ Unix.WUNTRACED ] self.pid
+    with _ -> Unix.WEXITED 0
+  in
   kill_and_close_ self;
   let res =
     match res with
