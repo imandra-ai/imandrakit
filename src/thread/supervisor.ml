@@ -3,8 +3,14 @@ module Log = (val Logger.mk_log_str "x.supervisor")
 let retry_loop (type a) ?(max = 10) ?(initial_delay_before_restart_s = 0.001)
     ?(max_delay_before_restart_s = 60.) () f : a =
   let exception Ret of a in
-  let delay = ref (Stdlib.max 0.000_001 initial_delay_before_restart_s) in
+  let delay = ref (Stdlib.max 0.001 initial_delay_before_restart_s) in
   let count = ref 0 in
+
+  let rd_st = lazy (Random.State.make_self_init ()) in
+  (* avoid thundering herd *)
+  let jitter_ms (delay : float) =
+    Random.State.float (Lazy.force rd_st) (delay /. 5.)
+  in
 
   try
     while true do
@@ -17,8 +23,17 @@ let retry_loop (type a) ?(max = 10) ?(initial_delay_before_restart_s = 0.001)
           Log.err (fun k ->
               k "task failed (retry %d/%d):@ %a" !count max Error.pp err)
         else
+          (* exit loop with error *)
           Error.raise_err err;
-        Thread.delay !delay;
+
+        (* sleep before retrying *)
+        let actual_delay = !delay +. jitter_ms !delay in
+        (let@ _sp =
+           Trace.with_span ~__FILE__ ~__LINE__ "supervisor.retry-loop.sleep"
+             ~data:(fun () -> [ "delay_s", `Float actual_delay ])
+         in
+         Thread.delay actual_delay);
+
         delay := min (!delay *. 2.) max_delay_before_restart_s
     done;
     assert false
