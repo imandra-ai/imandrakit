@@ -44,7 +44,7 @@ val iter_all :
    registered to {!add_on_refresh}. *)
 
 val emit_trace : unit -> unit
-(** Emit into trace *)
+(** Emit into [trace] as int and float counters *)
 
 val emit_trace_every : period_s:float -> Timer.t -> unit
 (** Emit metrics every [period_s] seconds *)

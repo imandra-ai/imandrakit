@@ -1,7 +1,7 @@
 module Log = (val Logger.mk_log_str "x.supervisor")
 
 let retry_loop (type a) ?(max = 10) ?(initial_delay_before_restart_s = 0.001)
-    ?(max_delay_before_restart_s = 60.) f : a =
+    ?(max_delay_before_restart_s = 60.) () f : a =
   let exception Ret of a in
   let delay = ref (Stdlib.max 0.000_001 initial_delay_before_restart_s) in
   let count = ref 0 in
