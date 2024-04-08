@@ -26,6 +26,9 @@ val run_after_s : t -> float -> (unit -> unit) -> unit
 
 val run_after_s' : t -> float -> (unit -> unit) -> Handle.t
 
+val after_s : t -> float -> unit Fut.t
+(** [after_s timer t] returns a future that resolves in [t] seconds. *)
+
 val run_every_s : t -> ?initial:float -> float -> (unit -> unit) -> unit
 (** [run_every ~initial t f] waits [initial] seconds and
     then runs [f()] every [t] seconds.

@@ -223,3 +223,11 @@ let[@inline] run_every_s self ?initial t f : unit =
   ignore (run_every_s' self ?initial t f : Handle.t)
 
 let[@inline] terminate self = self.terminate ()
+
+let after_s (self : t) t : unit Fut.t =
+  let fut, prom = Fut.make () in
+  let h =
+    run_after_s' self t (fun () -> Fut.fulfill_idempotent prom @@ Ok ())
+  in
+  Fut.on_result fut (fun r -> if Result.is_error r then cancel self h);
+  fut
