@@ -102,3 +102,21 @@ let () =
         assert (BV.get bv i = List.mem i l)
       done;
       true)
+
+let () =
+  q ~name:"of_list_get"
+    Q.(pair (small_list small_nat) (small_list small_nat))
+    (fun (l1, l2) ->
+      let l1 = List.sort_uniq compare l1 in
+      let l2 = List.sort_uniq compare l2 in
+      let lboth = List.sort_uniq compare (l1 @ l2) in
+      let bv1 = BV.of_list l1 in
+      let bv2 = BV.of_list l2 in
+
+      let bv_both = BV.or_ bv1 bv2 in
+      let l' = BV.to_list bv_both |> List.sort compare in
+      if lboth <> l' then
+        Q.Test.fail_reportf "expected: %s, or: %s"
+          (Q.Print.(list int) l')
+          (Q.Print.(list int) lboth);
+      true)

@@ -44,6 +44,12 @@ let iter (self : t) f : unit =
     done
   done
 
+let or_ v1 v2 : t =
+  let res = create (max (length v1) (length v2)) in
+  iter v1 (set res);
+  iter v2 (set res);
+  res
+
 let to_list self : _ list =
   let l = ref [] in
   iter self (fun x -> l := x :: !l);
