@@ -3,5 +3,6 @@
   <span><span class="optlabel">?max</span>:int <span class="arrow">&#45;&gt;</span></span>
   <span><span class="optlabel">?initial_delay_before_restart_s</span>:float <span class="arrow">&#45;&gt;</span></span>
   <span><span class="optlabel">?max_delay_before_restart_s</span>:float <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="arrow">&#45;&gt;</span></span>
   <span><span>(<span>unit <span class="arrow">&#45;&gt;</span></span> <span class="type-var">'a</span>)</span> <span class="arrow">&#45;&gt;</span></span>
   <span class="type-var">'a</span></span></code></div><div class="spec-doc"><p><code>retry_loop f</code> runs <code>f()</code>; if <code>f()</code> fails, the loop waits a bit and tries again.</p><ul class="at-tags"><li class="parameter"><span class="at-tag">parameter</span> <span class="value">max_delay_before_restart_s</span> <p>upper bound on the delay. Default 60s.</p></li></ul><ul class="at-tags"><li class="parameter"><span class="at-tag">parameter</span> <span class="value">max</span> <p>after this many attempts, the last failure of <code>f()</code> is raised again and the whole loop fails. Default <code>max_int</code>.</p></li></ul></div></div></div></body></html>
