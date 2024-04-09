@@ -1,6 +1,8 @@
 module Popen = Popen
 module Xdg = Xdg
 
+let io_error = Error_kind.make ~name:"IOError" ()
+
 let str_of_file = CCIO.File.read_exn
 let write_to_file filename s = CCIO.File.write_exn filename s
 
@@ -321,4 +323,17 @@ let rec mkdir_rec (d : string) =
     mkdir_rec d2;
     try Unix.mkdir d 0o755
     with _ -> Logs.debug (fun k -> k "mkdir %S failed" d)
+  )
+
+(* Safe, recursive creation of directories *)
+let safe_mkdir_rec (dir : string) =
+  if Sys.file_exists dir then (
+    if not (Sys.is_directory dir) then
+      Error.failf ~kind:io_error
+        "`%s` is not a directory." dir
+  ) else (
+    try mkdir_rec dir
+    with _ ->
+      Error.failf ~kind:io_error
+        "Directory `%s` could not be created." dir
   )
