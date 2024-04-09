@@ -5,9 +5,4 @@
  (synopsis "Metrics")
  (preprocess
   (pps ppx_deriving.std))
- (libraries
-  containers
-  mtime
-  mtime.clock.os
-  imandrakit
-  imandrakit.thread))
+ (libraries containers mtime mtime.clock.os imandrakit imandrakit.thread))
