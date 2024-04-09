@@ -89,3 +89,6 @@ val dup_stdin_stdout :
 
 val mkdir_rec : string -> unit
 (** Ensure directory exists, recursively *)
+
+val safe_mkdir_rec : string -> unit
+(* Safe, recursive creation of directories (checks existing file type and fails with Error.t) *)
