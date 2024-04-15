@@ -37,11 +37,21 @@ let unsubscribe (self : _ t) (h : handle) : unit =
 
 exception Unsubscribe
 
-let emit self x : unit =
-  let m = Atomic.get self.map in
+let emit_with_ self m x =
   Int_map.iter
     (fun handle cb -> try cb x with Unsubscribe -> unsubscribe self handle)
     m
+
+let emit self x : unit =
+  let m = Atomic.get self.map in
+  emit_with_ self m x
+
+let emit_lazy (self : _ t) f : unit =
+  let m = Atomic.get self.map in
+  if not (Int_map.is_empty m) then (
+    let x = f () in
+    emit_with_ self m x
+  )
 
 let[@inline] forward o1 o2 : unit = subscribe' o1 (emit o2)
 

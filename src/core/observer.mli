@@ -10,6 +10,11 @@ type 'a t
 val create : unit -> 'a t
 val emit : 'a t -> 'a -> unit
 
+val emit_lazy : 'a t -> (unit -> 'a) -> unit
+(** [emit_lazy obs f] emits the result of [f()], but
+    only calls [f()] if there's at least one
+    observer to be notified. *)
+
 type handle
 
 exception Unsubscribe
