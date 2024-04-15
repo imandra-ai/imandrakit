@@ -3,6 +3,7 @@
     This builds on top of {{: https://github.com/c-cube/moonpool/} Moonpool}
     but adds helpers. *)
 
+module Atomic_util = Atomic_util
 module Background_thread = Background_thread
 module Executor = Executor
 module Fiber = Fiber
