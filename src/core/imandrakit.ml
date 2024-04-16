@@ -12,7 +12,6 @@ module Error_core = Imandrakit_error.Error_core
 module Error_kind = Imandrakit_error.Kind
 module Error_data = Imandrakit_error.Data
 module Ser_value = Imandrakit_ser.Value
-module Ser_decode = Imandrakit_ser.Decode
 module Ser_pack = Imandrakit_ser_pack
 
 (** {2 Local modules} *)

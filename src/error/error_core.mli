@@ -1,6 +1,4 @@
-(** Universal error type for Imandra.
-
-    Exposes the standard errors that Imandra can raise. *)
+(** Universal error type for Imandrakit. *)
 
 type message = {
   msg: string;
