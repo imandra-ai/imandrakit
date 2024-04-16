@@ -1,4 +1,3 @@
-
 (** Universal errors.
 
     This library provides an error type that can be used in many situations,
