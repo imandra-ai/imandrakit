@@ -1,4 +1,8 @@
-(** Error kinds *)
+(** Error kinds.
+
+ Each error has a single kind that is a concise description
+ of the nature of the error. More details are typically provided
+ in the error message. *)
 
 type t = private { name: string }
 [@@unboxed] [@@deriving show, eq, ord, serpack]
