@@ -40,6 +40,7 @@ module Observer = Observer
 module Scc = Scc
 module Stats = Stats
 module Timestamp_s = Timestamp_s
+module Timestamp = Timestamp
 module Trace = Trace_core
 module Trace_async = Trace_async
 module Util = Util

@@ -1,4 +1,4 @@
-(** Timestamp, in seconds *)
+(** Wall-clock timestamps as a float *)
 
 type t = (float[@printer Util.pp_duration_s]) [@@deriving show, eq, serpack]
 (** Timestamps *)
