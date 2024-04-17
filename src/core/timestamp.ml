@@ -11,10 +11,10 @@ let pp = Fmt.of_to_string show
 let now : unit -> t = Ptime_clock.now
 let to_yojson self = `String (Ptime.to_rfc3339 ~space:false self)
 
-let of_yojson = function
+let of_yojson : _ -> (t, string) result = function
   | `String s ->
     Ptime.of_rfc3339 s |> Ptime.rfc3339_error_to_msg
-    |> Result.map_error (fun (`Msg s) -> s)
+    |> CCResult.map2 (fun (t, _, _) -> t) (fun (`Msg s) -> s)
   | _ -> Error "expected a RFC3339 timestamp"
 
 let to_serpack : t Ser_pack.Ser.t =
