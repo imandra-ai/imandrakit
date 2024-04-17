@@ -3,6 +3,8 @@
 type t = (float[@printer Util.pp_duration_s]) [@@deriving show, eq, serpack]
 (** Timestamps *)
 
+let now : unit -> t = Util.ptime_now
+
 let to_string_rfc3339 ?tz_offset_s (self : t) : string =
   let tz_offset_s =
     match tz_offset_s with
