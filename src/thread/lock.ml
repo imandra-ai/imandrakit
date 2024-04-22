@@ -3,12 +3,15 @@ type 'a t = {
   mutable content: 'a;
 }
 
-let create content = { mutex = Mutex.create (); content }
+let create content : _ t = { mutex = Mutex.create (); content }
+let[@inline] tid_ () : int = Thread.id (Thread.self ())
 
 let with_lock l f =
+  let tid_start = tid_ () in
   Mutex.lock l.mutex;
   try
     let x = f l.content in
+    assert (tid_ () == tid_start);
     Mutex.unlock l.mutex;
     x
   with e ->
@@ -58,12 +61,16 @@ module LockRef = struct
 end
 
 let with_lock_as_ref l f =
+  let tid_start = tid_ () in
   Mutex.lock l.mutex;
   let lref = { LockRef.l = ref l.content; usable = true } in
   try
     let x = f lref in
     l.content <- !(lref.l);
     lref.usable <- false;
+
+    assert (tid_ () == tid_start);
+
     Mutex.unlock l.mutex;
     x
   with e ->
