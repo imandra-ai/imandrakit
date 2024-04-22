@@ -33,3 +33,9 @@ let both_await ?protect f1 f2 =
   await f1, await f2
 
 let both_await_ignore ?protect f1 f2 : unit = ignore (both_await ?protect f1 f2)
+
+let pp ppx out (self : _ t) =
+  match peek self with
+  | Some (Ok x) -> Fmt.fprintf out "<@[fiber@ :done %a@]>" ppx x
+  | Some (Error _) -> Fmt.string out "<fiber :failed>"
+  | None -> Fmt.string out "<fiber :in-progress>"
