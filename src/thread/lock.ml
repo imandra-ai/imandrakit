@@ -36,6 +36,13 @@ let set l x =
   l.content <- x;
   Mutex.unlock l.mutex
 
+let exchange l x =
+  Mutex.lock l.mutex;
+  let old = l.content in
+  l.content <- x;
+  Mutex.unlock l.mutex;
+  old
+
 module LockRef = struct
   type nonrec 'a t = {
     l: 'a ref;

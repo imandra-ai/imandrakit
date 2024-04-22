@@ -28,6 +28,9 @@ val get : 'a t -> 'a
 val set : 'a t -> 'a -> unit
 (** Atomically set the value. *)
 
+val exchange : 'a t -> 'a -> 'a
+(** [exchange lock x] atomically sets [lock := x] and returns the previous value *)
+
 (** Type allowing to manipulate the lock as a reference when one is holding it. *)
 module LockRef : sig
   type 'a t
