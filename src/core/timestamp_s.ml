@@ -13,3 +13,8 @@ let to_string_rfc3339 ?tz_offset_s (self : t) : string =
   in
   Ptime.to_rfc3339 ?tz_offset_s
     (Ptime.of_float_s self |> Option.value ~default:(Ptime_clock.now ()))
+
+let of_string_rfc3339 (s : string) : (t, [ `Msg of string ]) result =
+  match Ptime.of_rfc3339 s |> Ptime.rfc3339_error_to_msg with
+  | Ok (t, _, _) -> Ok (Ptime.to_float_s t)
+  | Error _ as err -> err
