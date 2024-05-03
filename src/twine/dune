@@ -1,0 +1,7 @@
+
+(library
+ (name imandrakit_weft)
+ (public_name imandrakit.weft)
+ (synopsis "Weft data format for imandrakit")
+ (flags :standard -open Imandrakit_common)
+ (libraries containers imandrakit.common))
