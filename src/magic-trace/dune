@@ -1,0 +1,10 @@
+
+(library
+  (name imandrakit_magic_trace)
+  (public_name imandrakit.magic-trace)
+  (optional)
+  (libraries ocaml_intrinsics atomic)
+  (foreign_stubs
+    (language c)
+    (names imandrakit_magic_stubs))
+  (synopsis "Simple stub to trigger https://github.com/janestreet/magic-trace"))

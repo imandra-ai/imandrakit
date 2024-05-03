@@ -1,3 +1,5 @@
 _build
 _opam
 *.exe
+*.fxt
+*.fxt.old

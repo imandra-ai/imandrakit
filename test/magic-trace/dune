@@ -1,0 +1,4 @@
+
+(test
+  (name test_magic_trace)
+  (libraries unix imandrakit.magic-trace))
