@@ -22,13 +22,19 @@ val int_truncate : int t
 val float : float t
 (** Assuming tag is float, read the float *)
 
+val string : string t
+val string_ref : (string * int * int) t
+val blob : string t
+val blob_ref : (string * int * int) t
+
 val pointer : offset t
 (** Dereference a pointer *)
 
-val array : ('st -> ('st -> int -> offset -> unit) -> unit) t
+val array : ('st1 -> 'st2 -> ('st1 -> 'st2 -> int -> offset -> unit) -> unit) t
 (** Access items in an array. *)
 
-val dict : ('st -> ('st -> string -> offset -> unit) -> unit) t
+val dict :
+  ('st1 -> 'st2 -> ('st1 -> 'st2 -> string -> offset -> unit) -> unit) t
 (** Access content of a dictionary *)
 
 val key_content : offset t
@@ -38,14 +44,19 @@ val record_descr : record_descriptor t
 (** Access a record descriptor *)
 
 val record_fields :
-  ('st -> ('st -> index:int -> name:string -> offset -> unit) -> unit) t
+  ('st1 ->
+  'st2 ->
+  ('st1 -> 'st2 -> index:int -> name:string -> offset -> unit) ->
+  unit)
+  t
 (** Access the fields of a record.  This will also
     read the record descriptor implicitly. *)
 
 val cstor_num : int t
 (** Index of a given constructor. *)
 
-val cstor_args : ('st -> ('st -> int -> offset -> unit) -> unit) t
+val cstor_args :
+  ('st1 -> 'st2 -> ('st1 -> 'st2 -> int -> offset -> unit) -> unit) t
 (** Access arguments of a constructor *)
 
 val cstor_descr : cstor_descriptor t

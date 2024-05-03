@@ -17,22 +17,26 @@ type 'a t = encoder -> 'a -> offset
 type 'a t' = encoder -> 'a -> unit
 
 let ignore_offset : offset -> unit = ignore
-let[@inline] cap (self : encoder) : int = Bytes.length self.buf - self.offset
+
+(** How much space there is at the end of the buffer *)
+let[@inline] free_space_ (self : encoder) : int =
+  Bytes.length self.buf - self.offset
 
 open struct
   let[@inline never] reserve_slow_ (self : encoder) n =
     let next_size =
-      min Sys.max_string_length (max (cap self * 2) (cap self + n + 2))
+      min Sys.max_string_length
+        (max (free_space_ self * 2) (free_space_ self + n + 2))
     in
-    if next_size < cap self + n then fail "Twine: max length exceeded";
+    if next_size < free_space_ self + n then fail "Twine: max length exceeded";
     let new_buf = Bytes.create next_size in
     Bytes.blit self.buf 0 new_buf 0 self.offset;
     self.buf <- new_buf
 
   let[@inline] reserve (self : encoder) (n : int) : offset =
-    let cap = cap self in
+    let free = free_space_ self in
     let off = self.offset in
-    if cap < n then reserve_slow_ self n;
+    if free < n then reserve_slow_ self n;
     self.offset <- off + n;
     off
 
@@ -245,6 +249,6 @@ let cstor (self : encoder) ~descr ~index () =
   assert (index < 256);
   let off = reserve self 2 in
   Bytes.set self.buf off 'C';
-  Bytes.set self.buf off (u8_to_char_ index);
+  Bytes.set self.buf (off + 1) (u8_to_char_ index);
   int self descr |> ignore_offset;
   off
