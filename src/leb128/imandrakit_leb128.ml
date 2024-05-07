@@ -3,20 +3,47 @@
 module Decode = struct
   module Slice = Byte_slice
 
-  let u64 (sl : Slice.t) : int64 =
+  let skip (sl : Slice.t) off : int =
+    let shift = ref 0 in
+    let continue = ref true in
+
+    let off = ref off in
+    let n_consumed = ref 0 in
+
+    while !continue do
+      if sl.len <= 0 then invalid_arg "out of bound";
+      incr n_consumed;
+      let b = Char.code (Bytes.get sl.bs !off) in
+      let cur = b land 0x7f in
+      if cur <> b then (
+        (* at least one byte follows this one *)
+        incr off;
+        shift := !shift + 7
+      ) else if !shift < 63 || b land 0x7f <= 1 then
+        continue := false
+      else
+        invalid_arg "leb128 varint is too long"
+    done;
+
+    !n_consumed
+
+  let u64 (sl : Slice.t) (off : int) : int64 * int =
     let shift = ref 0 in
     let res = ref 0L in
     let continue = ref true in
 
+    let off = ref off in
+    let n_consumed = ref 0 in
+
     while !continue do
       if sl.len <= 0 then invalid_arg "out of bound";
-      let b = Char.code (Bytes.get sl.bs sl.off) in
+      incr n_consumed;
+      let b = Char.code (Bytes.get sl.bs !off) in
       let cur = b land 0x7f in
       if cur <> b then (
         (* at least one byte follows this one *)
         (res := Int64.(logor !res (shift_left (of_int cur) !shift)));
-        sl.off <- sl.off + 1;
-        sl.len <- sl.len - 1;
+        incr off;
         shift := !shift + 7
       ) else if !shift < 63 || b land 0x7f <= 1 then (
         (res := Int64.(logor !res (shift_left (of_int b) !shift)));
@@ -25,13 +52,22 @@ module Decode = struct
         invalid_arg "leb128 varint is too long"
     done;
 
-    !res
+    !res, !n_consumed
+
+  let[@inline] uint_truncate sl off =
+    let v, n_consumed = u64 sl off in
+    Int64.to_int v, n_consumed
 
   let[@inline] decode_zigzag (v : int64) : int64 =
     Int64.(logxor (shift_right v 1) (neg (logand v Int64.one)))
 
-  let[@inline] i64 sl : int64 = decode_zigzag (u64 sl)
-  let[@inline] int sl : int = Int64.to_int (decode_zigzag (u64 sl))
+  let[@inline] i64 sl off : int64 * int =
+    let v, n_consumed = u64 sl off in
+    decode_zigzag v, n_consumed
+
+  let[@inline] int_truncate sl off =
+    let v, n_consumed = u64 sl off in
+    Int64.to_int (decode_zigzag v), n_consumed
 end
 
 module Encode = struct

@@ -1,14 +1,50 @@
 open Types
 
-type decoder
+type t
 
-val create : Slice.t -> decoder
+val create : slice -> t
 
-type 'a t = decoder -> offset -> 'a
+type 'a decoder = t -> offset -> 'a
 
-val deref_rec : offset t
+module Value : sig
+  type cstor_index = int
+  type array_cursor
+
+  (** A value *)
+  type t =
+    | Null
+    | True
+    | False
+    | Int of int64
+    | Float of float
+    | String of slice
+    | Blob of slice
+    | Pointer of offset
+    | Array of array_cursor
+    | Dict of array_cursor
+    | Tag of int * offset
+    | Cstor0 of cstor_index
+    | Cstor1 of cstor_index * offset
+    | CstorN of cstor_index * array_cursor
+  [@@deriving show { with_path = false }]
+end
+
+module Array_cursor : sig
+  type t = Value.array_cursor
+
+  val length : t -> int
+  val next : t -> Value.t
+end
+
+val deref_rec : offset decoder
 (** Given any value, follow pointers until a non-pointer value is reached,
     a return its address. *)
+
+val read : Value.t decoder
+
+(*
+
+type 'a t = decoder -> offset -> 'a
 
 val tag : tag t
 (** Access tag at this offset. *)
@@ -56,7 +92,8 @@ val cstor_num : int t
 (** Index of a given constructor. *)
 
 val cstor_args :
-  ('st1 -> 'st2 -> ('st1 -> 'st2 -> int -> offset -> unit) -> unit) t
+ the grand promises, and no actual the grand promises, and no actual  ('st1 -> 'st2 -> ('st1 -> 'st2 -> int -> offset -> unit) -> unit) t
 (** Access arguments of a constructor *)
 
 val cstor_descr : cstor_descriptor t
+*)

@@ -1,37 +1,49 @@
 (** Types *)
 
-type tag =
-  | Null
-  | True
-  | False
-  | Int
-  | Float
-  | String
-  | Blob
-  | Pointer
-  | Array
-  | Dict
-  | Key
-  | Record
-  | Constructor
-[@@deriving show { with_path = false }]
-
-exception Error of string
-
 type offset = int
 (** An offset in the slice *)
 
-type record_descriptor = { fs: string array }
-(** The description of a record type. Should be added only once to the output. *)
+type slice = Imandrakit.Byte_slice.t
+type buf = Imandrakit.Byte_buf.t
 
-type cstor_descriptor = {
-  ar: int;
-  fs: string array option;
-}
-(** Description of a constructor *)
+module Tag = struct
+  type t =
+    | Null
+    | True
+    | False
+    | Int
+    | Float
+    | String
+    | Blob
+    | Pointer
+    | Array
+    | Dict
+    | Key
+    | Record
+    | Constructor
+  [@@deriving show { with_path = false }]
+end
 
-type sum_type_descriptor = { cs: cstor_descriptor array  (** Constructors *) }
-(** Description of a sum type. Should be added only once to the output *)
+type tag = Tag.t
+
+module Immediate = struct
+  (** An immediate value *)
+  type t =
+    | Null
+    | True
+    | False
+    | Int of int64
+    | Float of float
+    | String of slice
+    | Blob of slice
+    | Pointer of offset
+    | Cstor0 of int
+  [@@deriving show { with_path = false }]
+end
+
+type immediate = Immediate.t
+
+exception Error of string
 
 (**/**)
 
