@@ -30,7 +30,7 @@ module Value : sig
 end
 
 module Array_cursor : sig
-  type t = Value.array_cursor
+  type t = Value.array_cursor [@@deriving show]
 
   val length : t -> int
   val next : t -> Value.t

@@ -27,5 +27,6 @@ module Encode : sig
   val encode_zigzag : int64 -> int64
   val u64 : Byte_buf.t -> int64 -> unit
   val i64 : Byte_buf.t -> int64 -> unit
+  val uint : Byte_buf.t -> int -> unit
   val int : Byte_buf.t -> int -> unit
 end

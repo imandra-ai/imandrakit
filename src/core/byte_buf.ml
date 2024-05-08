@@ -22,7 +22,7 @@ let grow_cap_ self =
     (let n = capacity self in
      n + (n lsl 1) + 5)
 
-let grow_to_ self newcap =
+let[@inline never] grow_to_ self newcap =
   if newcap = capacity self then invalid_arg "byte_buf: cannot grow further";
   let newbytes = Bytes.create newcap in
   Bytes.blit self.bs 0 newbytes 0 self.len;
@@ -32,11 +32,16 @@ let[@inline never] grow_ self =
   let newcap = grow_cap_ self in
   grow_to_ self newcap
 
-let ensure_cap self n =
+let[@inline] ensure_cap self n =
   if n > capacity self then (
     let newcap = max n (grow_cap_ self) in
     grow_to_ self newcap
   )
+
+let[@inline] free_space_ (self : t) : int = Bytes.length self.bs - self.len
+
+let[@inline] ensure_free (self : t) (n : int) =
+  if free_space_ self < n then ensure_cap self (capacity self + n)
 
 let shrink_to self n = if self.len > n then self.len <- n
 

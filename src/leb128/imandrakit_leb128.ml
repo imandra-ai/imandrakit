@@ -88,11 +88,12 @@ module Encode = struct
 
   let[@inline] u64 (buf : Buf.t) (i : int64) =
     let n = varint_size i in
-    Buf.ensure_cap buf n;
+    Buf.ensure_free buf n;
     assert (buf.len + n <= Bytes.length buf.bs);
     varint_slice buf.bs buf.len i;
     buf.len <- buf.len + n
 
   let[@inline] i64 buf i : unit = u64 buf (encode_zigzag i)
+  let[@inline] uint buf i : unit = u64 buf (Int64.of_int i)
   let[@inline] int buf i : unit = u64 buf (encode_zigzag (Int64.of_int i))
 end

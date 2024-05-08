@@ -1,8 +1,8 @@
 open Types
+open Common_
 module Slice = Byte_slice
 module LEB128 = Imandrakit_leb128.Decode
 
-type immediate = Immediate.t
 type t = { sl: slice } [@@unboxed]
 
 type array_cursor = {
@@ -11,14 +11,21 @@ type array_cursor = {
   mutable c_offset: offset;  (** Offset to the next value *)
 }
 
+let show_array_cursor (self : array_cursor) =
+  spf "<twine.array-cursor :off=%d :num-items=%d>" self.c_offset
+    self.c_num_items
+
+let pp_array_cursor = Fmt.of_to_string show_array_cursor
 let[@inline] create sl : t = { sl }
 
 type 'a decoder = t -> offset -> 'a
 type num_bytes_consumed = int
 
 module Value = struct
-  type cstor_index = int
+  type cstor_index = int [@@deriving show]
   type nonrec array_cursor = array_cursor
+
+  let pp_array_cursor = pp_array_cursor
 
   (** A value *)
   type t =
@@ -73,7 +80,8 @@ kinds:
 - 9: reserved
 - 10: cstor0, constructor index is [n]
 - 11: cstor1, constructor index is [n], a single argument follows
-- 12: cstorN, constructor index is [n], length as LEB128 follows (probably just one byte)
+- 12: cstorN, constructor index is [n], length as LEB128 follows
+      (probably just one byte), then arguments follow
 - 13, 14: reserved
   (possible extension: 14: pointer with metadata? [n] is relative offset,
     [n2:LEB128] is pointer to metadata)
@@ -220,6 +228,8 @@ let deref_rec self off : offset =
 module Array_cursor = struct
   type t = array_cursor
 
+  let pp = pp_array_cursor
+  let show = show_array_cursor
   let[@inline] length (self : t) = self.c_num_items
 
   let[@inline] next (self : t) : Value.t =

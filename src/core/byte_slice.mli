@@ -5,6 +5,7 @@ type t = {
   mutable off: int;
   mutable len: int;
 }
+[@@deriving show]
 
 val create : ?off:int -> ?len:int -> bytes -> t
 val clear : t -> unit
@@ -13,4 +14,5 @@ val len : t -> int
 val get : t -> int -> char
 val set : t -> int -> char -> unit
 val consume : t -> int -> unit
+val contents : t -> string
 val sub : t -> int -> int -> t

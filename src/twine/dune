@@ -4,4 +4,5 @@
  (public_name imandrakit.weft)
  (synopsis "Weft data format for imandrakit")
  (flags :standard -open Imandrakit)
+ (preprocess (pps ppx_deriving.std))
  (libraries containers imandrakit imandrakit.leb128))

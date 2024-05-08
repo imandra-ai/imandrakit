@@ -4,6 +4,9 @@ type t = {
   mutable len: int;
 }
 
+let show self = spf "<slice len=%d>" self.len
+let pp = Fmt.of_to_string show
+
 let create ?(off = 0) ?len bs =
   let len =
     match len with
@@ -17,6 +20,7 @@ let create ?(off = 0) ?len bs =
 
 let[@inline] of_string s = create (Bytes.unsafe_of_string s)
 let[@inline] len self = self.len
+let[@inline] contents self = Bytes.sub_string self.bs self.off self.len
 
 let[@inline] clear self =
   self.len <- 0;
