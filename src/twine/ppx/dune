@@ -1,0 +1,8 @@
+(library
+ (name imandrakit_twine_ppx)
+ (public_name imandrakit.twine.ppx)
+ (kind ppx_deriver)
+ (ppx_runtime_libraries imandrakit.twine)
+ (libraries ppxlib ppxlib.astlib)
+ (preprocess
+  (pps ppxlib.metaquot)))
