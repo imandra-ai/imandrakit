@@ -4,28 +4,30 @@ module Slice = Byte_slice
 module LEB128 = Imandrakit_leb128.Decode
 
 type t = { sl: slice } [@@unboxed]
+type cstor_index = int [@@deriving show]
 
-type array_cursor = {
+type cursor = {
   c_dec: t;
-  mutable c_num_items: int;  (** how many values *)
+  mutable c_num_items: int;  (** how many values or pairs *)
   mutable c_offset: offset;  (** Offset to the next value *)
 }
 
-let show_array_cursor (self : array_cursor) =
-  spf "<twine.array-cursor :off=%d :num-items=%d>" self.c_offset
-    self.c_num_items
+let show_cursor (self : cursor) =
+  spf "<twine.cursor :off=%d :num-items=%d>" self.c_offset self.c_num_items
 
-let pp_array_cursor = Fmt.of_to_string show_array_cursor
+let pp_cursor = Fmt.of_to_string show_cursor
 let[@inline] create sl : t = { sl }
+let[@inline] of_string s = create @@ Slice.of_string s
 
 type 'a decoder = t -> offset -> 'a
 type num_bytes_consumed = int
 
 module Value = struct
-  type cstor_index = int [@@deriving show]
-  type nonrec array_cursor = array_cursor
+  type array_cursor = cursor
+  type dict_cursor = cursor
 
-  let pp_array_cursor = pp_array_cursor
+  let pp_array_cursor = pp_cursor
+  let pp_dict_cursor = pp_cursor
 
   (** A value *)
   type t =
@@ -38,63 +40,13 @@ module Value = struct
     | Blob of slice
     | Pointer of offset
     | Array of array_cursor
-    | Dict of array_cursor
+    | Dict of dict_cursor
     | Tag of int * offset
     | Cstor0 of cstor_index
     | Cstor1 of cstor_index * offset
     | CstorN of cstor_index * array_cursor
   [@@deriving show { with_path = false }]
 end
-
-(*
-# Overview
-
-The encoding relies on a first byte to disambiguate between values.
-This first byte we name "initial byte".
-The first byte is a bitfield [kind:4 low:4] where:
-  - [kind] is the kind of value (int, float, etc.)
-  - [low] is a small integer value whose meaning depends on the kind.
-    It can be a small integer, or a length, or a special value,
-    or a constructor index. In case the value needs an integer argument [n]
-    (length, actual integer, element count, etc.),  this
-    integer argument is encoded in [low], but if [n>=15] then
-      [low = 15] and [n-15] is encoded as LEB128 immediately
-      after the first byte.
-
-kinds:
-- 0: special.
-  n=0: false
-  n=1: true
-  n=2: nil
-  Other values of [n] are reserved.
-- 1: positive int, value is [n].
-- 2: negative int, value is [-n-1]
-- 3: float. if [n=0] then it's a float32, 4 bytes follow (little-endian);
-  if [n=1] then it's a float64, 8 bytes follow (little-endian).
-  Other values of [n] are reserved.
-- 4: string, length in bytes is [n]. [n] bytes follow.
-- 5: binary blob, length in bytes is [n]. [n] bytes follow.
-- 6: array, number of elements is [n]. Elements follow.
-- 7: dict, number of key/value pairs is [n]. [2*n] elements follow.
-- 8: tag, the tag number is [n]. A single value follows.
-- 9: reserved
-- 10: cstor0, constructor index is [n]
-- 11: cstor1, constructor index is [n], a single argument follows
-- 12: cstorN, constructor index is [n], length as LEB128 follows
-      (probably just one byte), then arguments follow
-- 13, 14: reserved
-  (possible extension: 14: pointer with metadata? [n] is relative offset,
-    [n2:LEB128] is pointer to metadata)
-- 15: pointer, relative offset to the pointed value is [n].
-  If we're at offset [i], then the pointer points to [i-n-1].
-
-The toplevel value is written last, and to find it, a valid Twine blob
-must end with a byte [n:u8] that indicates where this last value starts.
-If the last byte [n] is at address [off], then the actual last value
-starts at [off-n-1]. If the last value is too big, it's turned
-into a pointer and that's what that last byte targets.
-
-*)
 
 let invalid_first_byte_ msg ~offset ~high ~low =
   failf "Decode: invalid first byte %d/%d at %d: %s" high low offset msg
@@ -129,84 +81,116 @@ let get_special_ offset ~high ~low : Value.t =
 let[@inline] get_float_ (self : t) offset ~low : float * num_bytes_consumed =
   let isf32 = low = 0 in
   if isf32 then
-    ( Bytes.get_int32_le self.sl.bs (self.sl.off + offset) |> Int32.float_of_bits,
+    ( Bytes.get_int32_le self.sl.bs (self.sl.off + offset + 1)
+      |> Int32.float_of_bits,
       4 )
   else
-    ( Bytes.get_int64_le self.sl.bs (self.sl.off + offset) |> Int64.float_of_bits,
+    ( Bytes.get_int64_le self.sl.bs (self.sl.off + offset + 1)
+      |> Int64.float_of_bits,
       8 )
 
-(* TODO: this should also return the number of bytes used, and be what we use in the array cursor *)
-let read_ (self : t) (offset : offset) : Value.t * num_bytes_consumed =
+(** Number of bytes to skip *)
+let skip_float_ ~low : int =
+  let isf32 = low = 0 in
+  if isf32 then
+    5
+  else
+    9
+
+let read (self : t) (offset : offset) : Value.t =
   let c = get_char_ self offset in
   let high = get_high c in
   let low = get_low c in
   match high with
-  | 0 ->
-    let v = get_special_ offset ~high ~low in
-    v, 1
+  | 0 -> get_special_ offset ~high ~low
   | 1 ->
-    let i, n = get_int64_ self offset ~low in
-    Value.Int i, n + 1
+    let i, _ = get_int64_ self offset ~low in
+    Value.Int i
   | 2 ->
-    let i, n = get_int64_ self offset ~low in
+    let i, _ = get_int64_ self offset ~low in
     (* [-i-1] *)
-    Value.Int Int64.(sub (neg i) 1L), n + 1
+    Value.Int Int64.(sub (neg i) 1L)
   | 3 ->
-    let f, n = get_float_ self offset ~low in
-    Value.Float f, n + 1
+    let f, _ = get_float_ self offset ~low in
+    Value.Float f
   | 4 ->
     let len, size_len = get_int_truncate_ self offset ~low in
     let s = Slice.sub self.sl (offset + 1 + size_len) len in
-    Value.String s, 1 + size_len + len
+    Value.String s
   | 5 ->
     let len, size_len = get_int_truncate_ self offset ~low in
     let s = Slice.sub self.sl (offset + 1 + size_len) len in
-    Value.Blob s, 1 + size_len + len
+    Value.Blob s
   | 6 ->
     let len, size_len = get_int_truncate_ self offset ~low in
-    let c : array_cursor =
+    let c : cursor =
       { c_offset = offset + 1 + size_len; c_num_items = len; c_dec = self }
     in
-    Value.Array c, -1
+    Value.Array c
   | 7 ->
     let len, size_len = get_int_truncate_ self offset ~low in
-    let c : array_cursor =
-      { c_offset = offset + 1 + size_len; c_num_items = 2 * len; c_dec = self }
+    let c : cursor =
+      { c_offset = offset + 1 + size_len; c_num_items = len; c_dec = self }
     in
-    Value.Dict c, -1
+    Value.Dict c
   | 8 ->
     let n, size_n = get_int_truncate_ self offset ~low in
-    Value.Tag (n, offset + 1 + size_n), -1
+    Value.Tag (n, offset + 1 + size_n)
   | 9 -> invalid_first_byte_ ~offset ~high ~low "type is reserved"
   | 10 ->
-    let idx_cstor, n = get_int_truncate_ self offset ~low in
-    Value.Cstor0 idx_cstor, 1 + n
+    let idx_cstor, _ = get_int_truncate_ self offset ~low in
+    Value.Cstor0 idx_cstor
   | 11 ->
     let idx_cstor, size_idx_cstor = get_int_truncate_ self offset ~low in
-    Value.Cstor1 (idx_cstor, offset + 1 + size_idx_cstor), 1 + size_idx_cstor
+    Value.Cstor1 (idx_cstor, offset + 1 + size_idx_cstor)
   | 12 ->
     let idx_cstor, size_idx_cstor = get_int_truncate_ self offset ~low in
     let offset_after_n = offset + 1 + size_idx_cstor in
     let num_items, size_num_items =
       LEB128.uint_truncate self.sl offset_after_n
     in
-    let c : array_cursor =
+    let c : cursor =
       {
         c_dec = self;
         c_num_items = num_items;
         c_offset = offset_after_n + size_num_items;
       }
     in
-    Value.CstorN (idx_cstor, c), -1
+    Value.CstorN (idx_cstor, c)
   | 13 | 14 -> invalid_first_byte_ ~offset ~high ~low "type is reserved"
   | 15 ->
-    let n, size_n = get_int_truncate_ self offset ~low in
-    Value.Pointer n, size_n + 1
+    let n, _ = get_int_truncate_ self offset ~low in
+    Value.Pointer n
   | _ -> assert false
 
-let[@inline] read self offset : Value.t =
-  let v, _ = read_ self offset in
-  v
+(** Skip the current (immediate) value *)
+let skip_ (self : t) (offset : offset) : num_bytes_consumed =
+  let c = get_char_ self offset in
+  let high = get_high c in
+  let low = get_low c in
+  match high with
+  | 0 -> 1
+  | 1 | 2 ->
+    let _, n = get_int64_ self offset ~low in
+    n + 1
+  | 3 -> skip_float_ ~low
+  | 4 | 5 ->
+    let len, size_len = get_int_truncate_ self offset ~low in
+    1 + size_len + len
+  | 6 -> fail "Twine: decode.skip: cannot skip over array"
+  | 7 -> fail "Twine: decode.skip: cannot skip over dict"
+  | 8 -> fail "Twine: decode.skip: cannot skip over tag"
+  | 9 -> invalid_first_byte_ ~offset ~high ~low "type is reserved"
+  | 10 ->
+    let _, n = get_int_truncate_ self offset ~low in
+    1 + n
+  | 11 -> fail "Twine: decode.skip: cannot skip over cstor1"
+  | 12 -> fail "Twine: decode.skip: cannot skip over cstorN"
+  | 13 | 14 -> invalid_first_byte_ ~offset ~high ~low "type is reserved"
+  | 15 ->
+    let _, size_n = get_int_truncate_ self offset ~low in
+    size_n + 1
+  | _ -> assert false
 
 let deref_rec self off : offset =
   let off = ref off in
@@ -225,17 +209,204 @@ let deref_rec self off : offset =
   done;
   !off
 
-module Array_cursor = struct
-  type t = array_cursor
+let fail_decode_type_ ~what offset =
+  failf "Twine: decode: expected %s at offset=%d" what offset
 
-  let pp = pp_array_cursor
-  let show = show_array_cursor
+let null self offset =
+  let c = get_char_ self offset in
+  let high = get_high c in
+  let low = get_low c in
+  if high <> 0 || low <> 2 then fail_decode_type_ ~what:"null" offset;
+  ()
+
+let bool self offset =
+  let c = get_char_ self offset in
+  let high = get_high c in
+  let low = get_low c in
+  match high with
+  | 0 ->
+    (match low with
+    | 0 -> false
+    | 1 -> true
+    | _ -> fail_decode_type_ ~what:"bool" offset)
+  | _ -> fail_decode_type_ ~what:"bool" offset
+
+let int64 self offset =
+  let c = get_char_ self offset in
+  let high = get_high c in
+  let low = get_low c in
+  match high with
+  | 1 ->
+    let i, _ = get_int64_ self offset ~low in
+    i
+  | 2 ->
+    let i, _ = get_int64_ self offset ~low in
+    (* [-i-1] *)
+    Int64.(sub (neg i) 1L)
+  | _ ->
+    Printf.eprintf "high=%d, low=%d\n%!" high low;
+    fail_decode_type_ ~what:"integer" offset
+
+let[@inline] int_truncate self offset = Int64.to_int @@ int64 self offset
+
+let float self offset =
+  let c = get_char_ self offset in
+  let high = get_high c in
+  let low = get_low c in
+  if high <> 3 then fail_decode_type_ ~what:"float" offset;
+  fst @@ get_float_ self offset ~low
+
+let string_slice self offset =
+  let c = get_char_ self offset in
+  let high = get_high c in
+  let low = get_low c in
+  if high <> 4 then fail_decode_type_ ~what:"string" offset;
+  let len, size_len = get_int_truncate_ self offset ~low in
+  Slice.sub self.sl (offset + 1 + size_len) len
+
+let string self offset = Slice.contents @@ string_slice self offset
+
+let blob_slice self offset =
+  let c = get_char_ self offset in
+  let high = get_high c in
+  let low = get_low c in
+  if high <> 5 then fail_decode_type_ ~what:"blob" offset;
+  let len, size_len = get_int_truncate_ self offset ~low in
+  Slice.sub self.sl (offset + 1 + size_len) len
+
+let blob self offset = Slice.contents @@ blob_slice self offset
+
+let array self offset =
+  let c = get_char_ self offset in
+  let high = get_high c in
+  let low = get_low c in
+  if high <> 6 then fail_decode_type_ ~what:"array" offset;
+  let len, size_len = get_int_truncate_ self offset ~low in
+  let c : cursor =
+    { c_offset = offset + 1 + size_len; c_num_items = len; c_dec = self }
+  in
+  c
+
+let dict self offset =
+  let c = get_char_ self offset in
+  let high = get_high c in
+  let low = get_low c in
+  if high <> 7 then fail_decode_type_ ~what:"dict" offset;
+  let len, size_len = get_int_truncate_ self offset ~low in
+  let c : cursor =
+    { c_offset = offset + 1 + size_len; c_num_items = len; c_dec = self }
+  in
+  c
+
+let tag self offset =
+  let c = get_char_ self offset in
+  let high = get_high c in
+  let low = get_low c in
+  if high <> 8 then fail_decode_type_ ~what:"tag" offset;
+  let n, size_n = get_int_truncate_ self offset ~low in
+  n, offset + 1 + size_n
+
+let cstor self offset =
+  let c = get_char_ self offset in
+  let high = get_high c in
+  let low = get_low c in
+  match high with
+  | 10 ->
+    let idx_cstor, _size_idx_cstor = get_int_truncate_ self offset ~low in
+    idx_cstor, { c_offset = offset; c_num_items = 0; c_dec = self }
+  | 11 ->
+    let idx_cstor, size_idx_cstor = get_int_truncate_ self offset ~low in
+    ( idx_cstor,
+      { c_offset = offset + 1 + size_idx_cstor; c_num_items = 1; c_dec = self }
+    )
+  | 12 ->
+    let idx_cstor, size_idx_cstor = get_int_truncate_ self offset ~low in
+    let offset_after_n = offset + 1 + size_idx_cstor in
+    let num_items, size_num_items =
+      LEB128.uint_truncate self.sl offset_after_n
+    in
+    let c : cursor =
+      {
+        c_dec = self;
+        c_num_items = num_items;
+        c_offset = offset_after_n + size_num_items;
+      }
+    in
+    idx_cstor, c
+  | _ -> fail_decode_type_ ~what:"cstor" offset
+
+let get_entrypoint (self : t) : offset =
+  assert (Slice.len self.sl > 0);
+  let last = Slice.len self.sl - 1 in
+  let offset = Char.code @@ Slice.get self.sl last in
+  last - offset - 1
+
+let read_entrypoint (self : t) : Value.t =
+  read self @@ deref_rec self @@ get_entrypoint self
+
+let[@inline] decode_string (d : _ decoder) (s : string) =
+  let self = of_string s in
+  let off = get_entrypoint self in
+  d self off
+
+module Array_cursor = struct
+  type t = cursor [@@deriving show]
+
+  let[@inline] length (self : t) = self.c_num_items
+  let[@inline] current self = self.c_offset
+
+  let consume self =
+    if self.c_num_items <= 0 then fail "Twine: cursor: no more elements";
+    self.c_offset <- self.c_offset + skip_ self.c_dec self.c_offset;
+    self.c_num_items <- self.c_num_items - 1
+
+  let get_value_and_consume (self : t) : Value.t =
+    if self.c_num_items <= 0 then fail "Twine: cursor: no more elements";
+    let v = read self.c_dec self.c_offset in
+    consume self;
+    v
+
+  let to_iter self yield =
+    while length self > 0 do
+      yield (get_value_and_consume self)
+    done
+
+  let to_list self = to_iter self |> Iter.to_list
+end
+
+module Dict_cursor = struct
+  type t = cursor [@@deriving show]
+
   let[@inline] length (self : t) = self.c_num_items
 
-  let[@inline] next (self : t) : Value.t =
+  let current self =
+    let off = self.c_offset in
+    off, off + skip_ self.c_dec off
+
+  let consume self =
     if self.c_num_items <= 0 then fail "Twine: cursor: no more elements";
-    let v, n_bytes = read_ self.c_dec self.c_offset in
-    self.c_num_items <- self.c_num_items - 1;
-    self.c_offset <- self.c_offset + n_bytes;
-    v
+
+    (* skip the key and value *)
+    let off = self.c_offset in
+    let off = off + skip_ self.c_dec off in
+    let off = off + skip_ self.c_dec off in
+    self.c_offset <- off;
+
+    self.c_num_items <- self.c_num_items - 1
+
+  let get_key_value_and_consume (self : t) : Value.t * Value.t =
+    if self.c_num_items <= 0 then fail "Twine: cursor: no more elements";
+
+    let k, v = current self in
+    let k = read self.c_dec k in
+    let v = read self.c_dec v in
+    consume self;
+    k, v
+
+  let to_iter self yield =
+    while length self > 0 do
+      yield (get_key_value_and_consume self)
+    done
+
+  let to_list self = to_iter self |> Iter.to_list
 end

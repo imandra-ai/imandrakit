@@ -45,6 +45,10 @@ module Immediate = struct
       True
     else
       False
+
+  let[@inline] string (s : string) : t = String (Byte_slice.of_string s)
+  let[@inline] blob (s : string) : t = Blob (Byte_slice.of_string s)
+  let[@inline] pointer off : t = Pointer off
 end
 
 type immediate = Immediate.t
