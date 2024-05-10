@@ -48,6 +48,9 @@ module Value = struct
   [@@deriving show { with_path = false }]
 end
 
+let fail = fail
+let failf = failf
+
 let invalid_first_byte_ msg ~offset ~high ~low =
   failf "Decode: invalid first byte %d/%d at %d: %s" high low offset msg
 
@@ -97,7 +100,35 @@ let skip_float_ ~low : int =
   else
     9
 
+let[@inline never] deref_rec_ self off : offset =
+  let off = ref off in
+  while
+    let c = get_char_ self !off in
+    let high = get_high c in
+    if high = 15 then (
+      let low = get_low c in
+      let p, _ = get_int_truncate_ self !off ~low in
+      off := !off - p - 1;
+      true
+    ) else
+      false
+  do
+    ()
+  done;
+  !off
+
+(* inlinable fast path for deref_rec *)
+let[@inline] deref_rec self off : offset =
+  let c = get_char_ self off in
+  let high = get_high c in
+  if high = 15 then
+    (* do the actual work *)
+    deref_rec_ self off
+  else
+    off
+
 let read (self : t) (offset : offset) : Value.t =
+  let offset = deref_rec self offset in
   let c = get_char_ self offset in
   let high = get_high c in
   let low = get_low c in
@@ -192,27 +223,11 @@ let skip_ (self : t) (offset : offset) : num_bytes_consumed =
     size_n + 1
   | _ -> assert false
 
-let deref_rec self off : offset =
-  let off = ref off in
-  while
-    let c = get_char_ self !off in
-    let high = get_high c in
-    if high = 15 then (
-      let low = get_low c in
-      let p, _ = get_int_truncate_ self !off ~low in
-      off := !off - p - 1;
-      true
-    ) else
-      false
-  do
-    ()
-  done;
-  !off
-
 let fail_decode_type_ ~what offset =
-  failf "Twine: decode: expected %s at offset=%d" what offset
+  failf "Twine: decode: expected %s at offset=0x%x" what offset
 
 let null self offset =
+  let offset = deref_rec self offset in
   let c = get_char_ self offset in
   let high = get_high c in
   let low = get_low c in
@@ -220,6 +235,7 @@ let null self offset =
   ()
 
 let bool self offset =
+  let offset = deref_rec self offset in
   let c = get_char_ self offset in
   let high = get_high c in
   let low = get_low c in
@@ -232,6 +248,7 @@ let bool self offset =
   | _ -> fail_decode_type_ ~what:"bool" offset
 
 let int64 self offset =
+  let offset = deref_rec self offset in
   let c = get_char_ self offset in
   let high = get_high c in
   let low = get_low c in
@@ -250,6 +267,7 @@ let int64 self offset =
 let[@inline] int_truncate self offset = Int64.to_int @@ int64 self offset
 
 let float self offset =
+  let offset = deref_rec self offset in
   let c = get_char_ self offset in
   let high = get_high c in
   let low = get_low c in
@@ -257,6 +275,7 @@ let float self offset =
   fst @@ get_float_ self offset ~low
 
 let string_slice self offset =
+  let offset = deref_rec self offset in
   let c = get_char_ self offset in
   let high = get_high c in
   let low = get_low c in
@@ -267,6 +286,7 @@ let string_slice self offset =
 let string self offset = Slice.contents @@ string_slice self offset
 
 let blob_slice self offset =
+  let offset = deref_rec self offset in
   let c = get_char_ self offset in
   let high = get_high c in
   let low = get_low c in
@@ -277,6 +297,7 @@ let blob_slice self offset =
 let blob self offset = Slice.contents @@ blob_slice self offset
 
 let array self offset =
+  let offset = deref_rec self offset in
   let c = get_char_ self offset in
   let high = get_high c in
   let low = get_low c in
@@ -288,6 +309,7 @@ let array self offset =
   c
 
 let dict self offset =
+  let offset = deref_rec self offset in
   let c = get_char_ self offset in
   let high = get_high c in
   let low = get_low c in
@@ -299,6 +321,7 @@ let dict self offset =
   c
 
 let tag self offset =
+  let offset = deref_rec self offset in
   let c = get_char_ self offset in
   let high = get_high c in
   let low = get_low c in
@@ -307,6 +330,7 @@ let tag self offset =
   n, offset + 1 + size_n
 
 let cstor self offset =
+  let offset = deref_rec self offset in
   let c = get_char_ self offset in
   let high = get_high c in
   let low = get_low c in
@@ -344,9 +368,9 @@ let get_entrypoint (self : t) : offset =
 let read_entrypoint (self : t) : Value.t =
   read self @@ deref_rec self @@ get_entrypoint self
 
-let[@inline] decode_string (d : _ decoder) (s : string) =
+let decode_string (d : _ decoder) (s : string) =
   let self = of_string s in
-  let off = get_entrypoint self in
+  let off = deref_rec self @@ get_entrypoint self in
   d self off
 
 module Array_cursor = struct
@@ -371,7 +395,19 @@ module Array_cursor = struct
       yield (get_value_and_consume self)
     done
 
+  let to_array_of f self =
+    Array.init (length self) (fun _ ->
+        let x = current self in
+        consume self;
+        f x)
+
   let to_list self = to_iter self |> Iter.to_list
+
+  let to_list_of f self =
+    List.init (length self) (fun _ ->
+        let x = current self in
+        consume self;
+        f x)
 end
 
 module Dict_cursor = struct
@@ -408,5 +444,17 @@ module Dict_cursor = struct
       yield (get_key_value_and_consume self)
     done
 
+  let to_array_of f self =
+    Array.init (length self) (fun _ ->
+        let k, v = current self in
+        consume self;
+        f k v)
+
   let to_list self = to_iter self |> Iter.to_list
+
+  let to_list_of f self =
+    List.init (length self) (fun _ ->
+        let k, v = current self in
+        consume self;
+        f k v)
 end

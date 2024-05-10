@@ -153,7 +153,7 @@ let rec encode_expr_of_ty (e : expression) ~(ty : core_type) : expression =
   | [%type: [%t? ty_arg0] array] ->
     [%expr
       let arr = [%e e] in
-      (Imandrakit_twine.Encode.array (Array.length arr) (fun i ->
+      (Imandrakit_twine.Encode.array_init enc (Array.length arr) (fun i ->
            let v = Array.unsafe_get arr i in
            [%e immediate_expr_of_ty ~ty:ty_arg0 [%expr v]])
         : Imandrakit_twine.offset)]
@@ -304,25 +304,23 @@ let rec decode_expr_of_ty (e : expression) ~(ty : core_type) : expression =
         let x =
           [%e
             decode_expr_of_ty ~ty:ty_arg0
-              [%expr Imandrakit_twine.Decode.Array_cursor.next c]]
+              [%expr Imandrakit_twine.Decode.Array_cursor.current c]]
         in
         Some x
       | _ ->
         Imandrakit_twine.Decode.fail "expected an option (null or 1-item list)"]
   | [%type: [%t? ty_arg0] list] ->
     [%expr
-      let c = Imandrakit_twine.Decode.(array dec [%e e]) in
-      assert false
-      (* Imandrakit_twine.Decode.Array_cursor.
-         List.map (fun x -> [%e decode_expr_of_ty [%expr x] ~ty:ty_arg0]) l
-      *)]
+      Imandrakit_twine.Decode.(
+        array dec [%e e]
+        |> Array_cursor.to_list_of (fun x ->
+               [%e decode_expr_of_ty [%expr x] ~ty:ty_arg0]))]
   | [%type: [%t? ty_arg0] array] ->
     [%expr
-      let c = Imandrakit_twine.Decode.(array dec [%e e]) in
-      assert false
-      (* TODO:
-         let a = Array.of_list @@ Imandrakit_twine.Decode.to_list dec [%e e] in
-         Array.map (fun x -> [%e decode_expr_of_ty [%expr x] ~ty:ty_arg0]) a*)]
+      Imandrakit_twine.Decode.(
+        array dec [%e e]
+        |> Array_cursor.to_array_of (fun offset ->
+               [%e decode_expr_of_ty ~ty:ty_arg0 [%expr offset]]))]
   | { ptyp_desc = Ptyp_var v; ptyp_loc = loc; _ } ->
     (* use function passed as a parameter for each polymorphic argument *)
     let s = A.Exp.ident @@ lid ~loc @@ name_poly_var_ v in
@@ -344,39 +342,35 @@ let rec decode_expr_of_ty (e : expression) ~(ty : core_type) : expression =
       else
         A.Exp.apply f args)
   | { ptyp_desc = Ptyp_tuple args; ptyp_loc = loc; _ } ->
-    let deser_args =
+    let arity = List.length args in
+
+    let tup_vars, deser_args =
       args
       |> List.mapi (fun i ty_i ->
-             let x_i = A.Exp.ident (lid ~loc @@ spf "x_%d" i) in
-             decode_expr_of_ty x_i ~ty:ty_i)
-    in
-    (* [match e with [x1,...,xn] -> … | _ -> fail] *)
-    let br_good =
-      let lhs =
-        mk_list_pat ~loc
-        @@ List.mapi
-             (fun i ty_i ->
-               let loc = ty_i.ptyp_loc in
-               A.Pat.var { loc; txt = spf "x_%d" i })
-             args
-      and rhs = A.Exp.tuple ~loc deser_args in
-      A.Exp.case [%pat? List [%p lhs] as _p] rhs
-    and br_bad1 =
-      let msg =
-        A.Const.string
-          (spf "wrong tuple arity (expected %d)" (List.length args))
-      in
-      A.Exp.case
-        [%pat? List _]
-        [%expr Imandrakit_twine.Decode.fail [%e A.Exp.constant msg]]
-    and br_bad2 =
-      A.Exp.case [%pat? _] [%expr Imandrakit_twine.Decode.fail "expected tuple"]
+             let name_var = { loc; txt = spf "x_%d" i } in
+             let p_var = A.Pat.var name_var in
+             let e_var = A.Exp.ident (lid_of_str name_var) in
+             let decoded =
+               [%expr
+                 let v =
+                   [%e
+                     decode_expr_of_ty ~ty:ty_i [%expr Array_cursor.current c]]
+                 in
+                 Array_cursor.consume c;
+                 v]
+             in
+             e_var, A.Vb.mk p_var decoded)
+      |> List.split
     in
 
-    (* FIXME: just use an array *)
-    A.Exp.match_ ~loc
-      [%expr Imandrakit_twine.Decode.deref_rec dec [%e e]]
-      [ br_good; br_bad1; br_bad2 ]
+    [%expr
+      Imandrakit_twine.Decode.(
+        let c = array dec [%e e] in
+        if Array_cursor.length c <> [%e A.Exp.constant (A.Const.int arity)] then
+          fail
+            [%e A.Exp.constant (A.Const.string (spf "expected %d-tuple" arity))]
+        else
+          [%e A.Exp.let_ Nonrecursive deser_args @@ A.Exp.tuple tup_vars])]
   | { ptyp_desc = Ptyp_alias (ty, _); _ } -> decode_expr_of_ty e ~ty
   | { ptyp_desc = Ptyp_arrow _; ptyp_loc = loc; _ } ->
     [%expr [%error "Cannot deserialize functions"]]
@@ -415,14 +409,19 @@ let encode_expr_of_tydecl (decl : type_declaration) : expression =
           match pcd_args with
           | Pcstr_tuple l ->
             let lhs =
-              let pat =
+              let pats =
                 l
                 |> List.mapi (fun i ty ->
                        let loc = ty.ptyp_loc in
                        A.Pat.var { loc; txt = spf "x_%d" i })
-                |> A.Pat.tuple
               in
-              A.Pat.construct (lid_of_str cname) (Some pat)
+              let pat =
+                match pats with
+                | [] -> None
+                | [ x ] -> Some x
+                | _ -> Some (A.Pat.tuple pats)
+              in
+              A.Pat.construct (lid_of_str cname) pat
             in
             let rhs =
               let args =
@@ -449,7 +448,7 @@ let encode_expr_of_tydecl (decl : type_declaration) : expression =
                 r
                 |> List.map (fun { pld_name; pld_loc = _; pld_type; _ } ->
                        let field = A.Exp.field var_r (lid_of_str pld_name) in
-                       encode_expr_of_ty field ~ty:pld_type)
+                       immediate_expr_of_ty field ~ty:pld_type)
                 |> A.Exp.array ~loc
               in
               [%expr
@@ -474,10 +473,7 @@ let encode_expr_of_tydecl (decl : type_declaration) : expression =
       [%expr Imandrakit_twine.Encode.array enc [%e A.Exp.array fields]]
   in
 
-  [%expr
-    fun enc self ->
-      let open Imandrakit_twine.Encode in
-      [%e body]]
+  [%expr fun enc self -> [%e body]]
 
 let decode_expr_of_tydecl (decl : type_declaration) : expression =
   let loc = decl.ptype_loc in
@@ -507,9 +503,10 @@ let decode_expr_of_tydecl (decl : type_declaration) : expression =
                  let rhs =
                    [%expr
                      let v =
-                       decode_expr_of_ty ~ty
-                         [%expr
-                           Imandrakit_twine.Decode.Array_cursor.current args]
+                       [%e
+                         decode_expr_of_ty ~ty
+                           [%expr
+                             Imandrakit_twine.Decode.Array_cursor.current args]]
                      in
                      Imandrakit_twine.Decode.Array_cursor.consume args;
                      v]
@@ -583,7 +580,7 @@ let decode_expr_of_tydecl (decl : type_declaration) : expression =
       in
       let branches = List.mapi dec_cstor cstors @ [ fail ] in
       [%expr
-        let e = Imandrakit_twine.Decode.deref_if_ptr dec [%e self] in
+        let e = Imandrakit_twine.Decode.(read dec @@ deref_rec dec [%e self]) in
         [%e A.Exp.match_ [%expr e] branches]]
     | Ptype_record labels ->
       let fields, vbs =

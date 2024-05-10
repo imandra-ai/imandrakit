@@ -8,6 +8,9 @@ val of_string : string -> t
 type 'a decoder = t -> offset -> 'a
 type cstor_index = int
 
+val fail : string -> 'a
+val failf : ('a, unit, string, 'b) format4 -> 'a
+
 module Value : sig
   type array_cursor
   type dict_cursor
@@ -45,7 +48,9 @@ module Array_cursor : sig
 
   val get_value_and_consume : t -> Value.t
   val to_iter : t -> Value.t Iter.t
+  val to_array_of : (offset -> 'a) -> t -> 'a array
   val to_list : t -> Value.t list
+  val to_list_of : (offset -> 'a) -> t -> 'a list
 end
 
 module Dict_cursor : sig
@@ -56,7 +61,9 @@ module Dict_cursor : sig
   val consume : t -> unit
   val get_key_value_and_consume : t -> Value.t * Value.t
   val to_iter : t -> (Value.t * Value.t) Iter.t
+  val to_array_of : (offset -> offset -> 'a) -> t -> 'a array
   val to_list : t -> (Value.t * Value.t) list
+  val to_list_of : (offset -> offset -> 'a) -> t -> 'a list
 end
 
 val deref_rec : offset decoder
@@ -89,59 +96,3 @@ val read_entrypoint : t -> Value.t
 (** Read the entrypoint, from the end of the slice *)
 
 val decode_string : 'a decoder -> string -> 'a
-
-(*
-
-type 'a t = decoder -> offset -> 'a
-
-val tag : tag t
-(** Access tag at this offset. *)
-
-val int64 : int64 t
-(** Assuming tag is int, read the integer *)
-
-val int_truncate : int t
-(** Like {!int} but truncates from int64 to int *)
-
-val float : float t
-(** Assuming tag is float, read the float *)
-
-val string : string t
-val string_ref : (string * int * int) t
-val blob : string t
-val blob_ref : (string * int * int) t
-
-val pointer : offset t
-(** Dereference a pointer *)
-
-val array : ('st1 -> 'st2 -> ('st1 -> 'st2 -> int -> offset -> unit) -> unit) t
-(** Access items in an array. *)
-
-val dict :
-  ('st1 -> 'st2 -> ('st1 -> 'st2 -> string -> offset -> unit) -> unit) t
-(** Access content of a dictionary *)
-
-val key_content : offset t
-(** After reading a key, access the value *)
-
-val record_descr : record_descriptor t
-(** Access a record descriptor *)
-
-val record_fields :
-  ('st1 ->
-  'st2 ->
-  ('st1 -> 'st2 -> index:int -> name:string -> offset -> unit) ->
-  unit)
-  t
-(** Access the fields of a record.  This will also
-    read the record descriptor implicitly. *)
-
-val cstor_num : int t
-(** Index of a given constructor. *)
-
-val cstor_args :
- the grand promises, and no actual the grand promises, and no actual  ('st1 -> 'st2 -> ('st1 -> 'st2 -> int -> offset -> unit) -> unit) t
-(** Access arguments of a constructor *)
-
-val cstor_descr : cstor_descriptor t
-*)
