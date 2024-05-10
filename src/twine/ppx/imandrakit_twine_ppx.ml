@@ -122,19 +122,19 @@ let rec encode_expr_of_ty (e : expression) ~(ty : core_type) : expression =
       [%expr Int64.of_nativeint [%e e]]
   | [%type: string] ->
     if is_some_ @@ Attribute.get ~mark_as_seen:false attr_use_bytes ty then
-      apply_encode [%expr Imandrakit_twine.Encode.add_bytes] e
+      apply_encode [%expr Imandrakit_twine.Encode.blob] e
     else
-      apply_encode [%expr Imandrakit_twine.Encode.add_string] e
+      apply_encode [%expr Imandrakit_twine.Encode.string] e
   | [%type: bytes] ->
     let e = [%expr Bytes.unsafe_to_string [%e e]] in
     if is_some_ @@ Attribute.get ~mark_as_seen:false attr_use_bytes ty then
-      apply_encode [%expr Imandrakit_twine.Encode.add_bytes] e
+      apply_encode [%expr Imandrakit_twine.Encode.blob] e
     else
-      apply_encode [%expr Imandrakit_twine.Encode.add_string] e
+      apply_encode [%expr Imandrakit_twine.Encode.string] e
   | [%type: bool] -> apply_encode [%expr Imandrakit_twine.Encode.bool] e
   | [%type: char] ->
     apply_encode [%expr Imandrakit_twine.Encode.int] [%expr Char.code c]
-  | [%type: unit] -> by_encode [%expr Imandrakit_twine.Encode.unit]
+  | [%type: unit] -> by_encode [%expr Imandrakit_twine.Encode.null]
   | [%type: float] -> by_encode [%expr Imandrakit_twine.Encode.float]
   | [%type: [%t? ty_arg0] option] ->
     [%expr
@@ -294,7 +294,7 @@ let rec decode_expr_of_ty (e : expression) ~(ty : core_type) : expression =
   | [%type: bool] -> by_full_dec [%expr Imandrakit_twine.Decode.bool]
   | [%type: char] ->
     [%expr Imandrakit_twine.Decode.int_truncate dec [%e e] |> Char.chr]
-  | [%type: unit] -> by_full_dec [%expr Imandrakit_twine.Decode.unit]
+  | [%type: unit] -> by_full_dec [%expr Imandrakit_twine.Decode.null]
   | [%type: float] -> by_full_dec [%expr Imandrakit_twine.Decode.float]
   | [%type: [%t? ty_arg0] option] ->
     [%expr
