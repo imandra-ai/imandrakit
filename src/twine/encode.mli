@@ -1,6 +1,7 @@
 open Types
 module Immediate = Immediate
 
+type immediate = Immediate.t
 type t
 
 val create : unit -> t
@@ -62,15 +63,28 @@ val finalize_copy : t -> top:offset -> string
 val to_string : 'a encoder -> 'a -> string
 (** Full entrypoint *)
 
-(*
-val record_descriptor :
-  encoder -> key:string -> f:(unit -> record_descriptor) -> unit -> offset
-(** [record_descriptor enc name ~f] adds or returns the offset for
-        the unique descriptor for record type [name]. *)
+(** {2 Caching}
 
-val record : encoder -> descr:offset -> unit -> offset
+    Caching is used to create/preserve sharing in the encoded slice,
+    by actively storing, in a hashtable, the offset where a value
+    was previously encoded. *)
 
-val sum_type_descriptor :
-  encoder -> key:string -> f:(unit -> sum_type_descriptor) -> unit -> offset
-val cstor : encoder -> descr:offset -> index:int -> unit -> offset
-  *)
+type 'a cache_key
+
+val create_cache_key :
+  (module Hashtbl.HashedType with type t = 'a) -> 'a cache_key
+(** Create a new (generative) cache key for a hashable + comparable type.
+
+    {b NOTE} this should be called only at module toplevel, as a constant,
+    not dynamically inside a function:
+    [let key = create_cache_key (module …);;].
+    Indeed, this is generative, so creating multiple keys for a type
+    will result in sub-par or inexistant caching. *)
+
+val with_cache : 'a cache_key -> 'a encoder -> 'a encoder
+(** [with_cache key enc] is the same encoder as [enc], but
+    with caching. When encoding a value [x:'a],
+    the cache [key] is used to detect if [x] was already
+    encoded to some entry, and uses a pointer to this entry
+    instead of re-serializing [x].
+*)

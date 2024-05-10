@@ -56,6 +56,7 @@ into a pointer and that's what that last byte targets.
 *)
 
 include Types
+module Immediate = Immediate
 module Encode = Encode
 module Decode = Decode
 module Dump = Dump

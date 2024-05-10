@@ -4,9 +4,31 @@ module Buf = Byte_buf
 module LEB128 = Imandrakit_leb128
 module Slice = Byte_slice
 
-type t = { buf: Buf.t } [@@unboxed]
+module type CACHE_KEY = sig
+  include Hashtbl.HashedType
 
-let create () : t = { buf = Buf.create ~cap:256 () }
+  val id : int
+end
+
+type immediate = Immediate.t
+type 'a cache_key = (module CACHE_KEY with type t = 'a)
+type cache_key_with_val = K : 'a cache_key * 'a -> cache_key_with_val
+
+module Cache_tbl = Hashtbl.Make (struct
+  type t = cache_key_with_val
+
+  let equal (K ((module C1), v1)) (K ((module C2), v2)) : bool =
+    C1.id = C2.id && C1.equal v1 (Obj.magic v2)
+
+  let hash (K ((module C), v)) = C.hash v
+end)
+
+type t = {
+  buf: Buf.t;
+  cache: offset Cache_tbl.t;
+}
+
+let create () : t = { buf = Buf.create ~cap:256 (); cache = Cache_tbl.create 8 }
 let reset self = Buf.clear self.buf
 
 type 'a encoder = t -> 'a -> offset
@@ -215,3 +237,27 @@ let to_string (e : _ encoder) x : string =
   let enc = create () in
   let off = e enc x in
   finalize_copy enc ~top:off
+
+open struct
+  let cache_id_ = Atomic.make 0
+end
+
+let create_cache_key (type a) (module H : Hashtbl.HashedType with type t = a) :
+    a cache_key =
+  let id = Atomic.fetch_and_add cache_id_ 1 in
+  (module struct
+    include H
+
+    let id = id
+  end)
+
+let with_cache (key : 'a cache_key) (enc : 'a encoder) : 'a encoder =
+ fun st (x : 'a) : offset ->
+  let k = K (key, x) in
+  match Cache_tbl.find_opt st.cache k with
+  | Some c -> c
+  | None ->
+    (* encode and save the pointer *)
+    let c = enc st x in
+    Cache_tbl.add st.cache k c;
+    c

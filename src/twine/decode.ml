@@ -3,7 +3,20 @@ open Common_
 module Slice = Byte_slice
 module LEB128 = Imandrakit_leb128.Decode
 
-type t = { sl: slice } [@@unboxed]
+type cached = ..
+
+module Offset_tbl = Int_tbl
+
+module type CACHE_KEY = sig
+  type elt
+  type cached += C of elt
+end
+
+type t = {
+  sl: slice;
+  cache: cached Offset_tbl.t;
+}
+
 type cstor_index = int [@@deriving show]
 
 type cursor = {
@@ -16,7 +29,7 @@ let show_cursor (self : cursor) =
   spf "<twine.cursor :off=%d :num-items=%d>" self.c_offset self.c_num_items
 
 let pp_cursor = Fmt.of_to_string show_cursor
-let[@inline] create sl : t = { sl }
+let[@inline] create sl : t = { sl; cache = Offset_tbl.create 8 }
 let[@inline] of_string s = create @@ Slice.of_string s
 
 type 'a decoder = t -> offset -> 'a
@@ -458,3 +471,24 @@ module Dict_cursor = struct
         consume self;
         f k v)
 end
+
+type 'a cache_key = (module CACHE_KEY with type elt = 'a)
+
+let create_cache_key (type a) () : a cache_key =
+  (module struct
+    type elt = a
+    type cached += C of a
+  end)
+
+let with_cache (type a) (key : a cache_key) (dec : a decoder) : a decoder =
+ fun st c ->
+  let (module K) = key in
+  (* make sure we use the canonical offset *)
+  let c = deref_rec st c in
+  match Offset_tbl.find_opt st.cache c with
+  | Some (K.C v) -> v
+  | Some _ -> dec st c
+  | None ->
+    let v = dec st c in
+    Offset_tbl.add st.cache c (K.C v);
+    v

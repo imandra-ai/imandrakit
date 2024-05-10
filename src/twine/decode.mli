@@ -96,3 +96,34 @@ val read_entrypoint : t -> Value.t
 (** Read the entrypoint, from the end of the slice *)
 
 val decode_string : 'a decoder -> string -> 'a
+
+(** {2 Caching}
+
+  Caching is used to reflect the sharing of values
+  embedded in a Twine slice, into the decoded values.
+  It means that, for a given type, if values of this type
+  are encoded with sharing (e.g. a graph-heavy term representation),
+  then with caching we can decode the values to OCaml values
+  that also have sharing.
+*)
+
+type 'a cache_key
+(** Generative key used to cache values during decoding *)
+
+val create_cache_key : unit -> _ cache_key
+(** Generate a new (generative) cache key for a type.
+
+    {b NOTE} this should be called only at module toplevel, as a constant,
+    not dynamically inside a function:
+    [let key: foo value_pack.Deser.cache_key = value_pack.Deser.create_cache_key ();;].
+    Indeed, this is generative, so creating multiple keys for a type
+    will result in sub-par or inexistant caching. *)
+
+val with_cache : 'a cache_key -> 'a decoder -> 'a decoder
+(** [with_cache key dec] is the same decoder as [dec] but
+      it uses [key] to retrieve values directly from
+      an internal table for entries/values that have already
+      been decoded in the past. This means that a value that was
+      encoded with a lot of sharing (e.g in a graph, or a large
+      string using {!Ser.add_string}) will be decoded only once.
+  *)
