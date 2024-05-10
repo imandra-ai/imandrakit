@@ -5,4 +5,4 @@
   ppx_deriving.runtime)
  (package imandrakit)
  (preprocess
-  (pps imandrakit.twine.ppx ppx_deriving.show)))
+  (pps imandrakit.twine.ppx ppx_deriving.std)))

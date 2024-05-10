@@ -1,0 +1,11 @@
+b: { T7.f1 = [{ T7.x = (Some 1); y = [(0, 0); (1, 1); (2, 2)] }];
+     f2 =
+     [{ T7.x = None; y = [] };
+       { T7.x = (Some true); y = [(0, true); (1, false)] }]
+     }
+len=53
+b': { T7.f1 = [{ T7.x = (Some 1); y = [(0, 0); (1, 1); (2, 2)] }];
+      f2 =
+      [{ T7.x = None; y = [] };
+        { T7.x = (Some true); y = [(0, true); (1, false)] }]
+      }
