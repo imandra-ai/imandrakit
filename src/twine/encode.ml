@@ -219,7 +219,6 @@ let cstor (self : t) ~(index : int) (args : immediate array) =
 
 let rec finalize (self : t) ~top : slice =
   assert (top < self.buf.len);
-  Printf.eprintf "finalize off=%d top=%d\n%!" self.buf.len top;
   let delta = self.buf.len - top - 1 in
   if delta > 250 then (
     (* go through intermediate pointer (uncommon, can happen if last value is ginormous) *)
@@ -261,3 +260,7 @@ let with_cache (key : 'a cache_key) (enc : 'a encoder) : 'a encoder =
     let c = enc st x in
     Cache_tbl.add st.cache k c;
     c
+
+let add_cache h (enc_ref : _ encoder ref) : unit =
+  let key = create_cache_key h in
+  enc_ref := with_cache key !enc_ref

@@ -492,3 +492,7 @@ let with_cache (type a) (key : a cache_key) (dec : a decoder) : a decoder =
     let v = dec st c in
     Offset_tbl.add st.cache c (K.C v);
     v
+
+let add_cache (dec_ref : _ decoder ref) : unit =
+  let key = create_cache_key () in
+  dec_ref := with_cache key !dec_ref

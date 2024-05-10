@@ -15,11 +15,17 @@ let ser_name_of_ty_name (ty_name : string) : string =
   else
     ty_name ^ "_to_twine"
 
+let ser_name_ref_of_ty_name (ty_name : string) : string =
+  ser_name_of_ty_name ty_name ^ "_ref"
+
 let deser_name_of_ty_name (ty_name : string) : string =
   if ty_name = "t" then
     "of_twine"
   else
     ty_name ^ "_of_twine"
+
+let deser_name_ref_of_ty_name (ty_name : string) : string =
+  deser_name_of_ty_name ty_name ^ "_ref"
 
 (* name for variables *)
 let name_poly_var_ v = spf "_twine_poly_%s" v
@@ -33,6 +39,10 @@ let rec map_lid ~f (lid : Longident.t) : Longident.t =
 let ser_name_of_lid = map_lid ~f:ser_name_of_ty_name
 let dec_name_of_lid = map_lid ~f:deser_name_of_ty_name
 
+let ser_name_ref_of_ty (ty : type_declaration) : string =
+  let ty_name = ty.ptype_name.txt in
+  ser_name_ref_of_ty_name ty_name
+
 let ser_name_of_ty (ty : type_declaration) : string =
   let ty_name = ty.ptype_name.txt in
   ser_name_of_ty_name ty_name
@@ -40,6 +50,10 @@ let ser_name_of_ty (ty : type_declaration) : string =
 let deser_name_of_ty (ty : type_declaration) : string =
   let ty_name = ty.ptype_name.txt in
   deser_name_of_ty_name ty_name
+
+let deser_name_ref_of_ty (ty : type_declaration) : string =
+  let ty_name = ty.ptype_name.txt in
+  deser_name_ref_of_ty_name ty_name
 
 let lid ~loc s = { loc; txt = Longident.Lident s }
 let lid_of_str { txt; loc } = lid ~loc txt
@@ -626,33 +640,132 @@ let generate_impl_ (rec_flag, type_declarations) =
     mk_lambda ~loc (List.map name_poly_var_ @@ param_names ty) body
   in
 
-  (* generate serialization code *)
-  let ser_decls =
-    List.map
+  (* forward declarations *)
+  let forward_defs_refs : structure_item list =
+    List.concat_map
       (fun ty ->
-        let loc = ty.ptype_loc in
-        let fname = ser_name_of_ty ty in
-        let def = fun_poly_gen_ ~loc ty @@ encode_expr_of_tydecl ty in
-        A.Vb.mk (A.Pat.var { loc; txt = fname }) def)
+        if ty.ptype_params <> [] then
+          (* no ref for polymorphic types (value restriction gets in the way) *)
+          []
+        else (
+          let loc = ty.ptype_loc in
+          let f_encode_name = ser_name_ref_of_ty ty in
+          let f_decode_name = deser_name_ref_of_ty ty in
+          let def_encode = [%expr ref (fun _ _ -> assert false)] in
+          let str_encode =
+            A.Str.value Nonrecursive
+              [ A.Vb.mk (A.Pat.var { loc; txt = f_encode_name }) def_encode ]
+          in
+          let def_decode = [%expr ref (fun _ _ -> assert false)] in
+          let str_decode =
+            A.Str.value Nonrecursive
+              [ A.Vb.mk (A.Pat.var { loc; txt = f_decode_name }) def_decode ]
+          in
+          [ str_encode; str_decode ]
+        ))
       type_declarations
   in
-  let ser_defs = A.Str.value rec_flag ser_decls in
 
-  (* generate deserialization code *)
-  let deser_decls =
-    List.map
+  (* [let f enc x = !f_ref enc x] for mono types.
+     This must come before the actual definitions because of the
+     possibility of mutual recursion. *)
+  let defs_forward =
+    List.concat_map
       (fun ty ->
-        let loc = ty.ptype_loc in
-        let fname = deser_name_of_ty ty in
-        let def = fun_poly_gen_ ~loc ty @@ decode_expr_of_tydecl ty in
-        A.Vb.mk (A.Pat.var { loc; txt = fname }) def)
+        if ty.ptype_params <> [] then
+          []
+        else (
+          let loc = ty.ptype_loc in
+          let str_encode =
+            let fname = ser_name_of_ty ty in
+            let fref_name = ser_name_ref_of_ty ty in
+
+            let body = [%expr ![%e A.Exp.ident @@ lid ~loc fref_name]] in
+            let body = [%expr [%e body] enc self] in
+            let def = [%expr fun enc self -> [%e body]] in
+            A.Str.value Nonrecursive
+              [ A.Vb.mk (A.Pat.var { loc; txt = fname }) def ]
+          and str_decode =
+            let fname = deser_name_of_ty ty in
+            let fref_name = deser_name_ref_of_ty ty in
+
+            let body = [%expr ![%e A.Exp.ident @@ lid ~loc fref_name]] in
+            let body = [%expr [%e body] enc self] in
+            let def = [%expr fun enc self -> [%e body]] in
+            A.Str.value Nonrecursive
+              [ A.Vb.mk (A.Pat.var { loc; txt = fname }) def ]
+          in
+          [ str_encode; str_decode ]
+        ))
       type_declarations
   in
-  let deser_defs = A.Str.value rec_flag deser_decls in
 
-  (* deserialization code might be lazy (cyclic values), so here we wrap
-     taht in a forcing layer *)
-  let deser_defs_wrappers = [] in
+  let ser_defs_poly =
+    List.filter_map
+      (fun ty ->
+        if ty.ptype_params = [] then
+          None
+        else (
+          let loc = ty.ptype_loc in
+          let fname = ser_name_of_ty ty in
+          let def = fun_poly_gen_ ~loc ty @@ encode_expr_of_tydecl ty in
+          let vb = A.Vb.mk (A.Pat.var { loc; txt = fname }) def in
+          Some vb
+        ))
+      type_declarations
+  in
+  let ser_defs_poly =
+    if ser_defs_poly = [] then
+      []
+    else
+      [ A.Str.value rec_flag ser_defs_poly ]
+  in
+
+  let deser_defs_poly =
+    List.filter_map
+      (fun ty ->
+        if ty.ptype_params = [] then
+          None
+        else (
+          let loc = ty.ptype_loc in
+          let fname = deser_name_of_ty ty in
+          let def = fun_poly_gen_ ~loc ty @@ decode_expr_of_tydecl ty in
+          let vb = A.Vb.mk (A.Pat.var { loc; txt = fname }) def in
+          Some vb
+        ))
+      type_declarations
+  in
+  let deser_defs_poly =
+    if deser_defs_poly = [] then
+      []
+    else
+      [ A.Str.value rec_flag deser_defs_poly ]
+  in
+
+  (* generate (de)serialization code for mono types *)
+  let defs_init =
+    List.concat_map
+      (fun ty ->
+        if ty.ptype_params <> [] then
+          []
+        else (
+          let loc = ty.ptype_loc in
+          let str_encode =
+            let def = encode_expr_of_tydecl ty in
+            A.Str.eval
+              [%expr
+                [%e A.Exp.ident (lid ~loc @@ ser_name_ref_of_ty ty)] := [%e def]]
+          and str_decode =
+            let def = decode_expr_of_tydecl ty in
+            A.Str.eval
+              [%expr
+                [%e A.Exp.ident (lid ~loc @@ deser_name_ref_of_ty ty)]
+                := [%e def]]
+          in
+          [ str_encode; str_decode ]
+        ))
+      type_declarations
+  in
 
   let bracket_warn stri =
     let loc =
@@ -665,7 +778,14 @@ let generate_impl_ (rec_flag, type_declarations) =
     (disable :: stri) @ [ enable ]
   in
   bracket_warn
-    (List.flatten [ [ ser_defs ]; [ deser_defs ]; deser_defs_wrappers ])
+    (List.flatten
+       [
+         forward_defs_refs;
+         defs_forward;
+         ser_defs_poly;
+         deser_defs_poly;
+         defs_init;
+       ])
 
 let generate_impl ~ctxt:_ (rec_flag, type_declarations) =
   try generate_impl_ (rec_flag, type_declarations)

@@ -88,3 +88,13 @@ val with_cache : 'a cache_key -> 'a encoder -> 'a encoder
     encoded to some entry, and uses a pointer to this entry
     instead of re-serializing [x].
 *)
+
+val add_cache :
+  (module Hashtbl.HashedType with type t = 'a) -> 'a encoder ref -> unit
+(** [add_cache (module …) enc_ref] modifies the given encoder so that
+    it goes through a layer of caching. This is the same
+    as:
+      {[
+let key = create_cache_key (module …)
+let () = enc_ref := with_cache key !enc_ref
+      ]} *)

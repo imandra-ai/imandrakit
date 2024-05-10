@@ -127,3 +127,11 @@ val with_cache : 'a cache_key -> 'a decoder -> 'a decoder
       encoded with a lot of sharing (e.g in a graph, or a large
       string using {!Ser.add_string}) will be decoded only once.
   *)
+
+val add_cache : 'a decoder ref -> unit
+(** [add_cache dec_ref] modifies the decoder so it uses a new cache key.
+    It is the same as:
+  {[
+  let key = create_cache_key ()
+  let () = dec_ref := with_cache key !dec_ref
+  ]} *)
