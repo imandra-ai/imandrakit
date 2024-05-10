@@ -87,12 +87,6 @@ let attr_use_bytes =
     Ast_pattern.(pstr nil)
     ()
 
-(* field in record: use this key *)
-let attr_use_field_name =
-  Attribute.declare "twine.key" Attribute.Context.label_declaration
-    Ast_pattern.(single_expr_payload @@ estring __)
-    (fun x -> x)
-
 let attr_decode =
   Attribute.declare "twine.decode" Attribute.Context.core_type
     Ast_pattern.(single_expr_payload __)
@@ -848,16 +842,7 @@ let generate_intf ~ctxt:_ (_rec_flag, type_declarations) =
     in
     [ s ]
 
-let impl_generator =
-  (* AAAAAAAAAAAHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH
-     let args = Deriving.Args.(
-         let rec_name = arg_option "use_field_names" Ast_pattern.(e alt (bool true) (bool false)) in
-         empty +> rec_name
-       ) in
-     Deriving.Generator.V2.make args generate_impl
-  *)
-  Deriving.Generator.V2.make_noarg generate_impl
-
+let impl_generator = Deriving.Generator.V2.make_noarg generate_impl
 let intf_generator = Deriving.Generator.V2.make_noarg generate_intf
 
 let myderiver =

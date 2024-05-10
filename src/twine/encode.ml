@@ -264,3 +264,12 @@ let with_cache (key : 'a cache_key) (enc : 'a encoder) : 'a encoder =
 let add_cache h (enc_ref : _ encoder ref) : unit =
   let key = create_cache_key h in
   enc_ref := with_cache key !enc_ref
+
+let add_cache_with (type t) ~eq ~hash enc_ref =
+  let module M = struct
+    type nonrec t = t
+
+    let equal = eq
+    let hash = hash
+  end in
+  add_cache (module M) enc_ref

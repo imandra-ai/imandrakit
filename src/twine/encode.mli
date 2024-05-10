@@ -98,3 +98,7 @@ val add_cache :
 let key = create_cache_key (module …)
 let () = enc_ref := with_cache key !enc_ref
       ]} *)
+
+val add_cache_with :
+  eq:('a -> 'a -> bool) -> hash:('a -> int) -> 'a encoder ref -> unit
+(** Shortcut for {!add_cache} *)
