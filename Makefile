@@ -21,6 +21,8 @@ format-check:
 WATCH?= @check @runtest
 watch:
 	dune build $(DUNE_OPTS) -w $(WATCH)
+watch-autopromote:
+	dune build $(DUNE_OPTS) -w $(WATCH) --auto-promote
 
 .PHONY: test clean build doc build-dev
 

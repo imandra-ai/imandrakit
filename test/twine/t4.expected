@@ -1,3 +1,22 @@
-x: "\162ah\128ak\130aFlhello\0000world"
-len: 22
+x: (T4.F "hello\0000world")
+enc(x): "\176Lhello\0000world\r"
+len: 15
+hex:
+00000000: b04c 6865 6c6c 6f00 3077 6f72 6c64 0d    .Lhello.0world.
+
 deser: (T4.F "hello\0000world")
+t2: { T4.t1s =
+      [(Some (T4.F "hello\0000world")); None; (Some (T4.F "hello\0000world"))
+        ]
+      }
+enc(t2): "\176Lhello\0000worlda\254\176Lhello\0000worlda\254c\255\003\002\245a\245\001"
+len: 40
+hex:
+00000000: b04c 6865 6c6c 6f00 3077 6f72 6c64 61fe  .Lhello.0worlda.
+00000001: b04c 6865 6c6c 6f00 3077 6f72 6c64 61fe  .Lhello.0worlda.
+00000002: 63ff 0302 f561 f501                      c....a..
+
+deser: { T4.t1s =
+         [(Some (T4.F "hello\0000world")); None;
+           (Some (T4.F "hello\0000world"))]
+         }

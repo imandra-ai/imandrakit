@@ -1,3 +1,6 @@
-serialized to "\162ah\128ak\162aa\001ab\251@\000\000\000\000\000\000\000"
-len: 21
-foo after roundtrip: { T1.a = 1; b = 2. }
+serialized { T1.a = 7; b = 2. } to "b\0231\000\000\000\000\000\000\000@\n"
+hex:
+00000000: 6217 3100 0000 0000 0000 400a            b.1.......@.
+
+len: 12
+foo after roundtrip: { T1.a = 7; b = 2. }
