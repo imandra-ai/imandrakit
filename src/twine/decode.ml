@@ -209,7 +209,7 @@ let read ?(auto_deref = true) (self : t) (offset : offset) : Value.t =
   | 13 | 14 -> invalid_first_byte_ ~offset ~high ~low "type is reserved"
   | 15 ->
     let n, _ = get_int_truncate_ self offset ~low in
-    Value.Pointer n
+    Value.Pointer (offset - n - 1)
   | _ -> assert false
 
 (** Skip the current (immediate) value *)
