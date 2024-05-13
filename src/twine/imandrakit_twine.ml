@@ -65,3 +65,5 @@ module Immediate = Immediate
 module Encode = Encode
 module Decode = Decode
 module Dump = Dump
+
+type immediate = Immediate.t

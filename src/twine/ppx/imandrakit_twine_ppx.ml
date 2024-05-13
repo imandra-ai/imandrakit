@@ -96,7 +96,7 @@ let attr_decode =
 let apply_encode ~loc e_encode e : expression =
   [%expr
     let e = [%e e] in
-    ([%e e_encode] enc e : Imandrakit_twine.offset)]
+    ([%e e_encode] enc e : Imandrakit_twine.immediate)]
 
 (* apply [Decode.t -> offset -> 'a] *)
 let apply_decode ~loc e_deser p : expression =
@@ -106,51 +106,49 @@ let is_some_ = function
   | Some _ -> true
   | None -> false
 
-(* produce an expression that serializes [e].
-   In scope: [enc]. *)
-let rec encode_expr_of_ty (e : expression) ~(ty : core_type) : expression =
+(** Produce an immediate value *)
+let rec immediate_expr_of_ty (e : expression) ~(ty : core_type) : expression =
   let loc = ty.ptyp_loc in
   let apply_encode = apply_encode ~loc in
   let by_encode ser = apply_encode ser e in
   match ty with
   | _ when is_some_ (Attribute.get ~mark_as_seen:false attr_encode ty) ->
-    (* custom ser *)
+    (* user provided serializer *)
     let e_ser =
       match Attribute.get ~mark_as_seen:true attr_encode ty with
       | None -> assert false
       | Some h -> h
     in
     apply_encode e_ser e
-  | [%type: int] -> by_encode [%expr Imandrakit_twine.Encode.int]
+  | [%type: int] -> [%expr Imandrakit_twine.Immediate.Int (Int64.of_int [%e e])]
   | [%type: int32] ->
-    apply_encode [%expr Imandrakit_twine.Encode.int] [%expr Int32.to_int [%e e]]
-  | [%type: int64] -> apply_encode [%expr Imandrakit_twine.Encode.int64] e
+    [%expr Imandrakit_twine.Immediate.Int (Int64.of_int32 [%e e])]
+  | [%type: int64] -> [%expr Imandrakit_twine.Immediate.Int [%e e]]
   | [%type: nativeint] ->
-    apply_encode [%expr Imandrakit_twine.Encode.int64]
-      [%expr Int64.of_nativeint [%e e]]
+    [%expr Imandrakit_twine.Immediate.Int (Int64.of_nativeint [%e e])]
   | [%type: string] ->
     if is_some_ @@ Attribute.get ~mark_as_seen:false attr_use_bytes ty then
-      apply_encode [%expr Imandrakit_twine.Encode.blob] e
+      [%expr Imandrakit_twine.Immediate.blob [%e e]]
     else
-      apply_encode [%expr Imandrakit_twine.Encode.string] e
+      [%expr Imandrakit_twine.Immediate.string [%e e]]
   | [%type: bytes] ->
     let e = [%expr Bytes.unsafe_to_string [%e e]] in
     if is_some_ @@ Attribute.get ~mark_as_seen:false attr_use_bytes ty then
-      apply_encode [%expr Imandrakit_twine.Encode.blob] e
+      [%expr Imandrakit_twine.Immediate.blob [%e e]]
     else
-      apply_encode [%expr Imandrakit_twine.Encode.string] e
-  | [%type: bool] -> apply_encode [%expr Imandrakit_twine.Encode.bool] e
+      [%expr Imandrakit_twine.Immediate.string [%e e]]
+  | [%type: bool] -> [%expr Imandrakit_twine.Immediate.bool [%e e]]
   | [%type: char] ->
-    apply_encode [%expr Imandrakit_twine.Encode.int] [%expr Char.code c]
-  | [%type: unit] -> by_encode [%expr Imandrakit_twine.Encode.null]
-  | [%type: float] -> by_encode [%expr Imandrakit_twine.Encode.float]
+    [%expr Imandrakit_twine.Immediate.Int (Int64.of_int @@ Char.code [%e e])]
+  | [%type: unit] -> [%expr Imandrakit_twine.Immediate.Null]
+  | [%type: float] -> [%expr Imandrakit_twine.Immediate.Float [%e e]]
   | [%type: [%t? ty_arg0] option] ->
     [%expr
       match [%e e] with
-      | None -> Imandrakit_twine.Encode.null enc ()
+      | None -> Imandrakit_twine.Immediate.Null
       | Some x ->
-        let x = [%e immediate_expr_of_ty [%expr x] ~ty:ty_arg0] in
-        [%e apply_encode [%expr Imandrakit_twine.Encode.list] [%expr [ x ]]]]
+        Imandrakit_twine.(
+          Encode.list enc [ [%e immediate_expr_of_ty [%expr x] ~ty:ty_arg0] ])]
   | [%type: [%t? ty_arg0] list] ->
     apply_encode [%expr Imandrakit_twine.Encode.array_iter]
       [%expr
@@ -164,7 +162,7 @@ let rec encode_expr_of_ty (e : expression) ~(ty : core_type) : expression =
       (Imandrakit_twine.Encode.array_init enc (Array.length arr) (fun i ->
            let v = Array.unsafe_get arr i in
            [%e immediate_expr_of_ty ~ty:ty_arg0 [%expr v]])
-        : Imandrakit_twine.offset)]
+        : Imandrakit_twine.immediate)]
   | { ptyp_desc = Ptyp_var v; ptyp_loc = loc; _ } ->
     (* use function passed as a parameter for each polymorphic argument *)
     let s = A.Exp.ident @@ lid ~loc @@ name_poly_var_ v in
@@ -176,7 +174,7 @@ let rec encode_expr_of_ty (e : expression) ~(ty : core_type) : expression =
       args
       |> List.map (fun ty ->
              let ser =
-               [%expr fun enc x -> [%e encode_expr_of_ty [%expr x] ~ty]]
+               [%expr fun enc x -> [%e immediate_expr_of_ty [%expr x] ~ty]]
              in
              Nolabel, ser)
     in
@@ -208,10 +206,10 @@ let rec encode_expr_of_ty (e : expression) ~(ty : core_type) : expression =
       [%expr Imandrakit_twine.Encode.(array enc [%e A.Exp.array ~loc ser_args])]
     in
     A.Exp.let_ Nonrecursive vbs body
+  | { ptyp_desc = Ptyp_alias (ty, _); _ } -> immediate_expr_of_ty e ~ty
   | { ptyp_desc = Ptyp_variant _; ptyp_loc = loc; _ } ->
     (* TODO *)
     [%expr [%error "Cannot serialize polymorphic variants yet"]]
-  | { ptyp_desc = Ptyp_alias (ty, _); _ } -> encode_expr_of_ty e ~ty
   | { ptyp_desc = Ptyp_arrow _; ptyp_loc = loc; _ } ->
     [%expr [%error "Cannot serialize functions"]]
   | { ptyp_desc = Ptyp_class _ | Ptyp_object _; ptyp_loc = loc; _ } ->
@@ -224,47 +222,6 @@ let rec encode_expr_of_ty (e : expression) ~(ty : core_type) : expression =
     [%expr [%error "Cannot serialize values of type `_`"]]
   | { ptyp_desc = Ptyp_poly _; ptyp_loc = loc; _ } ->
     [%expr [%error "Cannot serialize values of this type"]]
-
-(** Produce an immediate value *)
-and immediate_expr_of_ty (e : expression) ~(ty : core_type) : expression =
-  let loc = ty.ptyp_loc in
-  match ty with
-  | [%type: int] -> [%expr Imandrakit_twine.Immediate.Int (Int64.of_int [%e e])]
-  | [%type: int32] ->
-    [%expr Imandrakit_twine.Immediate.Int (Int64.of_int32 [%e e])]
-  | [%type: int64] -> [%expr Imandrakit_twine.Immediate.Int [%e e]]
-  | [%type: nativeint] ->
-    [%expr Imandrakit_twine.Immediate.Int (Int64.of_nativeint [%e e])]
-  | [%type: string] ->
-    if is_some_ @@ Attribute.get ~mark_as_seen:false attr_use_bytes ty then
-      [%expr Imandrakit_twine.Immediate.blob [%e e]]
-    else
-      [%expr Imandrakit_twine.Immediate.string [%e e]]
-  | [%type: bytes] ->
-    let e = [%expr Bytes.unsafe_to_string [%e e]] in
-    if is_some_ @@ Attribute.get ~mark_as_seen:false attr_use_bytes ty then
-      [%expr Imandrakit_twine.Immediate.blob [%e e]]
-    else
-      [%expr Imandrakit_twine.Immediate.string [%e e]]
-  | [%type: bool] -> [%expr Imandrakit_twine.Immediate.bool [%e e]]
-  | [%type: char] ->
-    [%expr Imandrakit_twine.Immediate.Int (Int64.of_int @@ Char.code [%e e])]
-  | [%type: unit] -> [%expr Imandrakit_twine.Immediate.Null]
-  | [%type: float] -> [%expr Imandrakit_twine.Immediate.Float [%e e]]
-  | [%type: [%t? ty_arg0] option] ->
-    [%expr
-      match [%e e] with
-      | None -> Imandrakit_twine.Immediate.Null
-      | Some x ->
-        Imandrakit_twine.(
-          Immediate.Pointer
-            (Encode.list enc
-               [
-                 Immediate.pointer [%e encode_expr_of_ty [%expr x] ~ty:ty_arg0];
-               ]))]
-  | _ ->
-    (* just encode, and return a pointer to the encoded value *)
-    [%expr Imandrakit_twine.Immediate.pointer [%e encode_expr_of_ty e ~ty]]
 
 (* produce an expression that deserializes offset represented by [e].
    In scope: [dec]. *)
@@ -405,7 +362,7 @@ let encode_expr_of_tydecl (decl : type_declaration) : expression =
     | Ptype_abstract ->
       (match decl.ptype_manifest with
       | Some ty_alias ->
-        encode_expr_of_ty self ~ty:ty_alias (* alias, just forward to it *)
+        immediate_expr_of_ty self ~ty:ty_alias (* alias, just forward to it *)
       | None -> [%expr [%error "cannot derive twine for abstract type"]])
     | Ptype_open -> [%expr [%error "cannot derive twine for open type"]]
     | Ptype_variant cstors ->
