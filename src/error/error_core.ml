@@ -3,9 +3,9 @@ type message = {
   data: Data.t;
   bt: string option; [@key "bt"]
 }
-[@@deriving serpack]
+[@@deriving twine]
 
-type stack = message list [@@deriving serpack]
+type stack = message list [@@deriving twine]
 
 type t = {
   process: string; [@key "p"]
@@ -13,7 +13,7 @@ type t = {
   msg: message; [@key "msg"]
   stack: stack; [@key "st"]
 }
-[@@deriving serpack]
+[@@deriving twine]
 
 exception E of t
 
@@ -70,13 +70,10 @@ let add_data k v (self : t) : t =
   { self with msg }
 
 module Result_ = struct
-  type nonrec ('a, 'b) t = ('a, 'b) result
-
-  let to_serpack = Imandrakit_ser_pack.Ser.result
-  let of_serpack = Imandrakit_ser_pack.Deser.result
+  include Imandrakit_twine.Util.Result
 end
 
-type !'a result = ('a, t) Result_.t [@@deriving serpack]
+type !'a result = ('a, t) Result_.t [@@deriving twine]
 
 let map_result = CCResult.map
 let iter_result = CCResult.iter

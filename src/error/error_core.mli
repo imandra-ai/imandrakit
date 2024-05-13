@@ -5,7 +5,7 @@ type message = {
   data: Data.t;
   bt: string option;  (** Backtrace *)
 }
-[@@deriving serpack]
+[@@deriving twine]
 (** A message.
 
     An error message is emitted at a particular place in the code.
@@ -19,7 +19,7 @@ type t = {
   msg: message;
   stack: stack;
 }
-[@@deriving show, serpack]
+[@@deriving show, twine]
 
 exception E of t
 (** Internal error *)
@@ -47,7 +47,7 @@ val guard : ?let_pass:(exn -> bool) -> (unit -> message) -> (unit -> 'a) -> 'a
     @param let_pass if it returns [true] for an exception, the exception is
       re-raised. *)
 
-type !'a result = ('a, t) Stdlib.result [@@deriving show, map, iter, serpack]
+type !'a result = ('a, t) Stdlib.result [@@deriving show, map, iter, twine]
 
 val unwrap : 'a result -> 'a
 (** [unwrap e] uses {!raise_err} to unpack the result *)

@@ -5,7 +5,7 @@
     is serializable and printable).
 *)
 
-module Ser_pack = Imandrakit_ser_pack
+module Twine = Imandrakit_twine
 
 module Key : sig
   type 'a t
@@ -13,8 +13,8 @@ module Key : sig
 
   val make :
     field_name:string ->
-    enc:'a Ser_pack.Ser.t ->
-    dec:'a Ser_pack.Deser.t ->
+    enc:'a Twine.encoder ->
+    dec:'a Twine.decoder ->
     pp:'a Fmt.printer ->
     unit ->
     'a t
@@ -27,7 +27,7 @@ module Key : sig
 end
 
 type 'a key = 'a Key.t
-type t [@@deriving serpack]
+type t [@@deriving twine]
 
 val empty : t
 (** Empty set of data *)

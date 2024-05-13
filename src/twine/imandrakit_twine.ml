@@ -65,5 +65,8 @@ module Immediate = Immediate
 module Encode = Encode
 module Decode = Decode
 module Dump = Dump
+module Util = Util
 
 type immediate = Immediate.t
+type 'a encoder = 'a Encode.encoder
+type 'a decoder = 'a Decode.decoder
