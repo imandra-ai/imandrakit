@@ -1,6 +1,8 @@
 (tests
- (names t1 t2 t3 t4 t5 t6 t7 t8 t9)
+ (names tproof)
  (libraries imandrakit.twine hex ppx_deriving.runtime unix)
  (package imandrakit)
+ (enabled_if
+  (> %{ocaml_version} 5.0))
  (preprocess
   (pps imandrakit.twine.ppx ppx_deriving.std imandrakit.ser-pack.ppx)))
