@@ -1,0 +1,6 @@
+
+(executable
+  (name twine_bench)
+ (libraries imandrakit.twine hex ppx_deriving.runtime)
+ (preprocess
+  (pps imandrakit.twine.ppx ppx_deriving.std imandrakit.ser-pack.ppx)))
