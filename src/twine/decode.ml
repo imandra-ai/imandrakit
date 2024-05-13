@@ -490,10 +490,10 @@ let with_cache (type a) (key : a cache_key) (dec : a decoder) : a decoder =
   let (module K) = key in
   (* make sure we use the canonical offset *)
   let c = deref_rec st c in
-  match Offset_tbl.find_opt st.cache c with
-  | Some (K.C v) -> v
-  | Some _ -> dec st c
-  | None ->
+  match Offset_tbl.find st.cache c with
+  | K.C v -> v
+  | _ -> dec st c
+  | exception Not_found ->
     let v = dec st c in
     Offset_tbl.add st.cache c (K.C v);
     v

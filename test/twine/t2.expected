@@ -11,32 +11,31 @@ start with myx2:
     |];
   c = None }
 serialized to
-00000000: 6062 011f 5262 001f 5462 f8f5 1361 f1c2  `b..Rb..Tb...a..
-00000001: 02f3 f861 f462 ff06 f4a1 63f1 f2f3 61ff  ...a.b....c...a.
-00000002: 00c3 02ff 04ff 0662 ff09 f863 ff02 ff00  .......b...c....
-00000003: f862 ff0d f8b0 1f1b 63f3 f802 03         .b......c....
+00000000: 6062 011f 5262 001f 5462 f8f5 6113 c202  `b..Rb..Tb..a...
+00000001: f3f7 61f4 62ff 05f4 63a1 a1a1 61fe c302  ..a.b...c...a...
+00000002: ff02 ff04 62ff 07f8 63ff 01fe f762 ff0a  ....b...c....b..
+00000003: f7b0 1f1b 63f3 f802 03                   ....c....
 
-len: 61
+len: 57
 len with marshal: 118
 dump:
-Array(3) [
- C_0(42),
- Array(2) [
-   Array(2) [
-     [],
-     Array(1) [
-       C_2([3],[[true,97],[false,99]]) ] ],
-   Array(3) [
-     Array(3) [
-       C_1,
-       C_1,
-       C_1 ],
-     Array(1) [
-       C_2([3],[[true,97],[false,99]]) ],
-     Array(2) [
-       C_2([3],[[true,97],[false,99]]),
-       C_3(C_2([3],[[true,97],[false,99]]),C_2([3],[[true,97],[false,99]])) ] ] ],
- null ]
+[0x0]: []
+[0x1]: Array(2) [true,97]
+[0x5]: Array(2) [false,99]
+[0x9]: Array(2) [@0x1,@0x5]
+[0xc]: Array(1) [3]
+[0xe]: C_2(@0xc,@0x9)
+[0x12]: Array(1) [@0xe]
+[0x14]: Array(2) [@0x0,@0x12]
+[0x18]: Array(3) [C_1,C_1,C_1]
+[0x1c]: Array(1) [@0xe]
+[0x1e]: C_3(@0xe,@0xe)
+[0x24]: Array(2) [@0xe,@0x1e]
+[0x28]: Array(3) [@0x18,@0x1c,@0x24]
+[0x2d]: Array(2) [@0x14,@0x28]
+[0x31]: C_0(42)
+[0x34]: Array(3) [@0x31,@0x2d,null]
+
 myx2 after roundtrip:
 { a = (A 42);
   b =
@@ -49,7 +48,7 @@ myx2 after roundtrip:
       ]
     |];
   c = None }
-len: 83
+len: 78
 len(big) with marshal: 258
 deser(myx2_big):
 { a = B;
@@ -86,10 +85,9 @@ deser(myx2_big):
           ])
   }
 myx2_big hex is:
-00000000: 6062 011f 5262 001f 5462 f8f5 1361 f1c2  `b..Rb..Tb...a..
-00000001: 02f3 f861 f462 ff06 f4a1 63f1 f2f3 61ff  ...a.b....c...a.
-00000002: 00c3 02ff 04ff 0662 ff09 f863 ff02 ff00  .......b...c....
-00000003: f862 ff0d f8b0 1f1b 63f3 f802 62f4 f561  .b......c...b..a
-00000004: f360 62ff 24ff 2662 f6f6 61f3 63ff 24f4  .`b.$.&b..a.c.$.
-00000005: ff01 05                                  ...
+00000000: 6062 011f 5262 001f 5462 f8f5 6113 c202  `b..Rb..Tb..a...
+00000001: f3f7 61f4 62ff 05f4 63a1 a1a1 61fe c302  ..a.b...c...a...
+00000002: ff02 ff04 62ff 07f8 63ff 01fe f762 ff0a  ....b...c....b..
+00000003: f7b0 1f1b 63f3 f802 62f4 f561 f360 62ff  ....c...b..a.`b.
+00000004: 21ff 2362 f6f6 61f3 63a1 f3ff 0004       !.#b..a.c.....
 

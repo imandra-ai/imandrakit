@@ -18,13 +18,12 @@ Format.printf "deser: %a@." pp_t1 x'
 type t2 = { t1s: t1 option list } [@@deriving show, twine]
 
 let t2 = { t1s = [ Some x; None; Some x ] }
-let enc_t2 = Imandrakit_twine.Encode.to_string t2_to_twine t2;;
-
-Format.printf "t2: %a@." pp_t2 t2;;
-Format.printf "enc(t2): %S@." enc_t2;;
-Format.printf "len: %d@." (String.length enc_t2);;
-Format.printf "hex:@.%s@." (Hex.hexdump_s @@ Hex.of_string enc_t2)
-
+let enc_t2 = Imandrakit_twine.Encode.to_string t2_to_twine t2
+let () = Format.printf "t2: %a@." pp_t2 t2
+let () = Format.printf "enc(t2): %S@." enc_t2
+let () = Format.printf "len: %d@." (String.length enc_t2)
+let () = Format.printf "hex:@.%s@." (Hex.hexdump_s @@ Hex.of_string enc_t2)
+let () = Format.printf "dump:@.%s@." (Imandrakit_twine.Dump.dump_string enc_t2)
 let t2' = Imandrakit_twine.Decode.decode_string t2_of_twine enc_t2;;
 
 Format.printf "deser: %a@." pp_t2 t2'

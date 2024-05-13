@@ -37,6 +37,10 @@ let () =
   Format.printf "many foos marshalled: %d bytes@.%s@." (String.length s_foos_m)
     (Hex.hexdump_s @@ Hex.of_string s_foos_m)
 
+let () =
+  Format.printf "dump of many foos:@.%s@."
+    (Imandrakit_twine.Dump.dump_string s_foos)
+
 (** {2 Trees} *)
 
 type tree =
@@ -104,6 +108,10 @@ let () =
   let sm = Marshal.to_string big_tree [] in
   Format.printf "marshal size: %d@.%s@." (String.length sm)
     (Hex.hexdump_s @@ Hex.of_string sm)
+
+let () =
+  Format.printf "dump of big tree:@.%s@."
+    (Imandrakit_twine.Dump.dump_string str_big_tree)
 
 let big_tree2 =
   Imandrakit_twine.Decode.decode_string tree_ref_of_twine str_big_tree

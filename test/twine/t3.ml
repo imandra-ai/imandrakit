@@ -21,6 +21,10 @@ module M1 = struct
 
   let pack1 = Imandrakit_twine.Encode.to_string t1_to_twine myt1
   let () = Format.printf "pack1:@.%s@." (Hex.hexdump_s @@ Hex.of_string pack1)
+
+  let () =
+    Format.printf "dump(t1):@.%s@." (Imandrakit_twine.Dump.dump_string pack1)
+
   let () = Format.printf "len1: %d@." @@ String.length pack1
 end
 
@@ -41,7 +45,9 @@ module M2 = struct
 
   type t1 = { foos: t0 list } [@@deriving twine, show]
 
-  let () = Imandrakit_twine.Encode.add_cache (module T0) t0_to_twine_ref
+  let () =
+    Imandrakit_twine.Encode.add_cache (module T0) t0_to_twine_ref;
+    Imandrakit_twine.Decode.add_cache t0_of_twine_ref
 
   let myt1 =
     let x1 = { x = 0; y = false } in
@@ -53,5 +59,9 @@ module M2 = struct
 
   let pack1 = Imandrakit_twine.Encode.to_string t1_to_twine myt1
   let () = Format.printf "pack1:@.%s@." (Hex.hexdump_s @@ Hex.of_string pack1)
+
+  let () =
+    Format.printf "dump(t1'):@.%s@." (Imandrakit_twine.Dump.dump_string pack1)
+
   let () = Format.printf "len1: %d@." (String.length pack1)
 end
