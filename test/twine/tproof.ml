@@ -102,7 +102,7 @@ let psize p : int =
   !n
 
 (* XXX: disable this for normal testing, to be deterministic *)
-let enable_time = ref true
+let enable_time = ref false
 
 let timeit what f =
   let t = Unix.gettimeofday () in
