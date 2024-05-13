@@ -1,5 +1,5 @@
 (tests
- (names t1 t2 t3 t4 t5 t6 t7 t8 tproof)
+ (names t1 t2 t3 t4 t5 t6 t7 t8 t9 tproof)
  (libraries imandrakit.twine hex ppx_deriving.runtime)
  (package imandrakit)
  (preprocess
