@@ -755,11 +755,11 @@ let generate_intf_ type_declarations =
         let poly_sers =
           param_names ty
           |> List.map (fun n ->
-                 [%type: [%t A.Typ.var n] Imandrakit_twine.Encode.t])
+                 [%type: [%t A.Typ.var n] Imandrakit_twine.Encode.encoder])
         and poly_desers =
           param_names ty
           |> List.map (fun n ->
-                 [%type: [%t A.Typ.var n] Imandrakit_twine.Decode.t])
+                 [%type: [%t A.Typ.var n] Imandrakit_twine.Decode.decoder])
         in
 
         (* type expression for [ty], like [(int, bool) mypair] *)
@@ -774,13 +774,13 @@ let generate_intf_ type_declarations =
         let decl_ser =
           let ty =
             mk_arrow ~loc poly_sers
-            @@ [%type: [%t tye] Imandrakit_twine.Encode.t]
+            @@ [%type: [%t tye] Imandrakit_twine.Encode.encoder]
           in
           A.Val.mk { loc; txt = name_ser } ty
         and decl_deser =
           let ty =
             mk_arrow ~loc poly_desers
-            @@ [%type: [%t tye] Imandrakit_twine.Decode.t]
+            @@ [%type: [%t tye] Imandrakit_twine.Decode.decoder]
           in
           A.Val.mk { loc; txt = name_deser } ty
         in
