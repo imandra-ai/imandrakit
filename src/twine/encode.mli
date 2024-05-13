@@ -29,9 +29,7 @@ val string : string encoder
 val string_slice : slice encoder
 val blob : string encoder
 val blob_slice : slice encoder
-
-(* TODO: ? val key : unit encoder *)
-val tag : t -> tag:int -> v:offset -> offset
+val tag : t -> tag:int -> v:immediate -> offset
 val pointer : int encoder
 
 (** {2 Arrays} *)

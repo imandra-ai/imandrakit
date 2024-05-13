@@ -140,8 +140,13 @@ let[@inline] deref_rec self off : offset =
   else
     off
 
-let read (self : t) (offset : offset) : Value.t =
-  let offset = deref_rec self offset in
+let read ?(auto_deref = true) (self : t) (offset : offset) : Value.t =
+  let offset =
+    if auto_deref then
+      deref_rec self offset
+    else
+      offset
+  in
   let c = get_char_ self offset in
   let high = get_high c in
   let low = get_low c in

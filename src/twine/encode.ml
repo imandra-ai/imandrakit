@@ -136,12 +136,7 @@ let blob_slice (self : t) (s : slice) =
 
 let[@inline] blob self s = blob_slice self (Slice.of_string s)
 
-let tag (self : t) ~tag ~v : offset =
-  let off = write_first_byte_and_int self ~high:8 ~n:tag in
-  LEB128.Encode.int self.buf v;
-  off
-
-let cstor0 (self : t) ~index : offset =
+let[@inline] cstor0 (self : t) ~index : offset =
   write_first_byte_and_int self ~high:10 ~n:index
 
 let immediate (self : t) (v : immediate) : offset =
@@ -156,12 +151,17 @@ let immediate (self : t) (v : immediate) : offset =
   | Pointer p -> pointer self p
   | Cstor0 index -> cstor0 self ~index
 
+let tag (self : t) ~tag ~(v : immediate) : offset =
+  let off = write_first_byte_and_int self ~high:8 ~n:tag in
+  immediate self v |> ignore_offset;
+  off
+
 let array (self : t) vs : offset =
   let n = Array.length vs in
   let off = write_first_byte_and_int self ~high:6 ~n in
   for i = 0 to n - 1 do
     let v = Array.unsafe_get vs i in
-    ignore_offset @@ immediate self v
+    immediate self v |> ignore_offset
   done;
   off
 

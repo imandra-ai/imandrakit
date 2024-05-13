@@ -70,8 +70,9 @@ val deref_rec : offset decoder
 (** Given any value, follow pointers until a non-pointer value is reached,
     a return its address. *)
 
-val read : Value.t decoder
-(** Read a value of any kind *)
+val read : ?auto_deref:bool -> Value.t decoder
+(** Read a value of any kind.
+ @param auto_deref if true (default), follow pointers implicitly *)
 
 val null : unit decoder
 val bool : bool decoder

@@ -33,14 +33,14 @@ kinds:
   Other values of [n] are reserved.
 - 4: string, length in bytes is [n]. [n] bytes follow.
 - 5: binary blob, length in bytes is [n]. [n] bytes follow.
-- 6: array, number of elements is [n]. Elements follow.
-- 7: dict, number of key/value pairs is [n]. [2*n] elements follow.
-- 8: tag, the tag number is [n]. A single value follows.
+- 6: array, number of elements is [n]. Immediate elements follow.
+- 7: dict, number of key/value pairs is [n]. [2*n] immediate elements follow.
+- 8: tag, the tag number is [n]. A single immediate element follows.
 - 9: reserved
 - 10: cstor0, constructor index is [n]
-- 11: cstor1, constructor index is [n], a single argument follows
+- 11: cstor1, constructor index is [n], a single immediate argument follows
 - 12: cstorN, constructor index is [n], length as LEB128 follows
-      (probably just one byte), then arguments follow
+      (probably just one byte), then immediate arguments follow
 - 13, 14: reserved
   (possible extension: 14: pointer with metadata? [n] is relative offset,
     [n2:LEB128] is pointer to metadata)
@@ -52,6 +52,11 @@ must end with a byte [n:u8] that indicates where this last value starts.
 If the last byte [n] is at address [off], then the actual last value
 starts at [off-n-1]. If the last value is too big, it's turned
 into a pointer and that's what that last byte targets.
+
+An immediate element is, basically, a non-recursive case that is easy to
+{b skip} over to get to the next element. It includes booleans, integers,
+floats, strings, pointers, but not arrays or dictionaries (which
+must be encoded somewhere else and referred to by a pointer).
 
 *)
 

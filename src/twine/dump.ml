@@ -8,11 +8,6 @@ end
 
 let hex_of_string = CCString.to_hex
 
-let add_indent (out : Buffer.t) (indent : int) =
-  for _i = 1 to indent do
-    Buffer.add_char out ' '
-  done
-
 (** Does [s] print ok with "%S"? *)
 let string_is_printable (s : string) : bool =
   try
@@ -39,7 +34,8 @@ let dump_bytes_summary b : string =
   else
     spf "bytes(h'%s%s')" (hex_of_string b) tail
 
-let rec dump_value_nonrec (self : Decode.t) (v : Decode.Value.t) =
+(** Print primitive and a quick view of composite values *)
+let rec dump_primitive (self : Decode.t) (v : Decode.Value.t) =
   match v with
   | Null -> "null"
   | True -> "true"
@@ -53,131 +49,99 @@ let rec dump_value_nonrec (self : Decode.t) (v : Decode.Value.t) =
     else
       spf "%S" s
   | Blob b -> dump_bytes_summary @@ Slice.contents b
-  | Pointer p -> spf "@%x" p
-  | Tag (n, v) -> spf "%d(@%x)" n v
+  | Pointer p -> spf "@0x%x" p
+  | Tag (n, v) -> spf "%d(@0x%x)" n v
   | Array c -> spf "[…[%d omitted]]" (Decode.Array_cursor.length c)
   | Dict c -> spf "{…[%d omitted]}" (Decode.Dict_cursor.length c)
   | Cstor0 idx -> spf "C_%d" idx
   | Cstor1 (idx, p) ->
     let a = Decode.read self @@ deref_rec self p in
-    spf "C_%d(%s)" idx (dump_value_nonrec self a)
+    spf "C_%d(%s)" idx (dump_primitive self a)
   | CstorN (idx, c) ->
     spf "C_%d(%s)" idx
       (String.concat ","
-      @@ List.map (dump_value_nonrec self)
+      @@ List.map (dump_primitive self)
       @@ Decode.Array_cursor.to_list c)
 
-(* Dump a summary of the value, including small map/arrays *)
-let rec dump_summary (self : Decode.t) depth (out : Buffer.t)
-    (v : Decode.Value.t) : unit =
-  let[@inline] recurse out v =
-    if depth <= 0 then
-      Buffer.add_string out (dump_value_nonrec self v)
-    else
-      dump_summary self (depth - 1) out v
-  in
-  match v with
-  | Null | True | False | Int _ | Float _ | String _ | Blob _ ->
-    Buffer.add_string out @@ dump_value_nonrec self v
-  | Array c ->
-    let l = Decode.Array_cursor.to_list c in
-    (match l with
-    | x :: y :: z :: (_ :: _ as tl) ->
-      bpf out "[%a,%a,%a,…(%d)]" recurse x recurse y recurse z (List.length tl)
-    | _ ->
-      bpf out "[";
-      List.iteri
-        (fun i v ->
-          if i > 0 then bpf out ",";
-          recurse out v)
-        l;
-      bpf out "]")
-  | Dict c ->
-    let l = Decode.Dict_cursor.to_list c in
-    let ppkv out (k, v) = bpf out "%a: %a" recurse k recurse v in
-    (match l with
-    | kv1 :: kv2 :: kv3 :: (_ :: _ as tl) ->
-      bpf out "{%a,%a,%a,…(%d)}" ppkv kv1 ppkv kv2 ppkv kv3 (List.length tl)
-    | _ ->
-      bpf out "{";
-      List.iteri
-        (fun i kv ->
-          if i > 0 then bpf out ",";
-          ppkv out kv)
-        l;
-      bpf out "}")
-  | Tag (c, p) ->
-    bpf out "%d(%a)" c recurse (Decode.read self @@ deref_rec self p)
-  | Pointer p ->
-    let v = Decode.read self @@ deref_rec self p in
-    bpf out "&%a @%x" (dump_summary self 3) v p
-  | Cstor0 idx -> bpf out "C_%d" idx
-  | Cstor1 (idx, p) ->
-    let a = Decode.read self @@ deref_rec self p in
-    bpf out "C_%d(%a)" idx (dump_summary self (depth - 1)) a
-  | CstorN (idx, c) ->
-    bpf out "C_%d(" idx;
-    Decode.Array_cursor.to_list c
-    |> List.iteri (fun i v ->
-           if i > 0 then bpf out ",";
-           dump_summary self (depth - 1) out v);
-    bpf out ")"
+type state = {
+  dec: Decode.t;
+  mutable offset: string Int_map.t;  (** Values, by their offset *)
+}
 
-let rec dump_c (self : Decode.t) (indent : int) (out : Buffer.t)
-    (v : Decode.Value.t) : unit =
-  match v with
-  | Null | True | False | Int _ | Float _ | String _ | Blob _ ->
-    Buffer.add_string out @@ dump_value_nonrec self v
-  | Array c ->
-    let l = Decode.Array_cursor.to_list c in
-    (match l with
-    | [] -> bpf out "[]"
-    | _ ->
-      bpf out "Array(%d) [" (List.length l);
-      List.iteri
-        (fun i x ->
-          if i > 0 then bpf out ",";
-          bpf out "\n%a %a" add_indent indent (dump_c self (indent + 2)) x)
-        l;
-      bpf out " ]")
-  | Dict c ->
-    let l = Decode.Dict_cursor.to_list c in
-    (match l with
-    | [] -> bpf out "{}"
-    | _ ->
-      bpf out "Map(%d) {" (List.length l);
-      List.iter
-        (fun (x, y) ->
-          bpf out "\n%a%a:\n%a%a" add_indent indent
-            (dump_c self (indent + 2))
-            x add_indent (indent + 2)
-            (dump_c self (indent + 2))
-            y)
-        l;
-      bpf out " }")
-  | Pointer p ->
-    let pointee = Decode.read self @@ deref_rec self p in
-    bpf out "&%a @%d" (dump_summary self 3) pointee p
-  | Tag (c, x) ->
-    bpf out "%d(%a)" c (dump_c self indent)
-      (Decode.read self @@ deref_rec self x)
-  | Cstor0 idx -> bpf out "C_%d" idx
-  | Cstor1 (idx, p) ->
-    let a = Decode.read self @@ deref_rec self p in
-    bpf out "C_%d(%a)" idx (dump_summary self 3) a
-  | CstorN (idx, c) ->
-    bpf out "C_%d(" idx;
-    Decode.Array_cursor.to_list c
-    |> List.iteri (fun i v ->
-           if i > 0 then bpf out ",";
-           dump_summary self 3 out v);
-    bpf out ")"
+let add_offset (self : state) i s = self.offset <- Int_map.add i s self.offset
+
+let rec dump_rec (self : state) (off : offset) : unit =
+  (* let off = Decode.deref_rec self.dec off in *)
+  let decode_sub off =
+    dump_rec self off;
+    Decode.read ~auto_deref:false self.dec off
+  in
+
+  if not (Int_map.mem off self.offset) then (
+    let v = Decode.read self.dec off in
+    let printed =
+      match v with
+      | Null | True | False | Int _ | Float _ | String _ | Blob _ ->
+        dump_primitive self.dec v
+      | Array c ->
+        let out = Buffer.create 32 in
+        let l = Decode.Array_cursor.to_list_of decode_sub c in
+        (match l with
+        | [] -> bpf out "[]"
+        | _ ->
+          bpf out "Array(%d) [" (List.length l);
+          List.iteri
+            (fun i x ->
+              if i > 0 then bpf out ",";
+              bpf out "%s" (dump_primitive self.dec x))
+            l;
+          bpf out "]");
+        Buffer.contents out
+      | Dict c ->
+        let l = Decode.Dict_cursor.to_list c in
+        (match l with
+        | [] -> "{}"
+        | _ ->
+          let out = Buffer.create 32 in
+          bpf out "Map(%d) {" (List.length l);
+          List.iteri
+            (fun i (k, v) ->
+              if i > 0 then bpf out ",";
+              bpf out "%s: %s"
+                (dump_primitive self.dec k)
+                (dump_primitive self.dec v))
+            l;
+          bpf out "}";
+          Buffer.contents out)
+      | Pointer p ->
+        let pointee = Decode.read self.dec @@ deref_rec self.dec p in
+        spf "@0x%x (%s)" p (dump_primitive self.dec pointee)
+      | Tag (c, x) ->
+        let v = decode_sub x in
+        spf "%d(%s)" c (dump_primitive self.dec v)
+      | Cstor0 idx -> spf "C_%d" idx
+      | Cstor1 (idx, p) ->
+        let v = decode_sub p in
+        spf "C_%d(%s)" idx (dump_primitive self.dec v)
+      | CstorN (idx, c) ->
+        let out = Buffer.create 32 in
+        bpf out "C_%d(" idx;
+        Decode.Array_cursor.to_list_of decode_sub c
+        |> List.iteri (fun i v ->
+               if i > 0 then bpf out ",";
+               bpf out "%s" (dump_primitive self.dec v));
+        bpf out ")";
+        Buffer.contents out
+    in
+    add_offset self off printed
+  )
 
 let dump_slice (sl : slice) : string =
-  let buf = Buffer.create 32 in
   let dec = Decode.create sl in
-  let v = Decode.read_entrypoint dec in
-  dump_c dec 0 buf v;
+  let st = { offset = Int_map.empty; dec } in
+  dump_rec st (Decode.get_entrypoint dec);
+  let buf = Buffer.create 32 in
+  Int_map.iter (fun off printed -> bpf buf "[0x%x]: %s\n" off printed) st.offset;
   Buffer.contents buf
 
 let dump_string s : string = dump_slice (Slice.of_string s)
