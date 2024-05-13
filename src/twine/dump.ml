@@ -73,8 +73,12 @@ let add_offset (self : state) i s = self.offset <- Int_map.add i s self.offset
 let rec dump_rec (self : state) (off : offset) : unit =
   (* let off = Decode.deref_rec self.dec off in *)
   let decode_sub off =
-    dump_rec self off;
-    Decode.read ~auto_deref:false self.dec off
+    let v = Decode.read ~auto_deref:false self.dec off in
+    match v with
+    | Pointer p ->
+      dump_rec self p;
+      v
+    | _ -> v
   in
 
   if not (Int_map.mem off self.offset) then (
