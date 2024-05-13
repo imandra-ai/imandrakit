@@ -407,6 +407,13 @@ module Array_cursor = struct
     consume self;
     v
 
+  let to_iter_of self f yield =
+    while length self > 0 do
+      let x = f (current self) in
+      consume self;
+      yield x
+    done
+
   let to_iter self yield =
     while length self > 0 do
       yield (get_value_and_consume self)
@@ -459,6 +466,14 @@ module Dict_cursor = struct
   let to_iter self yield =
     while length self > 0 do
       yield (get_key_value_and_consume self)
+    done
+
+  let to_iter_of self f yield =
+    while length self > 0 do
+      let k, v = current self in
+      let res = f k v in
+      consume self;
+      yield res
     done
 
   let to_array_of f self =

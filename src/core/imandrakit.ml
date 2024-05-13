@@ -4,6 +4,7 @@
     our projects. *)
 
 include Imandrakit_common
+include Imandrakit_bytes
 
 (** {2 Re-exports} *)
 
@@ -50,5 +51,6 @@ module Util_b64 = Util_b64
 module Util_gzip = Util_gzip
 module Util_serpack = Util_serpack
 module Util_sockaddr = Util_sockaddr
+module Util_twine = Util_twine
 module Util_zip = Util_zip
 module Util_zlib = Util_zlib

@@ -49,6 +49,7 @@ module Array_cursor : sig
   val get_value_and_consume : t -> Value.t
   val to_iter : t -> Value.t Iter.t
   val to_array_of : (offset -> 'a) -> t -> 'a array
+  val to_iter_of : t -> (offset -> 'a) -> 'a Iter.t
   val to_list : t -> Value.t list
   val to_list_of : (offset -> 'a) -> t -> 'a list
 end
@@ -61,6 +62,7 @@ module Dict_cursor : sig
   val consume : t -> unit
   val get_key_value_and_consume : t -> Value.t * Value.t
   val to_iter : t -> (Value.t * Value.t) Iter.t
+  val to_iter_of : t -> (offset -> offset -> 'a) -> 'a Iter.t
   val to_array_of : (offset -> offset -> 'a) -> t -> 'a array
   val to_list : t -> (Value.t * Value.t) list
   val to_list_of : (offset -> offset -> 'a) -> t -> 'a list

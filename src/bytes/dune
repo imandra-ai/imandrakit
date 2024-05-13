@@ -1,0 +1,10 @@
+
+(library
+ (public_name imandrakit.bytes)
+ (name imandrakit_bytes)
+ (preprocess
+  (pps ppx_deriving.std))
+ (flags :standard -open Imandrakit_common)
+ (libraries
+  imandrakit.common
+  containers))

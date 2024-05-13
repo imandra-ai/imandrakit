@@ -2,13 +2,15 @@
  (public_name imandrakit)
  (name imandrakit)
  (preprocess
-  (pps ppx_deriving.std imandrakit.ser-pack.ppx))
+  (pps ppx_deriving.std imandrakit.ser-pack.ppx imandrakit.twine.ppx))
  (flags :standard -open Imandrakit_common)
  (private_modules internal_)
  (libraries
   imandrakit.common
+  imandrakit.bytes
   imandrakit.ser
   imandrakit.ser-pack
+  imandrakit.twine
   imandrakit.error
   containers
   iter

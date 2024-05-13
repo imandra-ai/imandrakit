@@ -3,8 +3,8 @@
  (public_name imandrakit.leb128)
  (synopsis
   "LEB128 encoding (https://en.wikipedia.org/wiki/LEB128) for imandrakit")
- (flags :standard -open Imandrakit)
- (libraries imandrakit)
+ (flags :standard -open Imandrakit_bytes)
+ (libraries imandrakit.bytes)
  (foreign_stubs
   (language c)
   (flags :standard -std=c99 -O2)
