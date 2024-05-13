@@ -4,8 +4,7 @@ module Slice = Byte_slice
 module LEB128 = Imandrakit_leb128.Decode
 
 type cached = ..
-
-module Offset_tbl = Int_tbl
+type cached += Miss
 
 module type CACHE_KEY = sig
   type elt
@@ -14,7 +13,7 @@ end
 
 type t = {
   sl: slice;
-  cache: cached Offset_tbl.t;
+  cache: cached array;
 }
 
 type cstor_index = int [@@deriving show]
@@ -29,7 +28,7 @@ let show_cursor (self : cursor) =
   spf "<twine.cursor :off=%d :num-items=%d>" self.c_offset self.c_num_items
 
 let pp_cursor = Fmt.of_to_string show_cursor
-let[@inline] create sl : t = { sl; cache = Offset_tbl.create 8 }
+let[@inline] create sl : t = { sl; cache = Array.make sl.len Miss }
 let[@inline] of_string s = create @@ Slice.of_string s
 
 type 'a decoder = t -> offset -> 'a
@@ -265,7 +264,7 @@ let bool self offset =
     | _ -> fail_decode_type_ ~what:"bool" offset)
   | _ -> fail_decode_type_ ~what:"bool" offset
 
-let int64 self offset =
+let[@inline] int64 self offset =
   let offset = deref_rec self offset in
   let c = get_char_ self offset in
   let high = get_high c in
@@ -279,7 +278,7 @@ let int64 self offset =
     (* [-i-1] *)
     Int64.(sub (neg i) 1L)
   | _ ->
-    Printf.eprintf "high=%d, low=%d\n%!" high low;
+    (* Printf.eprintf "high=%d, low=%d\n%!" high low; *)
     fail_decode_type_ ~what:"integer" offset
 
 let[@inline] int_truncate self offset = Int64.to_int @@ int64 self offset
@@ -486,17 +485,25 @@ let create_cache_key (type a) () : a cache_key =
   end)
 
 let with_cache (type a) (key : a cache_key) (dec : a decoder) : a decoder =
- fun st c ->
+ fun st off ->
   let (module K) = key in
   (* make sure we use the canonical offset *)
-  let c = deref_rec st c in
-  match Offset_tbl.find st.cache c with
-  | K.C v -> v
-  | _ -> dec st c
-  | exception Not_found ->
-    let v = dec st c in
-    Offset_tbl.add st.cache c (K.C v);
-    v
+  let off = deref_rec st off in
+  let c = get_char_ st off in
+  let high = get_high c in
+  if high < 6 || high = 10 then
+    (* easy immediate value *)
+    dec st off
+  else (
+    (* go through the cache *)
+    match st.cache.(off) with
+    | K.C v -> v
+    | Miss ->
+      let v = dec st off in
+      st.cache.(off) <- K.C v;
+      v
+    | _ -> (* weird collision, just don't cache… *) dec st off
+  )
 
 let add_cache (dec_ref : _ decoder ref) : unit =
   let key = create_cache_key () in
