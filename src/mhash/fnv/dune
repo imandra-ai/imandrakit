@@ -1,0 +1,5 @@
+(library
+  (name imandrakit_mhash_fnv)
+  (public_name imandrakit.mhash.fnv)
+  (synopsis "The FNV hash algorithm for Mhash")
+  (libraries imandrakit.mhash))

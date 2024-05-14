@@ -1,0 +1,7 @@
+
+
+(test
+  (name t1)
+  (libraries imandrakit.mhash imandrakit.mhash.fnv)
+  (flags :standard -w -60-69-70)
+  (preprocess (pps imandrakit.mhash.ppx)))

@@ -1,0 +1,8 @@
+(library
+ (name imandrakit_mhash_ppx)
+ (public_name imandrakit.mhash.ppx)
+ (kind ppx_deriver)
+ (ppx_runtime_libraries imandrakit.mhash)
+ (libraries ppxlib ppxlib.astlib)
+ (preprocess
+  (pps ppxlib.metaquot)))

@@ -1,0 +1,4 @@
+(library
+  (name imandrakit_mhash)
+  (public_name imandrakit.mhash)
+  (synopsis "Modular hashing interface"))
