@@ -119,7 +119,7 @@ let p_twine =
   timeit "twine" @@ fun () -> Imandrakit_twine.Encode.to_string proof_to_twine p
 
 (* XXX: full dump, for debug *)
-let enable_dump = ref true
+let enable_dump = ref false
 
 let () =
   if !enable_dump then
