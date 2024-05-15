@@ -602,12 +602,16 @@ let generate_impl_ (rec_flag, type_declarations) =
           let loc = ty.ptype_loc in
           let f_encode_name = ser_name_ref_of_ty ty in
           let f_decode_name = deser_name_ref_of_ty ty in
-          let def_encode = [%expr ref (fun _ _ -> assert false)] in
+          let def_encode =
+            [%expr ref (fun (_ : Imandrakit_twine.Encode.t) _ -> assert false)]
+          in
           let str_encode =
             A.Str.value Nonrecursive
               [ A.Vb.mk (A.Pat.var { loc; txt = f_encode_name }) def_encode ]
           in
-          let def_decode = [%expr ref (fun _ _ -> assert false)] in
+          let def_decode =
+            [%expr ref (fun (_ : Imandrakit_twine.Decode.t) _ -> assert false)]
+          in
           let str_decode =
             A.Str.value Nonrecursive
               [ A.Vb.mk (A.Pat.var { loc; txt = f_decode_name }) def_decode ]
