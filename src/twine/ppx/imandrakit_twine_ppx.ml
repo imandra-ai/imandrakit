@@ -480,25 +480,37 @@ let decode_expr_of_tydecl (decl : type_declaration) : expression =
           |> List.split
         in
 
-        let lhs, rhs =
+        let lhs, guard, rhs =
           match pcd_args with
           | Pcstr_tuple [] ->
             let lhs = [%pat? Imandrakit_twine.Decode.Value.Cstor0 [%p p_index]]
             and rhs = A.Exp.construct (lid_of_str cname) None in
-            lhs, rhs
+            lhs, None, rhs
           | Pcstr_tuple [ ty0 ] ->
             let lhs =
-              [%pat? Imandrakit_twine.Decode.Value.Cstor1 ([%p p_index], p)]
+              [%pat? Imandrakit_twine.Decode.Value.CstorN ([%p p_index], args)]
+            in
+            let guard =
+              [%expr Imandrakit_twine.Decode.Array_cursor.length args = 1]
             in
             let rhs =
               [%expr
-                let x = [%e decode_expr_of_ty [%expr p] ~ty:ty0] in
+                let offset =
+                  Imandrakit_twine.Decode.Array_cursor.current args
+                in
+                let x = [%e decode_expr_of_ty [%expr offset] ~ty:ty0] in
                 [%e A.Exp.construct (lid_of_str cname) (Some [%expr x])]]
             in
-            lhs, rhs
+            lhs, Some guard, rhs
           | Pcstr_tuple l ->
             let lhs =
               [%pat? Imandrakit_twine.Decode.Value.CstorN ([%p p_index], args)]
+            in
+
+            let guard =
+              let arity = A.Exp.constant (A.Const.int @@ List.length l) in
+              [%expr
+                Imandrakit_twine.Decode.Array_cursor.length args = [%e arity]]
             in
             let vars, read_args = read_cstor_args l in
             let rhs =
@@ -507,10 +519,15 @@ let decode_expr_of_tydecl (decl : type_declaration) : expression =
                 let_ Nonrecursive read_args
                 @@ construct (lid_of_str cname) (Some args))
             in
-            lhs, rhs
+            lhs, Some guard, rhs
           | Pcstr_record r ->
             let lhs =
               [%pat? Imandrakit_twine.Decode.Value.CstorN ([%p p_index], args)]
+            in
+            let guard =
+              let arity = A.Exp.constant (A.Const.int @@ List.length r) in
+              [%expr
+                Imandrakit_twine.Decode.Array_cursor.length args = [%e arity]]
             in
             let rhs =
               let vars, read_args =
@@ -527,9 +544,9 @@ let decode_expr_of_tydecl (decl : type_declaration) : expression =
                 let_ Nonrecursive read_args
                 @@ construct (lid_of_str cname) (Some r))
             in
-            lhs, rhs
+            lhs, Some guard, rhs
         in
-        B.case ~lhs ~guard:None ~rhs
+        B.case ~lhs ~guard ~rhs
       in
       let fail =
         let lhs = [%pat? _]

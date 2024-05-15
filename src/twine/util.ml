@@ -13,11 +13,11 @@ module Result = struct
     Decode.(
       fun dec c ->
         match read dec c with
-        | Cstor1 (0, off) ->
-          let x = p1 dec off in
+        | CstorN (0, c) when Array_cursor.length c = 1 ->
+          let x = p1 dec (Array_cursor.current c) in
           Ok x
-        | Cstor1 (1, off) ->
-          let e = p2 dec off in
+        | CstorN (1, c) when Array_cursor.length c = 1 ->
+          let e = p2 dec (Array_cursor.current c) in
           Error e
         | _ -> fail "expected result")
 end

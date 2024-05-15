@@ -55,7 +55,6 @@ module Value = struct
     | Dict of dict_cursor
     | Tag of int * offset
     | Cstor0 of cstor_index
-    | Cstor1 of cstor_index * offset
     | CstorN of cstor_index * array_cursor
   [@@deriving show { with_path = false }]
 end
@@ -190,7 +189,10 @@ let read ?(auto_deref = true) (self : t) (offset : offset) : Value.t =
     Value.Cstor0 idx_cstor
   | 11 ->
     let idx_cstor, size_idx_cstor = get_int_truncate_ self offset ~low in
-    Value.Cstor1 (idx_cstor, offset + 1 + size_idx_cstor)
+    let c : cursor =
+      { c_dec = self; c_num_items = 1; c_offset = offset + 1 + size_idx_cstor }
+    in
+    Value.CstorN (idx_cstor, c)
   | 12 ->
     let idx_cstor, size_idx_cstor = get_int_truncate_ self offset ~low in
     let offset_after_n = offset + 1 + size_idx_cstor in

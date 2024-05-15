@@ -29,7 +29,6 @@ module Value : sig
     | Dict of dict_cursor
     | Tag of int * offset
     | Cstor0 of cstor_index
-    | Cstor1 of cstor_index * offset
     | CstorN of cstor_index * array_cursor
   [@@deriving show { with_path = false }]
 end

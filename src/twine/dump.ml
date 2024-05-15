@@ -54,9 +54,6 @@ let rec dump_primitive (self : Decode.t) (v : Decode.Value.t) =
   | Array c -> spf "[…[%d omitted]]" (Decode.Array_cursor.length c)
   | Dict c -> spf "{…[%d omitted]}" (Decode.Dict_cursor.length c)
   | Cstor0 idx -> spf "C_%d" idx
-  | Cstor1 (idx, p) ->
-    let a = Decode.read self @@ deref_rec self p in
-    spf "C_%d(%s)" idx (dump_primitive self a)
   | CstorN (idx, c) ->
     spf "C_%d(%s)" idx
       (String.concat ","
@@ -124,9 +121,6 @@ let rec dump_rec (self : state) (off : offset) : unit =
         let v = decode_sub x in
         spf "%d(%s)" c (dump_primitive self.dec v)
       | Cstor0 idx -> spf "C_%d" idx
-      | Cstor1 (idx, p) ->
-        let v = decode_sub p in
-        spf "C_%d(%s)" idx (dump_primitive self.dec v)
       | CstorN (idx, c) ->
         let out = Buffer.create 32 in
         bpf out "C_%d(" idx;
