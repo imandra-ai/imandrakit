@@ -22,6 +22,9 @@ module type S = sig
   val n_levels : _ t -> int
   val push_level : _ t -> unit
   val pop_levels : 'a t -> int -> unit
+
+  val pop_levels_and_keep : 'a t -> int -> unit
+  (** pop [n] levels maintaining the current tbl *)
 end
 
 module type ARG = sig
