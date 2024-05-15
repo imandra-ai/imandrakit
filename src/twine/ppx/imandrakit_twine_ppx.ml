@@ -537,10 +537,12 @@ let decode_expr_of_tydecl (decl : type_declaration) : expression =
           let err =
             A.Exp.constant
               (A.Const.string
-              @@ spf "expected value of type %s (defined in at %%s)"
+              @@ spf "expected value of type %s (defined in at %%s), got %%s"
                    decl.ptype_name.txt)
           in
-          [%expr Imandrakit_twine.Decode.failf [%e err] __LOC__]
+          [%expr
+            Imandrakit_twine.Decode.failf [%e err] __LOC__
+              (Imandrakit_twine.Decode.Value.show e)]
         in
         B.case ~lhs ~rhs ~guard:None
       in
