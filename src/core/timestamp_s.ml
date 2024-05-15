@@ -1,6 +1,7 @@
 (** Wall-clock timestamps as a float *)
 
-type t = (float[@printer Util.pp_duration_s]) [@@deriving show, eq, serpack]
+type t = (float[@printer Util.pp_duration_s])
+[@@deriving show, eq, serpack, twine]
 (** Timestamps *)
 
 let now : unit -> t = Util.ptime_now
