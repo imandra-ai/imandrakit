@@ -19,7 +19,7 @@ module M1 = struct
 
   Format.printf "myt1: %a@." pp_t1 myt1
 
-  let pack1 = Imandrakit_twine.Encode.to_string t1_to_twine myt1
+  let pack1 = Imandrakit_twine.Encode.encode_to_string t1_to_twine myt1
   let () = Format.printf "pack1:@.%s@." (Hex.hexdump_s @@ Hex.of_string pack1)
 
   let () =
@@ -57,7 +57,7 @@ module M2 = struct
 
   Format.printf "myt1': %a@." pp_t1 myt1
 
-  let pack1 = Imandrakit_twine.Encode.to_string t1_to_twine myt1
+  let pack1 = Imandrakit_twine.Encode.encode_to_string t1_to_twine myt1
   let () = Format.printf "pack1:@.%s@." (Hex.hexdump_s @@ Hex.of_string pack1)
 
   let () =

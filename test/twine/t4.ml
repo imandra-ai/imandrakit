@@ -4,7 +4,7 @@ type t1 =
 [@@deriving show, twine]
 
 let x = F "hello\x000world"
-let enc_x = Imandrakit_twine.Encode.to_string t1_to_twine x;;
+let enc_x = Imandrakit_twine.Encode.encode_to_string t1_to_twine x;;
 
 Format.printf "x: %a@." pp_t1 x;;
 Format.printf "enc(x): %S@." enc_x;;
@@ -18,7 +18,7 @@ Format.printf "deser: %a@." pp_t1 x'
 type t2 = { t1s: t1 option list } [@@deriving show, twine]
 
 let t2 = { t1s = [ Some x; None; Some x ] }
-let enc_t2 = Imandrakit_twine.Encode.to_string t2_to_twine t2
+let enc_t2 = Imandrakit_twine.Encode.encode_to_string t2_to_twine t2
 let () = Format.printf "t2: %a@." pp_t2 t2
 let () = Format.printf "enc(t2): %S@." enc_t2
 let () = Format.printf "len: %d@." (String.length enc_t2)

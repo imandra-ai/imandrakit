@@ -4,7 +4,7 @@ type foo =
 [@@deriving twine, eq, show]
 
 let x = B { x = 42 }
-let x_str = Imandrakit_twine.Encode.to_string foo_to_twine x
+let x_str = Imandrakit_twine.Encode.encode_to_string foo_to_twine x
 let x' = Imandrakit_twine.Decode.decode_string foo_of_twine x_str
 
 let () =

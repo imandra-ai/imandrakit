@@ -25,7 +25,7 @@ type many_foos = { foos: foo list } [@@deriving twine]
 
 let mkfoo ?y x : foo = { x; y }
 let foos = { foos = List.init 50 (fun _ -> mkfoo ~y:"yolo" 9999) }
-let s_foos = Imandrakit_twine.Encode.to_string many_foos_to_twine foos
+let s_foos = Imandrakit_twine.Encode.encode_to_string many_foos_to_twine foos
 
 let () =
   Format.printf "many foos as str: %d bytes@.%s@." (String.length s_foos)
@@ -96,7 +96,7 @@ let big_tree =
   t_ref (t t7 t7)
 
 let () = Format.printf "big_tree: %a@." pp_tree_ref big_tree
-let str_big_tree = Imandrakit_twine.Encode.to_string tree_ref_to_twine big_tree
+let str_big_tree = Imandrakit_twine.Encode.encode_to_string tree_ref_to_twine big_tree
 
 let () =
   Format.printf "ser(big_tree):@.%s@."

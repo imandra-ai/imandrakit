@@ -103,7 +103,7 @@ let timeit ?(n = 1) what f =
 let make_twine () =
   let st = Random.State.make [| 42 |] in
   let p = gen_proof st 20 in
-  Imandrakit_twine.Encode.to_string proof_to_twine p
+  Imandrakit_twine.Encode.encode_to_string proof_to_twine p
 
 let () =
   match Sys.argv.(1) with

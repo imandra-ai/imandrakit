@@ -143,7 +143,7 @@ let write_immediate (self : t) (v : immediate) : offset =
   | Pointer p -> write_pointer self p
   | Cstor0 index -> write_cstor0 self ~index
 
-let write_or_deref_immediate (self : t) (v : immediate) : offset =
+let write_or_ref_immediate (self : t) (v : immediate) : offset =
   match v with
   | Pointer p -> p
   | _ -> write_immediate self v
@@ -216,7 +216,7 @@ let cstor (self : t) ~(index : int) (args : immediate array) : immediate =
     Immediate.pointer off
 
 let finalize (self : t) ~(entrypoint : immediate) : slice =
-  let top = write_or_deref_immediate self entrypoint in
+  let top = write_or_ref_immediate self entrypoint in
   assert (top < self.buf.len);
 
   let rec finalize_offset top =

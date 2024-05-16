@@ -43,7 +43,7 @@ let myx2_big = { a = B; b = [| [ []; [ c0; c0 ] ] |]; c = Some [ myx2; myx2 ] }
 
 Format.printf "start with myx2:@.%a@." pp_x2 myx2
 
-let s = Imandrakit_twine.Encode.to_string x2_to_twine myx2
+let s = Imandrakit_twine.Encode.encode_to_string x2_to_twine myx2
 let () = Printf.printf "serialized to\n%s\n" (Hex.hexdump_s @@ Hex.of_string s)
 let () = Printf.printf "len: %d\n" (String.length s)
 let s' = Marshal.to_string myx2 [ Marshal.No_sharing ]
@@ -54,7 +54,7 @@ let () = Format.printf "myx2 after roundtrip:@.%a@." pp_x2 foo2;;
 
 assert (foo2 = myx2)
 
-let s_big = Imandrakit_twine.Encode.to_string x2_to_twine myx2_big
+let s_big = Imandrakit_twine.Encode.encode_to_string x2_to_twine myx2_big
 let () = Printf.printf "len: %d\n" (String.length s_big)
 let s'_big = Marshal.to_string myx2_big [ Marshal.No_sharing ]
 let () = Printf.printf "len(big) with marshal: %d\n" (String.length s'_big)

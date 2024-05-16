@@ -19,7 +19,7 @@ let b : bar2 =
   }
 
 let () = Format.printf "b: %a@." pp_bar2 b
-let s = Imandrakit_twine.Encode.to_string bar2_to_twine b
+let s = Imandrakit_twine.Encode.encode_to_string bar2_to_twine b
 let () = Format.printf "len=%d@." (String.length s)
 
 let () =

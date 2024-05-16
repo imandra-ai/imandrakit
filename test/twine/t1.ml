@@ -5,7 +5,7 @@ type foo = {
 [@@deriving twine, show]
 
 let foo1 = { a = 7; b = 2.0 }
-let s = Imandrakit_twine.Encode.to_string foo_to_twine foo1;;
+let s = Imandrakit_twine.Encode.encode_to_string foo_to_twine foo1;;
 
 Printf.printf "serialized %s to %S\nhex:\n%s\n" (show_foo foo1) s
   (Hex.hexdump_s (Hex.of_string s))

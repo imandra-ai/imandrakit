@@ -25,7 +25,7 @@ let t0 =
   }
 
 let () = Format.printf "start with %a@." pp t0
-let s = Imandrakit_twine.Encode.to_string to_twine t0
+let s = Imandrakit_twine.Encode.encode_to_string to_twine t0
 let () = Format.printf "result is:@.%s@." (Hex.hexdump_s @@ Hex.of_string s);;
 
 Format.printf "len=%d@." (String.length s);;

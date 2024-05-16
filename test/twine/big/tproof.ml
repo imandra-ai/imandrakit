@@ -116,7 +116,7 @@ let p = gen_proof st 20
 let () = Format.printf "size(p): %d@." (psize p)
 
 let p_twine =
-  timeit "twine" @@ fun () -> Imandrakit_twine.Encode.to_string proof_to_twine p
+  timeit "twine" @@ fun () -> Imandrakit_twine.Encode.encode_to_string proof_to_twine p
 
 (* XXX: full dump, for debug *)
 let enable_dump = ref false
