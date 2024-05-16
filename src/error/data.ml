@@ -45,7 +45,6 @@ let empty = M.empty
 let is_empty = M.is_empty
 let get = M.find
 let add = M.add
-let fold = M.fold
 let of_iter i = Iter.fold (fun m (M.B (k, v)) -> add k v m) empty i
 
 let to_twine : t Twine.encoder =
