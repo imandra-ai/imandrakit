@@ -235,10 +235,12 @@ let finalize (self : t) ~(entrypoint : immediate) : slice =
 let[@inline] finalize_copy self ~entrypoint : string =
   Slice.contents @@ finalize self ~entrypoint
 
-let to_string (e : _ encoder) x : string =
+let encode_to_string (e : _ encoder) x : string =
   let enc = create () in
   let entrypoint = e enc x in
   finalize_copy enc ~entrypoint
+
+let to_string = encode_to_string
 
 open struct
   let cache_id_ = Atomic.make 0
