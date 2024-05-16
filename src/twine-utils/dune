@@ -1,0 +1,14 @@
+(executable
+ (name main)
+ (public_name twine_utils)
+ (package twine-utils)
+ (preprocess
+  (pps ppx_subliner ppx_deriving.std))
+ (libraries
+  yojson
+  hex
+  containers
+  trace.core
+  trace-tef
+  imandrakit
+  imandrakit.twine))
