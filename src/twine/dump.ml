@@ -22,10 +22,11 @@ let string_is_printable (s : string) : bool =
 
 let deref_rec = Decode.deref_rec
 
-let dump_bytes_summary b : string =
+let dump_bytes_summary ~string_ellipsis_threshold b : string =
   let b, tail =
-    if String.length b > 20 then
-      String.sub b 0 20, spf "…[%dB omitted]" (String.length b - 20)
+    if String.length b > string_ellipsis_threshold then
+      ( String.sub b 0 string_ellipsis_threshold,
+        spf "…[%dB omitted]" (String.length b - string_ellipsis_threshold) )
     else
       b, ""
   in
@@ -34,8 +35,15 @@ let dump_bytes_summary b : string =
   else
     spf "bytes(h'%s%s')" (hex_of_string b) tail
 
+type state = {
+  dec: Decode.t;
+  string_ellipsis_threshold: int;
+  mutable offset: string Int_map.t;  (** Values, by their offset *)
+}
+
 (** Print primitive and a quick view of composite values *)
-let rec dump_primitive (self : Decode.t) (v : Decode.Value.t) =
+let rec dump_primitive (self : state) (v : Decode.Value.t) =
+  let string_ellipsis_threshold = self.string_ellipsis_threshold in
   match v with
   | Null -> "null"
   | True -> "true"
@@ -44,11 +52,13 @@ let rec dump_primitive (self : Decode.t) (v : Decode.Value.t) =
   | Float f -> spf "%f" f
   | String s ->
     let s = Slice.contents s in
-    if String.length s > 20 then
-      spf "%S[…%d omitted]" (String.sub s 0 20) (String.length s - 20)
+    if String.length s > string_ellipsis_threshold then
+      spf "%S[…%d omitted]"
+        (String.sub s 0 string_ellipsis_threshold)
+        (String.length s - string_ellipsis_threshold)
     else
       spf "%S" s
-  | Blob b -> dump_bytes_summary @@ Slice.contents b
+  | Blob b -> dump_bytes_summary ~string_ellipsis_threshold @@ Slice.contents b
   | Pointer p -> spf "@0x%x" p
   | Tag (n, v) -> spf "%d(@0x%x)" n v
   | Array c -> spf "[…[%d omitted]]" (Decode.Array_cursor.length c)
@@ -59,11 +69,6 @@ let rec dump_primitive (self : Decode.t) (v : Decode.Value.t) =
       (String.concat ","
       @@ List.map (dump_primitive self)
       @@ Decode.Array_cursor.to_list c)
-
-type state = {
-  dec: Decode.t;
-  mutable offset: string Int_map.t;  (** Values, by their offset *)
-}
 
 let add_offset (self : state) i s = self.offset <- Int_map.add i s self.offset
 
@@ -83,43 +88,45 @@ let rec dump_rec (self : state) (off : offset) : unit =
     let printed =
       match v with
       | Null | True | False | Int _ | Float _ | String _ | Blob _ ->
-        dump_primitive self.dec v
+        dump_primitive self v
       | Array c ->
         let out = Buffer.create 32 in
         let l = Decode.Array_cursor.to_list_of decode_sub c in
         (match l with
         | [] -> bpf out "[]"
         | _ ->
-          bpf out "Array(%d) [" (List.length l);
+          bpf out "[";
           List.iteri
             (fun i x ->
-              if i > 0 then bpf out ",";
-              bpf out "%s" (dump_primitive self.dec x))
+              if i > 0 then bpf out ", ";
+              bpf out "%s" (dump_primitive self x))
             l;
-          bpf out "]");
+          bpf out "] (len=%d)" (List.length l));
         Buffer.contents out
       | Dict c ->
-        let l = Decode.Dict_cursor.to_list c in
+        let l =
+          Decode.Dict_cursor.to_list_of
+            (fun k v -> decode_sub k, decode_sub v)
+            c
+        in
         (match l with
         | [] -> "{}"
         | _ ->
           let out = Buffer.create 32 in
-          bpf out "Map(%d) {" (List.length l);
+          bpf out "{";
           List.iteri
             (fun i (k, v) ->
-              if i > 0 then bpf out ",";
-              bpf out "%s: %s"
-                (dump_primitive self.dec k)
-                (dump_primitive self.dec v))
+              if i > 0 then bpf out ", ";
+              bpf out "%s: %s" (dump_primitive self k) (dump_primitive self v))
             l;
-          bpf out "}";
+          bpf out "} (len=%d)" (List.length l);
           Buffer.contents out)
       | Pointer p ->
         let pointee = Decode.read self.dec @@ deref_rec self.dec p in
-        spf "@0x%x (%s)" p (dump_primitive self.dec pointee)
+        spf "@0x%x (%s)" (off - p - 1) (dump_primitive self pointee)
       | Tag (c, x) ->
         let v = decode_sub x in
-        spf "%d(%s)" c (dump_primitive self.dec v)
+        spf "%d(%s)" c (dump_primitive self v)
       | Cstor0 idx -> spf "C_%d" idx
       | CstorN (idx, c) ->
         let out = Buffer.create 32 in
@@ -127,19 +134,23 @@ let rec dump_rec (self : state) (off : offset) : unit =
         Decode.Array_cursor.to_list_of decode_sub c
         |> List.iteri (fun i v ->
                if i > 0 then bpf out ",";
-               bpf out "%s" (dump_primitive self.dec v));
+               bpf out "%s" (dump_primitive self v));
         bpf out ")";
         Buffer.contents out
     in
     add_offset self off printed
   )
 
-let dump_slice (sl : slice) : string =
+let default_string_ellipsis_threshold = 30
+
+let dump_slice ?(string_ellipsis_threshold = default_string_ellipsis_threshold)
+    (sl : slice) : string =
   let dec = Decode.create sl in
-  let st = { offset = Int_map.empty; dec } in
+  let st = { offset = Int_map.empty; dec; string_ellipsis_threshold } in
   dump_rec st (Decode.get_entrypoint dec);
   let buf = Buffer.create 32 in
   Int_map.iter (fun off printed -> bpf buf "[0x%x]: %s\n" off printed) st.offset;
   Buffer.contents buf
 
-let dump_string s : string = dump_slice (Slice.of_string s)
+let dump_string ?string_ellipsis_threshold s : string =
+  dump_slice ?string_ellipsis_threshold (Slice.of_string s)
