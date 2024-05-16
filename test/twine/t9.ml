@@ -17,6 +17,8 @@ let () =
   assert (Foo.some_t = Imandrakit_twine.Decode.decode_string Foo.of_twine s)
 
 let () =
-  let s = Imandrakit_twine.Encode.encode_to_string Foo.t2_to_twine { foo = 41 } in
+  let s =
+    Imandrakit_twine.Encode.encode_to_string Foo.t2_to_twine { foo = 41 }
+  in
   assert (
     { Foo.foo = 41 } = Imandrakit_twine.Decode.decode_string Foo.t2_of_twine s)

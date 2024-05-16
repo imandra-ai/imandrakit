@@ -96,7 +96,9 @@ let big_tree =
   t_ref (t t7 t7)
 
 let () = Format.printf "big_tree: %a@." pp_tree_ref big_tree
-let str_big_tree = Imandrakit_twine.Encode.encode_to_string tree_ref_to_twine big_tree
+
+let str_big_tree =
+  Imandrakit_twine.Encode.encode_to_string tree_ref_to_twine big_tree
 
 let () =
   Format.printf "ser(big_tree):@.%s@."
