@@ -16,6 +16,7 @@ val capacity : t -> int
 (** Current capacity (size of the array returned by {!bytes}) *)
 
 val clear : t -> unit
+(** Clear the buffer, setting length to 0 *)
 
 val ensure_cap : t -> int -> unit
 (** [ensure_cap buf n] ensures that [capacity buf >= n]. *)
