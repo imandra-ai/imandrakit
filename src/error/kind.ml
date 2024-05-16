@@ -1,14 +1,14 @@
-module Ser_pack = Imandrakit_ser_pack
+module Twine = Imandrakit_twine
 
 type t = { name: string } [@@unboxed] [@@deriving show, ord, eq]
 
 let[@inline] hash self = CCHash.string self.name
 let make ~name () : t = { name }
 let[@inline] name self = self.name
-let to_serpack _st self = Ser_pack.Ser.string self.name
+let to_twine _st self = Twine.Immediate.string self.name
 
-let of_serpack st v =
-  let name = Ser_pack.Deser.to_text st v in
+let of_twine st v =
+  let name = Twine.Decode.string st v in
   make ~name ()
 
 let generic_internal_error : t = make ~name:"GenericInternalError" ()

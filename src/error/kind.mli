@@ -4,8 +4,7 @@
  of the nature of the error. More details are typically provided
  in the error message. *)
 
-type t = private { name: string }
-[@@unboxed] [@@deriving show, eq, ord, serpack]
+type t = private { name: string } [@@unboxed] [@@deriving show, eq, ord, twine]
 (** The kind of an error, ie a category the error belongs to *)
 
 val hash : t -> int

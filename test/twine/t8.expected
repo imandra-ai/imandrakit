@@ -1,0 +1,104 @@
+many foos as str: 108 bytes
+00000000: 6154 796f 6c6f 621f 804e f96f 23f6 f7f8  aTyolob..N.o#...
+00000001: f9fa fbfc fdfe ff00 ff02 ff04 ff06 ff08  ................
+00000002: ff0a ff0c ff0e ff10 ff12 ff14 ff16 ff18  ................
+00000003: ff1a ff1c ff1e ff20 ff22 ff24 ff26 ff28  ....... .".$.&.(
+00000004: ff2a ff2c ff2e ff30 ff32 ff34 ff36 ff38  .*.,...0.2.4.6.8
+00000005: ff3a ff3c ff3e ff40 ff42 ff44 ff46 ff48  .:.<.>.@.B.D.F.H
+00000006: ff4a ff4c ff4e ff50 61ff 4e02            .J.L.N.Pa.N.
+
+many foos marshalled: 180 bytes
+00000000: 8495 a6be 0000 00a0 0000 0036 0000 00a0  ...........6....
+00000001: 0000 009f 90a0 a001 270f 9024 796f 6c6f  ........'..$yolo
+00000002: a004 04a0 0405 a004 06a0 0407 a004 08a0  ................
+00000003: 0409 a004 0aa0 040b a004 0ca0 040d a004  ................
+00000004: 0ea0 040f a004 10a0 0411 a004 12a0 0413  ................
+00000005: a004 14a0 0415 a004 16a0 0417 a004 18a0  ................
+00000006: 0419 a004 1aa0 041b a004 1ca0 041d a004  ................
+00000007: 1ea0 041f a004 20a0 0421 a004 22a0 0423  ...... ..!.."..#
+00000008: a004 24a0 0425 a004 26a0 0427 a004 28a0  ..$..%..&..'..(.
+00000009: 0429 a004 2aa0 042b a004 2ca0 042d a004  .)..*..+..,..-..
+00000010: 2ea0 042f a004 30a0 0431 a004 32a0 0433  .../..0..1..2..3
+00000011: a004 3440                                ..4@
+
+dump of many foos:
+[0x0]: Array(1) [bytes("yolo")]
+[0x6]: Array(2) [9999,@0x0]
+[0xb]: Array(50) [@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6,@0x6]
+[0x68]: Array(1) [@0xb]
+
+big_tree: 7:=T (6:=T (4:=T (3:=T (0:=N {x=41, y=None},
+                                  1:=N {x=2, y=Some "hello"}),
+                            3:=T (0:=N {x=41, y=None},
+                                  1:=N {x=2, y=Some "hello"})),
+                      5:=T (4:=T (3:=T (0:=N {x=41, y=None},
+                                        1:=N {x=2, y=Some "hello"}),
+                                  3:=T (0:=N {x=41, y=None},
+                                        1:=N {x=2, y=Some "hello"})),
+                            2:=N {x=3, y=Some "world"})),
+                6:=T (4:=T (3:=T (0:=N {x=41, y=None},
+                                  1:=N {x=2, y=Some "hello"}),
+                            3:=T (0:=N {x=41, y=None},
+                                  1:=N {x=2, y=Some "hello"})),
+                      5:=T (4:=T (3:=T (0:=N {x=41, y=None},
+                                        1:=N {x=2, y=Some "hello"}),
+                                  3:=T (0:=N {x=41, y=None},
+                                        1:=N {x=2, y=Some "hello"})),
+                            2:=N {x=3, y=Some "world"})))
+ser(big_tree):
+00000000: 6155 776f 726c 6462 13f8 b0f3 6212 f361  aUworldb....b..a
+00000001: 5568 656c 6c6f 6212 f8b0 f362 11f3 621f  Uhellob....b..b.
+00000002: 1a02 b0f4 6210 f3c1 02f4 fe62 13f5 c102  ....b......b....
+00000003: f4f5 6214 f5c1 02f4 ff1c 6215 f6c1 02fc  ..b.......b.....
+00000004: f562 16f5 c102 f4f5 6217 f502            .b......b...
+
+size: 76
+marshal size: 71
+00000000: 8495 a6be 0000 0033 0000 0017 0000 0040  .......3.......@
+00000001: 0000 003e a047 a1a0 46a1 a044 a1a0 43a1  ...>.G..F..D..C.
+00000002: a040 90a0 6940 a041 90a0 4290 2568 656c  .@..i@.A..B.%hel
+00000003: 6c6f 040a a045 a104 0ea0 4290 a043 9025  lo...E....B..C.%
+00000004: 776f 726c 6404 15                        world..
+
+dump of big tree:
+[0x0]: Array(1) [bytes("world")]
+[0x7]: Array(2) [3,@0x0]
+[0xa]: C_0(@0x7)
+[0xc]: Array(2) [2,@0xa]
+[0xf]: Array(1) [bytes("hello")]
+[0x16]: Array(2) [2,@0xf]
+[0x19]: C_0(@0x16)
+[0x1b]: Array(2) [1,@0x19]
+[0x1e]: Array(2) [41,null]
+[0x22]: C_0(@0x1e)
+[0x24]: Array(2) [0,@0x22]
+[0x27]: C_1(@0x24,@0x1b)
+[0x2b]: Array(2) [3,@0x27]
+[0x2e]: C_1(@0x2b,@0x2b)
+[0x32]: Array(2) [4,@0x2e]
+[0x35]: C_1(@0x32,@0xc)
+[0x3a]: Array(2) [5,@0x35]
+[0x3d]: C_1(@0x32,@0x3a)
+[0x41]: Array(2) [6,@0x3d]
+[0x44]: C_1(@0x41,@0x41)
+[0x48]: Array(2) [7,@0x44]
+
+deser(ser(big_tree)): 7:=T (6:=T (4:=T (3:=T (0:=N {x=41, y=None},
+                                              1:=N {x=2, y=Some "hello"}),
+                                        3:=T (0:=N {x=41, y=None},
+                                              1:=N {x=2, y=Some "hello"})),
+                                  5:=T (4:=T (3:=T (0:=N {x=41, y=None},
+                                                    1:=N {x=2, y=Some "hello"}),
+                                              3:=T (0:=N {x=41, y=None},
+                                                    1:=N {x=2, y=Some "hello"})),
+                                        2:=N {x=3, y=Some "world"})),
+                            6:=T (4:=T (3:=T (0:=N {x=41, y=None},
+                                              1:=N {x=2, y=Some "hello"}),
+                                        3:=T (0:=N {x=41, y=None},
+                                              1:=N {x=2, y=Some "hello"})),
+                                  5:=T (4:=T (3:=T (0:=N {x=41, y=None},
+                                                    1:=N {x=2, y=Some "hello"}),
+                                              3:=T (0:=N {x=41, y=None},
+                                                    1:=N {x=2, y=Some "hello"})),
+                                        2:=N {x=3, y=Some "world"})))
+equal? true

@@ -1,0 +1,36 @@
+without hashcons
+myt1: { T3.M1.foos =
+        [{ T3.M1.x = 0; y = false }; { T3.M1.x = 0; y = false };
+          { T3.M1.x = 2; y = true }; { T3.M1.x = 0; y = false };
+          { T3.M1.x = 2; y = true }]
+        }
+pack1:
+00000000: 6210 0062 1000 6212 0162 1000 6212 0165  b..b..b..b..b..e
+00000001: ff00 fefc faf8 61f7 01                   ......a..
+
+dump(t1):
+[0x0]: Array(2) [0,false]
+[0x3]: Array(2) [0,false]
+[0x6]: Array(2) [2,true]
+[0x9]: Array(2) [0,false]
+[0xc]: Array(2) [2,true]
+[0xf]: Array(5) [@0x0,@0x3,@0x6,@0x9,@0xc]
+[0x16]: Array(1) [@0xf]
+
+len1: 25
+with caching
+myt1': { T3.M2.foos =
+         [{ T3.M2.x = 0; y = false }; { T3.M2.x = 0; y = false };
+           { T3.M2.x = 2; y = true }; { T3.M2.x = 0; y = false };
+           { T3.M2.x = 2; y = true }]
+         }
+pack1:
+00000000: 6210 0062 1201 65f6 f7f5 f9f7 61f6 01    b..b..e.....a..
+
+dump(t1'):
+[0x0]: Array(2) [0,false]
+[0x3]: Array(2) [2,true]
+[0x6]: Array(5) [@0x0,@0x0,@0x3,@0x0,@0x3]
+[0xc]: Array(1) [@0x6]
+
+len1: 15

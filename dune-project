@@ -40,6 +40,7 @@
   (trace-tef :with-test)
   (ocaml-lsp-server :with-dev-setup)
   (ocamlformat (and (= 0.24.1) :with-dev-setup))
+  (hex (and :with-test (>= 1.5)))
   (odoc :with-doc))
  (tags
   (moonpool multicore thread logs logging)))

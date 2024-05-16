@@ -4,6 +4,7 @@
     our projects. *)
 
 include Imandrakit_common
+include Imandrakit_bytes
 
 (** {2 Re-exports} *)
 
@@ -24,6 +25,8 @@ module Bag = Bag
 module Basic_bv = Basic_bv
 module Bidir_tbl = Bidir_tbl
 module Bit_field = Bit_field
+module Byte_buf = Byte_buf
+module Byte_slice = Byte_slice
 module Codec = Codec
 module Core_classes = Core_classes
 module Dot = Dot
@@ -39,8 +42,8 @@ module Logger = Logger
 module Observer = Observer
 module Scc = Scc
 module Stats = Stats
-module Timestamp_s = Timestamp_s
 module Timestamp = Timestamp
+module Timestamp_s = Timestamp_s
 module Trace = Trace_core
 module Trace_async = Trace_async
 module Util = Util
@@ -48,5 +51,6 @@ module Util_b64 = Util_b64
 module Util_gzip = Util_gzip
 module Util_serpack = Util_serpack
 module Util_sockaddr = Util_sockaddr
+module Util_twine = Util_twine
 module Util_zip = Util_zip
 module Util_zlib = Util_zlib

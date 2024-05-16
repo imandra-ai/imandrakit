@@ -27,3 +27,15 @@ let of_serpack : t Ser_pack.Deser.t =
       match Ptime.of_rfc3339 d |> Ptime.rfc3339_error_to_msg with
       | Ok (t, _, _) -> t
       | Error (`Msg msg) -> failf "invalid timestamp: %s" msg)
+
+let to_twine : t Imandrakit_twine.encoder =
+  Imandrakit_twine.Encode.(
+    fun (_st : t) self -> Immediate.string (Ptime.to_rfc3339 ~space:false self))
+
+let of_twine : t Imandrakit_twine.decoder =
+  Imandrakit_twine.Decode.(
+    fun st v ->
+      let d = string st v in
+      match Ptime.of_rfc3339 d |> Ptime.rfc3339_error_to_msg with
+      | Ok (t, _, _) -> t
+      | Error (`Msg msg) -> failf "invalid timestamp: %s" msg)

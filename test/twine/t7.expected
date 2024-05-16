@@ -1,0 +1,30 @@
+b: { T7.f1 = [{ T7.x = (Some 1); y = [(0, 0); (1, 1); (2, 2)] }];
+     f2 =
+     [{ T7.x = None; y = [] };
+       { T7.x = (Some true); y = [(0, true); (1, false)] }]
+     }
+len=47
+len as marshal=56
+dump:
+[0x0]: []
+[0x1]: Array(2) [null,@0x0]
+[0x4]: Array(2) [0,true]
+[0x7]: Array(2) [1,false]
+[0xa]: Array(2) [@0x4,@0x7]
+[0xd]: Array(1) [true]
+[0xf]: Array(2) [@0xd,@0xa]
+[0x12]: Array(2) [@0x1,@0xf]
+[0x16]: Array(2) [0,0]
+[0x19]: Array(2) [1,1]
+[0x1c]: Array(2) [2,2]
+[0x1f]: Array(3) [@0x16,@0x19,@0x1c]
+[0x23]: Array(1) [1]
+[0x25]: Array(2) [@0x23,@0x1f]
+[0x28]: Array(1) [@0x25]
+[0x2a]: Array(2) [@0x28,@0x12]
+
+b': { T7.f1 = [{ T7.x = (Some 1); y = [(0, 0); (1, 1); (2, 2)] }];
+      f2 =
+      [{ T7.x = None; y = [] };
+        { T7.x = (Some true); y = [(0, true); (1, false)] }]
+      }

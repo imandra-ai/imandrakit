@@ -1,0 +1,18 @@
+start with { T6.cs =
+             [(T6.C_nativeint 42n); (T6.C_int32 42l); (T6.C_int64 42L);
+               (T6.C_float 12.1); (T6.C_char 'c'); (T6.C_string "hello");
+               (T6.C_bytes "\000\002\255")]
+             }
+result is:
+00000000: b01f 1bb1 1f1b b21f 1bb3 3133 3333 3333  ..........133333
+00000001: 3328 40b4 1f54 b545 6865 6c6c 6fb6 4300  3(@..T.Ehello.C.
+00000002: 02ff 67ff 13ff 12ff 11ff 10ff 08ff 07ff  ..g.............
+00000003: 0261 ff00 02                             .a...
+
+len=53
+len if marshalled=86
+deser: { T6.cs =
+         [(T6.C_nativeint 42n); (T6.C_int32 42l); (T6.C_int64 42L);
+           (T6.C_float 12.1); (T6.C_char 'c'); (T6.C_string "hello");
+           (T6.C_bytes "\000\002\255")]
+         }

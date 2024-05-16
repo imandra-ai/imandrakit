@@ -1,0 +1,8 @@
+(library
+ (name imandrakit_twine)
+ (public_name imandrakit.twine)
+ (synopsis "Twine data format for imandrakit")
+ (flags :standard -open Imandrakit_bytes -open Imandrakit_common)
+ (preprocess
+  (pps ppx_deriving.std))
+ (libraries containers imandrakit.bytes imandrakit.common imandrakit.leb128))
