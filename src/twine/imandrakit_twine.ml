@@ -9,7 +9,6 @@
 # Overview
 
 The encoding relies on a first byte to disambiguate between values.
-This first byte we name "initial byte".
 The first byte is a bitfield [kind:4 low:4] where:
   - [kind] is the kind of value (int, float, etc.)
   - [low] is a small integer value whose meaning depends on the kind.

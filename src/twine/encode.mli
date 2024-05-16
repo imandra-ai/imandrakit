@@ -22,7 +22,7 @@ val write_immediate : t -> immediate -> offset
 (** [write_immediate enc i] writes down [i] and returns
     an immediate pointer to it *)
 
-val write_or_deref_immediate : t -> immediate -> offset
+val write_or_ref_immediate : t -> immediate -> offset
 (** [write_or_deref_immediate enc i] looks at [i],
     and if [i] is [Pointer p], it returns [p]; otherwise
     it writes down [i] and returns a pointer to it. *)

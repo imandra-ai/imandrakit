@@ -119,7 +119,7 @@ val create_cache_key : unit -> _ cache_key
     not dynamically inside a function:
     [let key: foo value_pack.Deser.cache_key = value_pack.Deser.create_cache_key ();;].
     Indeed, this is generative, so creating multiple keys for a type
-    will result in sub-par or inexistant caching. *)
+    will result in sub-par performance or non-existent caching. *)
 
 val with_cache : 'a cache_key -> 'a decoder -> 'a decoder
 (** [with_cache key dec] is the same decoder as [dec] but
