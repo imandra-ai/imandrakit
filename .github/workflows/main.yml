@@ -33,11 +33,11 @@ jobs:
 
       - run: opam pin moonpool --dev -y -n
       - run: opam install -t imandrakit --deps-only
-      - run: opam exec -- dune build @install
+      - run: opam exec -- dune build @install -p imandrakit
 
       # install some depopts and build+test again
       - run: opam install trace
-      - run: opam exec -- dune build @install @runtest
+      - run: opam exec -- dune build @install @runtest -p imandrakit
 
   format:
     name: format

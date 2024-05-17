@@ -19,7 +19,7 @@ jobs:
           dune-cache: true
           allow-prerelease-opam: true
 
-      - run: opam pin moonpool --dev -y -n
+      - run: opam pin imandrakit --dev -y -n
       - run: opam install odig imandrakit
       - run: opam exec -- odig odoc --cache-dir=_doc/ imandrakit
 
