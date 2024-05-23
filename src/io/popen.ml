@@ -5,6 +5,9 @@ type state = {
   stopped: bool Atomic.t;
   res_code: int Fut.t;
   promise_code: int Fut.promise;
+  close_stdin: bool;
+  close_stdout: bool;
+  close_stderr: bool;
 }
 
 type redirect =
@@ -13,9 +16,9 @@ type redirect =
   ]
 
 type t = {
-  stdin: out_channel option;
-  stdout: in_channel option;
-  stderr: in_channel option;
+  stdin: out_channel;
+  stdout: in_channel;
+  stderr: in_channel;
   pid: int;
   _st: state;
 }
@@ -29,9 +32,9 @@ let kill_and_close_ (self : t) =
   if not already_stopped then (
     Log.debug (fun k -> k "kill/close subprocess pid=%d" self.pid);
     (try Unix.kill self.pid 15 with _ -> ());
-    Option.iter close_out_noerr self.stdin;
-    Option.iter close_in_noerr self.stdout;
-    Option.iter close_in_noerr self.stderr;
+    if self._st.close_stdin then close_out_noerr self.stdin;
+    if self._st.close_stdout then close_in_noerr self.stdout;
+    if self._st.close_stderr then close_in_noerr self.stderr;
     (* just to be sure, wait a second and kill dash nine *)
     ignore
       (Thread.create
@@ -51,40 +54,52 @@ let run_ ?(env = Unix.environment ()) ?stdin:(r_stdin = `Pipe)
   (* block sigpipe *)
   ignore (Unix.sigprocmask Unix.SIG_BLOCK [ Sys.sigpipe ]);
 
-  let mkpipe (r : [< redirect ]) default =
+  let mkpipe (r : [< redirect ]) input output =
     match r with
-    | `Keep -> None, default, false
+    | `Keep -> input, output, false
     | `Pipe ->
       let ic, oc = Unix.pipe () in
-      Some ic, oc, true
+      ic, oc, true
   in
 
   (* make pipes, to give the appropriate ends to the subprocess *)
-  let stdout, p_stdout, close_stdout = mkpipe r_stdout Unix.stdout in
-  let stderr, p_stderr, close_stderr = mkpipe r_stderr Unix.stderr in
-  let stdin, p_stdin, close_stdin = mkpipe r_stdin Unix.stdin in
+  let stdout, p_stdout, cleanup_stdout =
+    mkpipe r_stdout Unix.stdin Unix.stdout
+  in
+  let stderr, p_stderr, cleanup_stderr =
+    mkpipe r_stderr Unix.stdin Unix.stderr
+  in
+  let stdin, p_stdin, cleanup_stdin = mkpipe r_stdin Unix.stdout Unix.stdin in
   (* close our ends in the subprocess *)
-  Option.iter Unix.set_close_on_exec stdout;
-  Option.iter Unix.set_close_on_exec stderr;
-  Option.iter Unix.set_close_on_exec stdin;
-  let stdout = Option.map Unix.in_channel_of_descr stdout in
-  let stderr = Option.map Unix.in_channel_of_descr stderr in
-  let stdin = Option.map Unix.out_channel_of_descr stdin in
+  if cleanup_stdout then Unix.set_close_on_exec stdout;
+  if cleanup_stderr then Unix.set_close_on_exec stderr;
+  if cleanup_stdin then Unix.set_close_on_exec stdin;
+  let stdout = Unix.in_channel_of_descr stdout in
+  let stderr = Unix.in_channel_of_descr stderr in
+  let stdin = Unix.out_channel_of_descr stdin in
   let pid = Unix.create_process_env cmd args env p_stdin p_stdout p_stderr in
   let res_code, promise_code = Fut.make () in
   Log.debug (fun k ->
       k "opened subprocess pid=%d cmd=%S args=[…%d]" pid cmd (Array.length args));
-  (* close the subprocess ends in here *)
-  if close_stdout then Unix.close p_stdout;
-  if close_stdin then Unix.close p_stdin;
-  if close_stderr then Unix.close p_stderr;
+  (* close the subprocess-side channels in here *)
+  if cleanup_stdout then Unix.close p_stdout;
+  if cleanup_stdin then Unix.close p_stdin;
+  if cleanup_stderr then Unix.close p_stderr;
   let p =
     {
       stdin;
       stdout;
       stderr;
       pid;
-      _st = { stopped = Atomic.make false; res_code; promise_code };
+      _st =
+        {
+          stopped = Atomic.make false;
+          res_code;
+          promise_code;
+          close_stdout = cleanup_stdout;
+          close_stdin = cleanup_stdin;
+          close_stderr = cleanup_stderr;
+        };
     }
   in
   Gc.finalise kill_and_close_ p;

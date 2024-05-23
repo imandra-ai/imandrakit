@@ -5,9 +5,9 @@
 type state
 
 type t = private {
-  stdin: out_channel option;
-  stdout: in_channel option;
-  stderr: in_channel option;
+  stdin: out_channel;
+  stdout: in_channel;
+  stderr: in_channel;
   pid: int;
   _st: state;
 }
