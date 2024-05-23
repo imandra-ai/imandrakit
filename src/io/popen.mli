@@ -5,19 +5,37 @@
 type state
 
 type t = private {
-  stdin: out_channel;
-  stdout: in_channel;
-  stderr: in_channel;
+  stdin: out_channel option;
+  stdout: in_channel option;
+  stderr: in_channel option;
   pid: int;
   _st: state;
 }
 [@@deriving show]
 (** A sub-process *)
 
-val run : ?env:string array -> string -> string list -> t
+type redirect =
+  [ `Keep
+  | `Pipe
+  ]
+
+val run :
+  ?env:string array ->
+  ?stdin:redirect ->
+  ?stdout:redirect ->
+  ?stderr:redirect ->
+  string ->
+  string list ->
+  t
 (** Run subprocess with given command *)
 
-val run_shell : ?env:string array -> string -> t
+val run_shell :
+  ?env:string array ->
+  ?stdin:redirect ->
+  ?stdout:redirect ->
+  ?stderr:redirect ->
+  string ->
+  t
 (** Run subprocess with given command *)
 
 val res_code : t -> int Moonpool.Fut.t
