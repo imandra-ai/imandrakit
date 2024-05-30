@@ -3,7 +3,6 @@
  (public_name imandrakit.metrics)
  (flags :standard -safe-string -open Imandrakit -open Imandrakit_sync)
  (synopsis "Metrics")
- (optional) ; imandrakit.thread
  (preprocess
   (pps ppx_deriving.std))
  (libraries containers mtime mtime.clock.os imandrakit imandrakit.sync))
