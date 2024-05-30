@@ -3,7 +3,6 @@
  (public_name imandrakit-io)
  (synopsis "Utils around IO/unix")
  (libraries imandrakit imandrakit-log moonpool threads unix)
- (optional)
  (preprocess
   (pps ppx_deriving.std))
  (flags :standard -open Imandrakit))
