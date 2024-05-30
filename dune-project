@@ -86,7 +86,6 @@
   dune
   (moonpool
    (>= 0.6))
-  thread-local-storage
   logs
   thread-local-storage
   (trace-tef :with-test)

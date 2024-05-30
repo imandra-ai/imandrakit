@@ -2,3 +2,4 @@ _build
 _opam
 *.exe
 perf.data*
+*.tmp
