@@ -11,4 +11,5 @@
   trace.core
   trace-tef
   imandrakit
+  imandrakit-log
   imandrakit.twine))

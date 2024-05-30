@@ -28,7 +28,6 @@
    (>= 3.4))
   (iter
    (>= 1.0))
-  logs
   base64
   uuidm
   ptime
@@ -63,11 +62,24 @@
   (moonpool multicore thread logs logging)))
 
 (package
- (name imandrakit-thread)
- (synopsis "Threading and concurrency for Imandra")
+ (name imandrakit-io)
+ (synopsis "IO utils for Imandra")
  (depends
   (ocaml
-   (>= 5.0))
+   (>= 4.13))
+  (imandrakit
+   (= :version))
+  (moonpool
+   (>= 0.6))
+  (trace-tef :with-test)
+  (odoc :with-doc)))
+
+(package
+ (name imandrakit-log)
+ (synopsis "Logging utils for Imandra")
+ (depends
+  (ocaml
+   (>= 4.13))
   (imandrakit
    (= :version))
   hmap
@@ -75,16 +87,34 @@
   (moonpool
    (>= 0.6))
   thread-local-storage
+  logs
+  thread-local-storage
   (trace-tef :with-test)
-  (odoc :with-doc))
- (tags
-  (moonpool multicore thread logs logging)))
+  (odoc :with-doc)))
+
+(package
+ (name imandrakit-thread)
+ (synopsis "Threading and concurrency for Imandra")
+ (depends
+  (ocaml
+   (>= 5.0))
+  (imandrakit
+   (= :version))
+  logs
+  hmap
+  dune
+  (moonpool
+   (>= 0.6))
+  thread-local-storage
+  (trace-tef :with-test)
+  (odoc :with-doc)))
 
 (package
  (name twine-utils)
  (synopsis "toolkit program for twine")
  (depends
   imandrakit
+  imandrakit-log
   yojson
   hex
   ppx_deriving

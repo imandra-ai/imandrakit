@@ -5,12 +5,12 @@ synopsis: "Threading and concurrency for Imandra"
 maintainer: ["Simon Cruanes"]
 authors: ["Simon Cruanes"]
 license: "MIT"
-tags: ["moonpool" "multicore" "thread" "logs" "logging"]
 homepage: "https://github.com/imandra-ai/imandrakit"
 bug-reports: "https://github.com/imandra-ai/imandrakit/issues"
 depends: [
   "ocaml" {>= "5.0"}
   "imandrakit" {= version}
+  "logs"
   "hmap"
   "dune" {>= "3.0"}
   "moonpool" {>= "0.6"}

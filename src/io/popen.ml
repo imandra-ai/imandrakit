@@ -1,5 +1,5 @@
 open Moonpool
-module Log = (val Logger.mk_log_str "x.popen")
+module Log = (val Imandrakit_log.Logger.mk_log_str "x.popen")
 
 type state = {
   stopped: bool Atomic.t;

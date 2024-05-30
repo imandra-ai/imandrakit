@@ -1,0 +1,18 @@
+(library
+ (public_name imandrakit-log)
+ (name imandrakit_log)
+ (preprocess
+  (pps ppx_deriving.std imandrakit.ser-pack.ppx imandrakit.twine.ppx))
+ (flags :standard -open Imandrakit)
+ (libraries
+  imandrakit
+  containers
+  iter
+  logs
+  ptime
+  ptime.clock.os
+  uuidm
+  unix
+  moonpool
+  trace.core
+  yojson))

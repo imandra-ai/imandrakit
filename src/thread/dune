@@ -12,6 +12,7 @@
   moonpool
   moonpool.fib
   imandrakit
+  logs
   hmap
   ptime
   ptime.clock.os

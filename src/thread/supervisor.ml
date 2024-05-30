@@ -1,4 +1,4 @@
-module Log = (val Logger.mk_log_str "x.supervisor")
+module Log = (val Logs.src_log (Logs.Src.create "x.supervisor"))
 
 type attempt_number = int
 

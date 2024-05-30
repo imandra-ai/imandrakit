@@ -23,11 +23,6 @@ let raise_err ?bt (e : t) =
   | None -> raise (E e)
   | Some bt -> Printexc.raise_with_backtrace (E e) bt
 
-module Internal_ = struct
-  let process_name_ = ref "/1proc"
-  let get_process_name () = !process_name_
-end
-
 module Message = struct
   type t = message
 
@@ -98,7 +93,7 @@ let guard ?(let_pass = fun _ -> false) g f =
     let e =
       {
         kind = Kind.generic_internal_error;
-        process = Internal_.get_process_name ();
+        process = Global_process_data.get_process_name ();
         stack = [];
         msg =
           {

@@ -4,7 +4,6 @@
  (preprocess
   (pps ppx_deriving.std imandrakit.ser-pack.ppx imandrakit.twine.ppx))
  (flags :standard -open Imandrakit_common)
- (private_modules internal_)
  (libraries
   imandrakit.common
   imandrakit.bytes
@@ -14,18 +13,14 @@
   imandrakit.error
   containers
   iter
-  logs
   ppx_deriving.runtime
   base64
   mtime
-  mtime.clock.os
   ptime
+  mtime.clock.os
   ptime.clock.os
   uuidm
   unix
   threads
-  camlzip
   trace.core
-  thread-local-storage
-  moonpool
   yojson))

@@ -13,7 +13,6 @@ depends: [
   "dune" {>= "3.0"}
   "containers" {>= "3.4"}
   "iter" {>= "1.0"}
-  "logs"
   "base64"
   "uuidm"
   "ptime"
