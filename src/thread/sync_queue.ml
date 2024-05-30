@@ -15,4 +15,3 @@ let to_iter self : _ Iter.t =
       yield x
     done
   with Closed -> ()
-
