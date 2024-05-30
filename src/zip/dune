@@ -1,0 +1,9 @@
+(library
+ (public_name imandrakit.zip)
+ (name imandrakit_zip)
+ (synopsis "Utils for compression using zip/zlib")
+ (optional); camlzip
+ (preprocess
+  (pps ppx_deriving.std imandrakit.ser-pack.ppx imandrakit.twine.ppx))
+ (flags :standard -open Imandrakit_common)
+ (libraries imandrakit.common imandrakit camlzip))

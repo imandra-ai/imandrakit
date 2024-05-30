@@ -1,13 +1,11 @@
 (library
  (name imandrakit_thread)
- (public_name imandrakit.thread)
+ (public_name imandrakit-thread)
  (flags :standard -safe-string -open Imandrakit)
  (synopsis "Threading and concurrency utils (building on Moonpool)")
  (private_modules domain_)
  (preprocess
   (pps ppx_deriving.std))
- (enabled_if
-  (>= %{ocaml_version} 5.0))
  (libraries
   containers
   threads.posix

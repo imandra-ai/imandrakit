@@ -24,8 +24,6 @@
   (ocaml
    (>= 4.13))
   dune
-  (moonpool
-   (>= 0.6))
   (containers
    (>= 3.4))
   (iter
@@ -36,10 +34,8 @@
   ptime
   atomic
   hmap
-  thread-local-storage
   (yojson
    (>= 1.6))
-  camlzip
   (mtime
    (>= 2.0))
   ppx_deriving
@@ -61,6 +57,25 @@
    (and
     :with-test
     (>= 1.5)))
+  (odoc :with-doc))
+ (depopts camlzip)
+ (tags
+  (moonpool multicore thread logs logging)))
+
+(package
+ (name imandrakit-thread)
+ (synopsis "Threading and concurrency for Imandra")
+ (depends
+  (ocaml
+   (>= 5.0))
+  (imandrakit
+   (= :version))
+  hmap
+  dune
+  (moonpool
+   (>= 0.6))
+  thread-local-storage
+  (trace-tef :with-test)
   (odoc :with-doc))
  (tags
   (moonpool multicore thread logs logging)))
