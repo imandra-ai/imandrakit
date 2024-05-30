@@ -19,9 +19,9 @@ jobs:
           dune-cache: true
           allow-prerelease-opam: true
 
-      - run: opam pin imandrakit --dev -y -n
-      - run: opam install odig imandrakit
-      - run: opam exec -- odig odoc --cache-dir=_doc/ imandrakit
+      - run: opam pin imandrakit imandrakit-thread --dev -y -n
+      - run: opam install odig imandrakit imandrakit-thread
+      - run: opam exec -- odig odoc --cache-dir=_doc/ imandrakit imandrakit-thread
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3

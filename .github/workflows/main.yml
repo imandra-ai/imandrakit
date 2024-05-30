@@ -7,7 +7,7 @@ on:
   pull_request:
 
 jobs:
-  run:
+  build-all-versions:
     name: build
     timeout-minutes: 15
     strategy:
@@ -19,7 +19,39 @@ jobs:
               #- windows-latest
         ocaml-compiler:
             - '4.13'
+            - '5.2'
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@main
+      - name: Use OCaml ${{ matrix.ocaml-compiler }}
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+          dune-cache: true
+          allow-prerelease-opam: true
+
+      - run: opam install -t imandrakit imandrakit-log imandrakit-io --deps-only
+      - run: opam exec -- dune build @install -p imandrakit,imandrakit-log,imandrakit-io
+      - run: opam exec -- dune build @runtest -p imandrakit,imandrakit-log,imandrakit-io
+
+      # install some depopts and build+test again
+      - run: opam install camlzip
+      - run: opam exec -- dune build @install @runtest -p imandrakit,imandrakit-log,imandrakit-io
+
+  build-ocaml5:
+    name: build-ocaml5
+    timeout-minutes: 15
+    strategy:
+      fail-fast: true
+      matrix:
+        os:
+            - ubuntu-latest
+              #- macos-latest
+              #- windows-latest
+        ocaml-compiler:
             - '5.1'
+            - '5.2'
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -32,12 +64,9 @@ jobs:
           allow-prerelease-opam: true
 
       - run: opam pin moonpool --dev -y -n
-      - run: opam install -t imandrakit --deps-only
-      - run: opam exec -- dune build @install -p imandrakit
-
-      # install some depopts and build+test again
-      - run: opam install trace
-      - run: opam exec -- dune build @install @runtest -p imandrakit
+      - run: opam install -t imandrakit imandrakit-log imandrakit-io imandrakit-thread --deps-only
+      - run: opam exec -- dune build @install -p imandrakit,imandrakit-io,imandrakit-log,imandrakit-thread
+      - run: opam exec -- dune build @runtest -p imandrakit,imandrakit-io,imandrakit-log,imandrakit-thread
 
   format:
     name: format
@@ -58,3 +87,4 @@ jobs:
       - run: opam install ocamlformat.0.24.1
       - run: opam exec -- make format-check
 
+# vim:foldmethod=indent

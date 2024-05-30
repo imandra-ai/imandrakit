@@ -1,19 +1,19 @@
 (library
  (name imandrakit_thread)
- (public_name imandrakit.thread)
- (flags :standard -safe-string -open Imandrakit)
+ (public_name imandrakit-thread)
+ (flags :standard -safe-string -open Imandrakit -open Imandrakit_sync)
  (synopsis "Threading and concurrency utils (building on Moonpool)")
  (private_modules domain_)
  (preprocess
   (pps ppx_deriving.std))
- (enabled_if
-  (>= %{ocaml_version} 5.0))
  (libraries
+  imandrakit
+  imandrakit.sync
   containers
   threads.posix
   moonpool
   moonpool.fib
-  imandrakit
+  logs
   hmap
   ptime
   ptime.clock.os

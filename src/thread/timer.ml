@@ -1,4 +1,4 @@
-module Log = (val Logger.mk_log_str "x.thread.timer")
+module Log = (val Logs.src_log (Logs.Src.create "x.timer"))
 
 let timer_error = Error_kind.make ~name:"TimerError" ()
 

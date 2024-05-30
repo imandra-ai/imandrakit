@@ -3,7 +3,12 @@
     This builds on top of {{: https://github.com/c-cube/moonpool/} Moonpool}
     but adds helpers. *)
 
-module Atomic_util = Atomic_util
+(** {2 Re-exports} *)
+
+include Imandrakit_sync
+
+(** {2 Main} *)
+
 module Background_thread = Background_thread
 module Executor = Executor
 module Fiber = Fiber

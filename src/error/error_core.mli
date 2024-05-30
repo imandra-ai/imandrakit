@@ -58,11 +58,3 @@ module Infix : sig
 end
 
 include module type of Infix
-
-(**/**)
-
-module Internal_ : sig
-  val get_process_name : unit -> string
-end
-
-(**/**)

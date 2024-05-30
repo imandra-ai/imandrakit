@@ -3,8 +3,8 @@ module Kind = Kind
 
 let pp_ ~f fmt = Fmt.kasprintf f fmt
 
-let mk_error ?(stack = []) ?(process = Internal_.get_process_name ()) ?bt ~kind
-    msg : t =
+let mk_error ?(stack = []) ?(process = Global_process_data.get_process_name ())
+    ?bt ~kind msg : t =
   let bt =
     match bt with
     | Some _ as b -> b

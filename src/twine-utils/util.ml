@@ -11,23 +11,24 @@ let exit_with i = raise @@ Exit i
 let top_exit_handler () f = try f () with Exit i -> exit i
 
 let with_logging (conf : Commands.logging) f =
+  let open Imandrakit_log in
   let log_level =
     if conf.quiet then
-      IK.Log_level.Error
+      Log_level.Error
     else if conf.debug then
-      IK.Log_level.Debug
+      Log_level.Debug
     else
-      IK.Log_level.Info
+      Log_level.Info
   in
-  IK.Logger.setup_level ~log_level ();
+  Logger.setup_level ~log_level ();
 
   match conf.log_file with
   | None when conf.quiet -> f ()
   | None ->
-    IK.Logger.setup_logger_to_stderr ();
-    let@ () = Fun.protect ~finally:IK.Logger.fence in
+    Logger.setup_logger_to_stderr ();
+    let@ () = Fun.protect ~finally:Logger.fence in
     f ()
-  | Some filename -> IK.Logger.setup_logger_to_LOG_FILE ~filename () f
+  | Some filename -> Logger.setup_logger_to_LOG_FILE ~filename () f
 
 let get_content (i : Commands.input) : string =
   let file = i.file in

@@ -11,18 +11,14 @@ bug-reports: "https://github.com/imandra-ai/imandrakit/issues"
 depends: [
   "ocaml" {>= "4.13"}
   "dune" {>= "3.0"}
-  "moonpool" {>= "0.6"}
   "containers" {>= "3.4"}
   "iter" {>= "1.0"}
-  "logs"
   "base64"
   "uuidm"
   "ptime"
   "atomic"
   "hmap"
-  "thread-local-storage"
   "yojson" {>= "1.6"}
-  "camlzip"
   "mtime" {>= "2.0"}
   "ppx_deriving"
   "ppxlib" {>= "0.25.0"}
@@ -34,6 +30,7 @@ depends: [
   "hex" {with-test & >= "1.5"}
   "odoc" {with-doc}
 ]
+depopts: ["camlzip"]
 build: [
   ["dune" "subst"] {dev}
   [

@@ -1,0 +1,8 @@
+(library
+ (name imandrakit_sync)
+ (public_name imandrakit.sync)
+ (flags :standard -safe-string -open Imandrakit)
+ (synopsis "Sync primitives")
+ (preprocess
+  (pps ppx_deriving.std))
+ (libraries containers threads.posix imandrakit))
