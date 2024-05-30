@@ -46,8 +46,5 @@ val iter_all :
 val emit_trace : unit -> unit
 (** Emit into [trace] as int and float counters *)
 
-val emit_trace_every : period_s:float -> Timer.t -> unit
-(** Emit metrics every [period_s] seconds *)
-
 (* TODO: optionally add a HTTP GET handler using prometheus,
    if [Tiny_httpd.prometheus] is installed *)

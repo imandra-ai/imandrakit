@@ -110,6 +110,3 @@ let emit_trace_ () =
     ()
 
 let emit_trace () = if Trace.enabled () then emit_trace_ ()
-
-let emit_trace_every ~period_s (timer : Timer.t) : unit =
-  if Trace.enabled () then Timer.run_every_s timer period_s emit_trace_
