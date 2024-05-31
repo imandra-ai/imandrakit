@@ -1,0 +1,15 @@
+(executable
+ (name t1)
+ (libraries imandrakit.typereg hex ppx_deriving.runtime)
+ (flags :standard -w -34-60)
+ (preprocess
+  (pps imandrakit.typereg.ppx)))
+
+(rule
+ (alias runtest)
+ (package imandrakit)
+ (action
+   ; fails, there's a collision
+  (with-accepted-exit-codes
+   2
+   (run ./t1.exe))))
