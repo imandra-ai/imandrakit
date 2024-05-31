@@ -1,0 +1,25 @@
+t2:
+{ path = "Dune__exe__T2"; name = "bar"; params = [];
+  decl =
+  (Alg
+     [{ c = "A"; args = []; labels = None };
+       { c = "B"; args = [(Cstor ("int", []))]; labels = None };
+       { c = "C"; args = [(Cstor ("int", [])); (Cstor ("string", []))];
+         labels = None };
+       { c = "D";
+         args =
+         [(Cstor ("int", []));
+           (Cstor ("list",
+              [(Tuple [(Cstor ("string", [])); (Cstor ("foo", []))])]))
+           ];
+         labels = (Some ["x"; "y"]) }
+       ])
+  }
+{ path = "Dune__exe__T2"; name = "foo"; params = [];
+  decl =
+  (Record
+     { fields =
+       [("x", (Cstor ("int", [])));
+         ("y", (Cstor ("option", [(Cstor ("float", []))])))]
+       })
+  }

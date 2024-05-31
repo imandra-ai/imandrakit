@@ -1,5 +1,5 @@
 (tests
- (names t1)
+ (names t1 t2)
  (libraries imandrakit.typereg hex ppx_deriving.runtime)
  (package imandrakit)
  (flags :standard -w -34-60)
