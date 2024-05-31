@@ -10,6 +10,12 @@ let spf = Printf.sprintf
 (* name for variables *)
 let name_poly_var_ v = spf "_tyreg_poly_%s" v
 
+(** attribute to define name manually *)
+let attr_name =
+  Attribute.declare "typereg.name" Attribute.Context.type_declaration
+    Ast_pattern.(single_expr_payload (estring __))
+    (fun x -> x)
+
 let rec lid_to_str (lid : Longident.t) : string =
   match lid with
   | Longident.Lident s -> s
@@ -144,12 +150,18 @@ let tyreg_of_tydecl (d : type_declaration) : expression =
     |> mk_list ~loc
   in
 
+  let name =
+    match Attribute.get ~mark_as_seen:true attr_name d with
+    | None -> d.ptype_name.txt
+    | Some s -> s
+  in
+
   [%expr
     let open Imandrakit_typereg in
     {
       Ty_def.path = __MODULE__;
       params = [%e params];
-      name = [%e A.Exp.constant @@ A.Const.string d.ptype_name.txt];
+      name = [%e A.Exp.constant @@ A.Const.string name];
       decl = [%e decl];
     }]
 
