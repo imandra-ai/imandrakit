@@ -173,4 +173,4 @@ let generate_impl ~ctxt:_ (rec_flag, type_declarations) =
     [ str0 ]
 
 let impl_generator = Deriving.Generator.V2.make_noarg generate_impl
-let myderiver = Deriving.add "tyreg" ~str_type_decl:impl_generator
+let myderiver = Deriving.add "typereg" ~str_type_decl:impl_generator
