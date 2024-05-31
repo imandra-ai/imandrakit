@@ -58,15 +58,6 @@ let deser_name_ref_of_ty (ty : type_declaration) : string =
 let lid ~loc s = { loc; txt = Longident.Lident s }
 let lid_of_str { txt; loc } = lid ~loc txt
 
-(* list literal *)
-let rec mk_list ~loc = function
-  | [] -> [%expr []]
-  | x :: tl -> [%expr [%e x] :: [%e mk_list ~loc tl]]
-
-let rec mk_list_pat ~loc = function
-  | [] -> [%pat? []]
-  | x :: tl -> [%pat? [%p x] :: [%p mk_list_pat ~loc tl]]
-
 let mk_lambda ~loc args body =
   List.fold_right
     (fun arg bod -> [%expr fun [%p A.Pat.var { loc; txt = arg }] -> [%e bod]])
@@ -102,17 +93,13 @@ let apply_encode ~loc e_encode e : expression =
 let apply_decode ~loc e_deser p : expression =
   [%expr [%e e_deser] dec ([%e p] : Imandrakit_twine.offset)]
 
-let is_some_ = function
-  | Some _ -> true
-  | None -> false
-
 (** Produce an immediate value *)
 let rec immediate_expr_of_ty (e : expression) ~(ty : core_type) : expression =
   let loc = ty.ptyp_loc in
   let apply_encode = apply_encode ~loc in
   let by_encode ser = apply_encode ser e in
   match ty with
-  | _ when is_some_ (Attribute.get ~mark_as_seen:false attr_encode ty) ->
+  | _ when Option.is_some (Attribute.get ~mark_as_seen:false attr_encode ty) ->
     (* user provided serializer *)
     let e_ser =
       match Attribute.get ~mark_as_seen:true attr_encode ty with
@@ -127,13 +114,15 @@ let rec immediate_expr_of_ty (e : expression) ~(ty : core_type) : expression =
   | [%type: nativeint] ->
     [%expr Imandrakit_twine.Immediate.Int (Int64.of_nativeint [%e e])]
   | [%type: string] ->
-    if is_some_ @@ Attribute.get ~mark_as_seen:false attr_use_bytes ty then
+    if Option.is_some @@ Attribute.get ~mark_as_seen:false attr_use_bytes ty
+    then
       [%expr Imandrakit_twine.Immediate.blob [%e e]]
     else
       [%expr Imandrakit_twine.Immediate.string [%e e]]
   | [%type: bytes] ->
     let e = [%expr Bytes.unsafe_to_string [%e e]] in
-    if is_some_ @@ Attribute.get ~mark_as_seen:false attr_use_bytes ty then
+    if Option.is_some @@ Attribute.get ~mark_as_seen:false attr_use_bytes ty
+    then
       [%expr Imandrakit_twine.Immediate.blob [%e e]]
     else
       [%expr Imandrakit_twine.Immediate.string [%e e]]
@@ -229,7 +218,7 @@ let rec decode_expr_of_ty (e : expression) ~(ty : core_type) : expression =
   let loc = ty.ptyp_loc in
   let by_full_dec ser = apply_decode ~loc ser e in
   match ty with
-  | _ when is_some_ (Attribute.get ~mark_as_seen:false attr_decode ty) ->
+  | _ when Option.is_some (Attribute.get ~mark_as_seen:false attr_decode ty) ->
     (* custom deser *)
     let e_deser =
       match Attribute.get ~mark_as_seen:true attr_decode ty with
@@ -244,14 +233,16 @@ let rec decode_expr_of_ty (e : expression) ~(ty : core_type) : expression =
   | [%type: nativeint] ->
     [%expr Imandrakit_twine.Decode.int64 dec [%e e] |> Int64.to_nativeint]
   | [%type: string] ->
-    if is_some_ @@ Attribute.get ~mark_as_seen:false attr_use_bytes ty then
+    if Option.is_some @@ Attribute.get ~mark_as_seen:false attr_use_bytes ty
+    then
       by_full_dec [%expr Imandrakit_twine.Decode.blob]
     else
       by_full_dec [%expr Imandrakit_twine.Decode.string]
   | [%type: bytes] ->
     [%expr
       [%e
-        if is_some_ @@ Attribute.get ~mark_as_seen:false attr_use_bytes ty then
+        if Option.is_some @@ Attribute.get ~mark_as_seen:false attr_use_bytes ty
+        then
           by_full_dec [%expr Imandrakit_twine.Decode.blob]
         else
           by_full_dec [%expr Imandrakit_twine.Decode.string]]
