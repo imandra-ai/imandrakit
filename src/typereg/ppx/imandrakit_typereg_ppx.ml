@@ -4,23 +4,17 @@
 
 open Ppxlib
 module A = Ast_helper
-module B = Ast_builder.Default
 
 let spf = Printf.sprintf
 
 (* name for variables *)
 let name_poly_var_ v = spf "_tyreg_poly_%s" v
-let lid ~loc s = { loc; txt = Longident.Lident s }
-let lid_of_str { txt; loc } = lid ~loc txt
 
 let rec lid_to_str (lid : Longident.t) : string =
   match lid with
   | Longident.Lident s -> s
   | Longident.Ldot (x, s) -> spf "%s.%s" (lid_to_str x) s
   | Longident.Lapply (a, b) -> spf "%s.%s" (lid_to_str a) (lid_to_str b)
-
-let mk_arrow ~loc args body =
-  List.fold_right (fun arg bod -> [%type: [%t arg] -> [%t bod]]) args body
 
 (** list literal *)
 let rec mk_list ~loc = function
@@ -102,82 +96,46 @@ let tyreg_of_tydecl (d : type_declaration) : expression =
       | None -> [%expr [%error "cannot derive tyreg for abstract type"]])
     | Ptype_open -> [%expr [%error "cannot derive tyreg for open type"]]
     | Ptype_variant cstors ->
-      [%expr assert false]
-      (*
-      let ser_cstor (index : int)
-          { pcd_args; pcd_name = cname; pcd_loc = loc; _ } : expression =
-        (* constructor identifier *)
-        let e_index = A.Exp.constant (A.Const.int index) in
-        let lhs, rhs =
-          match pcd_args with
-          | Pcstr_tuple l ->
-            let lhs =
-              let pats =
-                l
-                |> List.mapi (fun i ty ->
-                       let loc = ty.ptyp_loc in
-                       A.Pat.var { loc; txt = spf "x_%d" i })
-              in
-              let pat =
-                match pats with
-                | [] -> None
-                | [ x ] -> Some x
-                | _ -> Some (A.Pat.tuple pats)
-              in
-              A.Pat.construct (lid_of_str cname) pat
-            in
-            let rhs =
-              let args =
-                l
-                |> List.mapi (fun i ty ->
-                       let loc = ty.ptyp_loc in
-                       tyexpr_of_ty ~ty (A.Exp.ident @@ lid ~loc @@ spf "x_%d" i))
-                |> A.Exp.array ~loc
-              in
-              [%expr
-                Encode.cstor enc ~index:[%e e_index]
-                  [%e args]]
-            in
-
-            lhs, rhs
+      let conv_cstor (c : constructor_declaration) : expression =
+        let args, labels =
+          match c.pcd_args with
+          | Pcstr_tuple l -> List.map tyexpr_of_ty l, None
           | Pcstr_record r ->
-            (* variable for the record *)
-            let pat_r = A.Pat.var { loc; txt = "r" } in
-            let lhs = A.Pat.construct (lid_of_str cname) (Some pat_r) in
-            let rhs =
-              (* variable for the inline record *)
-              let var_r = A.Exp.ident (lid ~loc "r") in
-              let args =
-                r
-                |> List.map (fun { pld_name; pld_loc = _; pld_type; _ } ->
-                       let field = A.Exp.field var_r (lid_of_str pld_name) in
-                       tyexpr_of_ty field ~ty:pld_type)
-                |> A.Exp.array ~loc
-              in
-              [%expr
-                Encode.cstor enc ~index:[%e e_index]
-                  [%e args]]
+            let args, fields =
+              r
+              |> List.map (fun (r : label_declaration) ->
+                     let ty = tyexpr_of_ty r.pld_type in
+                     let lbl =
+                       A.Exp.constant @@ A.Const.string r.pld_name.txt
+                     in
+                     ty, lbl)
+              |> List.split
             in
-            lhs, rhs
+            args, Some fields
         in
-
-        B.case ~lhs ~guard:None ~rhs
+        let labels =
+          match labels with
+          | None -> [%expr None]
+          | Some l -> [%expr Some [%e mk_list ~loc l]]
+        in
+        [%expr
+          {
+            Ty_def.c = [%e A.Exp.constant @@ A.Const.string c.pcd_name.txt];
+            args = [%e mk_list ~loc args];
+            labels = [%e labels];
+          }]
       in
-      let branches = List.mapi ser_cstor cstors in
-      A.Exp.match_ self branches
-  *)
-    | Ptype_record labels -> [%expr assert false]
-    (* TODO: if some config asks for it, use a pointer-with-metadata
-       to pair the tuple with a record descriptor *)
-    (*
+      let cstors = List.map conv_cstor cstors in
+      [%expr Alg [%e mk_list ~loc cstors]]
+    | Ptype_record labels ->
       let fields =
         labels
-        |> List.map (fun { pld_name = field_name; pld_type; _ } ->
-               let self_field = A.Exp.field self @@ lid_of_str field_name in
-               tyexpr_of_ty self_field ~ty:pld_type)
+        |> List.map (fun (f : label_declaration) ->
+               [%expr
+                 [%e A.Exp.constant @@ A.Const.string f.pld_name.txt],
+                   [%e tyexpr_of_ty f.pld_type]])
       in
-      [%expr Encode.array enc [%e A.Exp.array fields]]
-  *)
+      [%expr Record { fields = [%e mk_list ~loc fields] }]
   in
 
   let params =
