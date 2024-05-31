@@ -592,9 +592,8 @@ let param_names ty =
          let loc = ty.ptyp_loc in
          match ty.ptyp_desc with
          | Ptyp_var a -> a
-         | Ptyp_any ->
-           error_gen ~loc "Cannot derive cbor pack for implicit param"
-         | _ -> error_gen ~loc "Cannot derive cbor pack for non-variable type")
+         | Ptyp_any -> error_gen ~loc "Cannot derive twine for implicit param"
+         | _ -> error_gen ~loc "Cannot derive twine for non-variable type")
 
 let generate_impl_ (rec_flag, type_declarations) =
   (* parametrize by functions for each type variable *)
