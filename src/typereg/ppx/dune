@@ -1,0 +1,9 @@
+(library
+ (name imandrakit_typereg_ppx)
+ (public_name imandrakit.typereg.ppx)
+ (synopsis "Automatically derive type registry entries")
+ (kind ppx_deriver)
+ (ppx_runtime_libraries imandrakit.typereg)
+ (libraries ppxlib ppxlib.astlib)
+ (preprocess
+  (pps ppxlib.metaquot)))

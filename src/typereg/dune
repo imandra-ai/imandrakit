@@ -1,0 +1,8 @@
+(library
+ (name imandrakit_typereg)
+ (public_name imandrakit.typereg)
+ (synopsis "Type registry")
+ (preprocess
+  (pps ppx_deriving.std))
+ (flags :standard -open Imandrakit)
+ (libraries imandrakit iter))

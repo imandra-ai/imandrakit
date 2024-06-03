@@ -1,0 +1,5 @@
+t3:
+{ path = "Dune__exe__T3"; name = "A.t"; params = [];
+  decl = (Alias (Cstor ("int", []))) }
+{ path = "Dune__exe__T3"; name = "B.t"; params = [];
+  decl = (Alias (Cstor ("bool", []))) }

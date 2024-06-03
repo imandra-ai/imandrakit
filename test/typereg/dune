@@ -1,0 +1,7 @@
+(tests
+ (names t1 t2 t3)
+ (libraries imandrakit.typereg hex ppx_deriving.runtime)
+ (package imandrakit)
+ (flags :standard -w -34-60)
+ (preprocess
+  (pps imandrakit.typereg.ppx)))
