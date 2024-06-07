@@ -11,6 +11,7 @@ depends: [
   "dune" {>= "3.0"}
   "ocaml" {>= "4.13"}
   "imandrakit" {= version}
+  "imandrakit-log" {= version}
   "moonpool" {>= "0.6"}
   "trace-tef" {with-test}
   "odoc" {with-doc}

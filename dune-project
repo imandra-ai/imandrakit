@@ -62,19 +62,6 @@
   (moonpool multicore thread logs logging)))
 
 (package
- (name imandrakit-io)
- (synopsis "IO utils for Imandra")
- (depends
-  (ocaml
-   (>= 4.13))
-  (imandrakit
-   (= :version))
-  (moonpool
-   (>= 0.6))
-  (trace-tef :with-test)
-  (odoc :with-doc)))
-
-(package
  (name imandrakit-log)
  (synopsis "Logging utils for Imandra")
  (depends
@@ -88,6 +75,21 @@
    (>= 0.6))
   logs
   thread-local-storage
+  (trace-tef :with-test)
+  (odoc :with-doc)))
+
+(package
+ (name imandrakit-io)
+ (synopsis "IO utils for Imandra")
+ (depends
+  (ocaml
+   (>= 4.13))
+  (imandrakit
+   (= :version))
+  (imandrakit-log
+   (= :version))
+  (moonpool
+   (>= 0.6))
   (trace-tef :with-test)
   (odoc :with-doc)))
 
