@@ -1,3 +1,52 @@
+6.0.2
+-----
+
+* Fix ordering of derived `make`'s arguments
+  #285
+  (@NathanReb)
+
+6.0.1 (17/04/2024) (aborted, not on opam)
+-----------------------------------------
+
+* Fix the unintentional removal of `Ppx_deriving_runtime.Result` in #279
+  #282
+  (@NathanReb)
+
+6.0.0 (15/04/2024) (aborted, not on opam)
+----------------------------
+
+* Fix a bug in `[@@deriving make]` that caused errors when it was used on a set
+  of type declarations containing at least one non record type.
+  #281
+  (@NathanReb)
+
+* Embed errors instead of raising exceptions when generating code
+  with `ppx_deriving.make`
+  #281
+  (@NathanReb)
+
+* Remove `[%derive.iter ...]`, `[%derive.map ...]` and `[%derive.fold ...]`
+  extensions
+  #278
+  (Simmo Saan)
+
+* Port standard plugins to ppxlib registration and attributes
+  #263
+  (Simmo Saan)
+
+* Optimize forwarding in eq and ord plugins
+  #252
+  (Simmo Saan)
+
+* Delegate quoter to ppxlib
+  #263
+  (Simmo Saan)
+
+* Introduce `Ppx_deriving_runtime.Stdlib` with OCaml >= 4.07.
+  This module already exists in OCaml < 4.07 but was missing otherwise.
+  #258
+  (Kate Deplaix)
+
 5.2.1 (02/02/2021)
 ------------------
 
