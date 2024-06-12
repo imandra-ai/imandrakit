@@ -8,7 +8,7 @@ license: "MIT"
 homepage: "https://github.com/imandra-ai/imandrakit"
 bug-reports: "https://github.com/imandra-ai/imandrakit/issues"
 depends: [
-  "ocaml" {>= "4.13"}
+  "ocaml" {>= "4.12"}
   "imandrakit" {= version}
   "hmap"
   "dune" {>= "3.0"}
