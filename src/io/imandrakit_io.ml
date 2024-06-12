@@ -47,7 +47,7 @@ let make_absolute ?(in_dir = Sys.getcwd ()) file_name =
     else
       Filename.concat in_dir file_name
   in
-  try Unix.realpath f
+  try Realpath_.realpath f
   with Unix.Unix_error (Unix.ENOENT, _, _) -> normalize_in_mem_ f
 
 let find_file ?(in_dir = Sys.getcwd ()) ~file_name ~load_path () :
