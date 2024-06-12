@@ -3,6 +3,14 @@
  (public_name imandrakit-io)
  (synopsis "Utils around IO/unix")
  (libraries imandrakit imandrakit-log moonpool threads unix)
+ (private_modules realpath_)
  (preprocess
   (pps ppx_deriving.std))
  (flags :standard -open Imandrakit))
+
+(rule
+ (targets realpath_.ml)
+ (action
+  (with-stdout-to
+   %{targets}
+   (run ./gen/gen.exe))))
