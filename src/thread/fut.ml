@@ -49,3 +49,11 @@ let map_vec_array (vec : ('a t, _) Vec.t) : 'a array t =
     ~aggregate_results:(fun f vec ->
       Array.init (Vec.length vec) (fun i -> f @@ Vec.get vec i))
     vec
+
+type any = Any : _ t -> any
+
+let pp_any out (Any x) = pp Fmt.opaque out x
+let[@inline] any_is_resolved (Any x) = is_resolved x
+let[@inline] any_is_success (Any x) = is_success x
+let[@inline] any_is_failed (Any x) = is_failed x
+let[@inline] any_raise_if_failed (Any x) = raise_if_failed x

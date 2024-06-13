@@ -25,3 +25,13 @@ val wait_vec : (_ t, _) Vec.t -> unit t
 (** Wait for all futures in the vector to be done *)
 
 val map_vec_array : ('a t, _) Vec.t -> 'a array t
+
+(** {2 Type erasure} *)
+
+type any = Any : _ t -> any
+
+val pp_any : any Fmt.printer
+val any_is_resolved : any -> bool
+val any_is_success : any -> bool
+val any_is_failed : any -> bool
+val any_raise_if_failed : any -> unit
