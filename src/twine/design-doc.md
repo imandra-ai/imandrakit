@@ -1,4 +1,4 @@
-(see: https://github.com/imandra-ai/imandrakit/discussions/2)
+**NOTE**: obsolete, only useful to understand some of the initial design ideas. (also see: https://github.com/imandra-ai/imandrakit/discussions/2)
 
 ## Overview
 
