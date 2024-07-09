@@ -38,6 +38,7 @@
   (mtime
    (>= 2.0))
   ppx_deriving
+  ppx_deriving_yojson
   (ppxlib
    (>= 0.25.0))
   (trace
