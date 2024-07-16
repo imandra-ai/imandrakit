@@ -12,6 +12,13 @@ type t =
   | Tuple of t list
 [@@deriving show { with_path = false }, eq, yojson]
 
+let map_shallow ~f (self : t) =
+  match self with
+  | Var _ -> self
+  | Cstor (s, l) -> Cstor (s, List.map f l)
+  | Arrow (lbl, a, b) -> Arrow (lbl, f a, f b)
+  | Tuple l -> Tuple (List.map f l)
+
 let var v : t = Var v
 let cstor c l : t = Cstor (c, l)
 let arrow ?label a b : t = Arrow (label, a, b)

@@ -16,13 +16,17 @@ val top : t
 (** Toplevel (default) register *)
 
 val declare : t -> __FILE__:string -> Ty_def.t list -> unit
-(** [declare reg ~__FILE__ tys] declares types to the registry,
+(** [declare reg ~__FILE__ tys] declares a clique of
+      types to the registry,
       with these types being declared in [__FILE__].
     @raise Failure if some types are already registered. *)
 
-val to_iter : t -> Ty_def.t Iter.t
-val find : t -> path:string -> name:string -> unit -> Ty_def.t option
+val to_iter : t -> Ty_def.clique Iter.t
 
-val find_exn : t -> path:string -> name:string -> unit -> Ty_def.t
+val find :
+  t -> path:string -> name:string -> unit -> (Ty_def.t * Ty_def.clique) option
+
+val find_exn :
+  t -> path:string -> name:string -> unit -> Ty_def.t * Ty_def.clique
 (** Same as {!find} but:
   @raise Not_found if not present *)

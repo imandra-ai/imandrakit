@@ -5,6 +5,9 @@ type ty = Ty_expr.t [@@deriving show, eq, yojson]
 type record = { fields: (string * ty) list }
 [@@deriving show { with_path = false }, eq, yojson]
 
+let map_record ~f { fields } : record =
+  { fields = List.map (fun (s, ty) -> s, f ty) fields }
+
 type cstor = {
   c: string;  (** Constructor name *)
   args: ty list;
@@ -13,12 +16,20 @@ type cstor = {
 }
 [@@deriving show { with_path = false }, eq, yojson]
 
+let map_cstor ~f (c : cstor) : cstor = { c with args = List.map f c.args }
+
 (** Definition *)
 type decl =
   | Alias of ty
   | Alg of cstor list
   | Record of record
 [@@deriving show { with_path = false }, eq, yojson]
+
+let map_decl ~f (d : decl) : decl =
+  match d with
+  | Alias ty -> Alias (f ty)
+  | Alg cs -> Alg (List.map (map_cstor ~f) cs)
+  | Record r -> Record (map_record ~f r)
 
 type t = {
   path: string;  (** Path *)
@@ -27,6 +38,10 @@ type t = {
   decl: decl;
 }
 [@@deriving show { with_path = false }, eq, yojson]
+
+type clique = t list
+
+let map ~f (self : t) : t = { self with decl = map_decl ~f self.decl }
 
 let compare_by_name (d1 : t) (d2 : t) =
   compare (d1.path, d1.name) (d2.path, d2.name)

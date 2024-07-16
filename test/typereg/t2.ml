@@ -1,5 +1,7 @@
 open Util_
 
+[@@@ocaml.warning "-37-69"]
+
 type foo = {
   x: int;
   y: float option;
