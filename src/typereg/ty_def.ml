@@ -39,7 +39,7 @@ type t = {
 }
 [@@deriving show { with_path = false }, eq, yojson]
 
-type clique = t list
+type clique = t list [@@deriving eq, yojson, show]
 
 let map ~f (self : t) : t = { self with decl = map_decl ~f self.decl }
 
