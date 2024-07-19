@@ -2,7 +2,7 @@
  (public_name imandrakit.error)
  (name imandrakit_error)
  (preprocess
-  (pps ppx_deriving.std imandrakit.twine.ppx))
+  (pps ppx_deriving.std imandrakit.twine.ppx imandrakit.typereg.ppx))
  (flags :standard -open Imandrakit_common)
  (synopsis "Error library for imandrakit")
  (libraries imandrakit.common imandrakit.twine hmap logs containers))

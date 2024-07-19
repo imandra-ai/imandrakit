@@ -3,9 +3,9 @@ type message = {
   data: Data.t;
   bt: string option; [@key "bt"]
 }
-[@@deriving twine]
+[@@deriving twine, typereg]
 
-type stack = message list [@@deriving twine]
+type stack = message list [@@deriving twine, typereg]
 
 type t = {
   process: string; [@key "p"]
@@ -13,7 +13,7 @@ type t = {
   msg: message; [@key "msg"]
   stack: stack; [@key "st"]
 }
-[@@deriving twine]
+[@@deriving twine, typereg]
 
 exception E of t
 

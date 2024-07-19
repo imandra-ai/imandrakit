@@ -1,6 +1,8 @@
-module Tbl = Str_tbl
+module Tbl = CCHashtbl.Make (CCString)
 module Ty_expr = Ty_expr
 module Ty_def = Ty_def
+
+let spf = Printf.sprintf
 
 type t = {
   tbl: (Ty_def.t * Ty_def.clique) Tbl.t;

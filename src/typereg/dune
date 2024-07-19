@@ -4,5 +4,5 @@
  (synopsis "Type registry")
  (preprocess
   (pps ppx_deriving.std ppx_deriving_yojson))
- (flags :standard -open Imandrakit)
- (libraries imandrakit iter))
+ (flags :standard)
+ (libraries containers iter))

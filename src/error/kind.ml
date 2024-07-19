@@ -1,6 +1,6 @@
 module Twine = Imandrakit_twine
 
-type t = { name: string } [@@unboxed] [@@deriving show, ord, eq]
+type t = { name: string } [@@unboxed] [@@deriving show, ord, eq, typereg]
 
 let[@inline] hash self = CCHash.string self.name
 let make ~name () : t = { name }
