@@ -1,4 +1,10 @@
 t1:
+[{ path = "Dune__exe__T1"; name = "Yolo.t"; params = [];
+   decl =
+   (Alias
+      (Cstor ("array",
+         [(Cstor ("list", [(Cstor ("option", [(Cstor ("float", []))]))]))])))
+   }]
 [{ path = "Dune__exe__T1"; name = "bar"; params = [];
    decl =
    (Alias
@@ -8,9 +14,3 @@ t1:
    }]
 [{ path = "Dune__exe__T1"; name = "foo"; params = [];
    decl = (Alias (Cstor ("int", []))) }]
-[{ path = "Dune__exe__T1"; name = "t"; params = [];
-   decl =
-   (Alias
-      (Cstor ("array",
-         [(Cstor ("list", [(Cstor ("option", [(Cstor ("float", []))]))]))])))
-   }]
