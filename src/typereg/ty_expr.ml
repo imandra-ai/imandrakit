@@ -19,6 +19,15 @@ let map_shallow ~f (self : t) =
   | Arrow (lbl, a, b) -> Arrow (lbl, f a, f b)
   | Tuple l -> Tuple (List.map f l)
 
+let iter_shallow ~f (self : t) =
+  match self with
+  | Var _ -> ()
+  | Cstor (s, l) -> List.iter f l
+  | Arrow (lbl, a, b) ->
+    f a;
+    f b
+  | Tuple l -> List.iter f l
+
 let var v : t = Var v
 let cstor c l : t = Cstor (c, l)
 let arrow ?label a b : t = Arrow (label, a, b)
