@@ -13,13 +13,13 @@ t2:
                [(Tuple [(Cstor ("string", [])); (Cstor ("foo", []))])]))
             ];
           labels = (Some ["x"; "y"]) }
-        ])
-   }]
+        ]);
+   unboxed = false }]
 [{ path = "Dune__exe__T2"; name = "foo"; params = [];
    decl =
    (Record
       { fields =
         [("x", (Cstor ("int", [])));
           ("y", (Cstor ("option", [(Cstor ("float", []))])))]
-        })
-   }]
+        });
+   unboxed = false }]

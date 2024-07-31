@@ -16,6 +16,9 @@ let attr_name =
     Ast_pattern.(single_expr_payload (estring __))
     (fun x -> x)
 
+let has_attr_unboxed (ty : type_declaration) : bool =
+  List.exists (fun a -> a.attr_name.txt = "unboxed") ty.ptype_attributes
+
 let rec lid_to_str (lid : Longident.t) : string =
   match lid with
   | Longident.Lident s -> s
@@ -155,6 +158,7 @@ let tyreg_of_tydecl (d : type_declaration) : expression =
     | None -> d.ptype_name.txt
     | Some s -> s
   in
+  let unboxed = has_attr_unboxed d in
 
   [%expr
     let open Imandrakit_typereg in
@@ -163,6 +167,12 @@ let tyreg_of_tydecl (d : type_declaration) : expression =
       params = [%e params];
       name = [%e A.Exp.constant @@ A.Const.string name];
       decl = [%e decl];
+      unboxed =
+        [%e
+          if unboxed then
+            [%expr true]
+          else
+            [%expr false]];
     }]
 
 let generate_impl_ (_rec_flag, type_declarations) : structure_item list =

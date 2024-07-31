@@ -1,5 +1,8 @@
 t3:
 [{ path = "Dune__exe__T3"; name = "A.t"; params = [];
-   decl = (Alias (Cstor ("int", []))) }]
+   decl = (Alias (Cstor ("int", []))); unboxed = false }]
 [{ path = "Dune__exe__T3"; name = "B.t"; params = [];
-   decl = (Alias (Cstor ("bool", []))) }]
+   decl = (Alias (Cstor ("bool", []))); unboxed = false }]
+[{ path = "Dune__exe__T3"; name = "u"; params = [];
+   decl = (Record { fields = [("x", (Cstor ("float", [])))] });
+   unboxed = true }]

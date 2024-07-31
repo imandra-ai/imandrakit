@@ -45,6 +45,7 @@ type t = {
   name: string;  (** Name of the type *)
   params: string list;  (** Type parameters *)
   decl: decl;
+  unboxed: bool;
 }
 [@@deriving show { with_path = false }, eq, yojson]
 

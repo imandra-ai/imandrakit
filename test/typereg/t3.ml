@@ -10,6 +10,8 @@ module B = struct
   type t = bool [@@deriving typereg] [@@typereg.name "B.t"]
 end
 
+type u = { x: float } [@@unboxed] [@@deriving typereg]
+
 let () =
   print_endline "t3:";
   dump ()
