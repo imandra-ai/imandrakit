@@ -83,6 +83,9 @@ let attr_decode =
     Ast_pattern.(single_expr_payload __)
     (fun x -> x)
 
+let has_attr_unboxed (ty : type_declaration) : bool =
+  List.exists (fun a -> a.attr_name.txt = "unboxed") ty.ptype_attributes
+
 (* apply [Twine.Encode.t -> 'a -> offset] function *)
 let apply_encode ~loc e_encode e : expression =
   [%expr
@@ -417,6 +420,10 @@ let encode_expr_of_tydecl (decl : type_declaration) : expression =
       in
       let branches = List.mapi ser_cstor cstors in
       A.Exp.match_ self branches
+    | Ptype_record [ label ] when has_attr_unboxed decl ->
+      (* just encode unique field *)
+      immediate_expr_of_ty ~ty:label.pld_type
+        (A.Exp.field [%expr self] (lid_of_str label.pld_name))
     | Ptype_record labels ->
       (* TODO: if some config asks for it, use a pointer-with-metadata
          to pair the tuple with a record descriptor *)
@@ -558,6 +565,14 @@ let decode_expr_of_tydecl (decl : type_declaration) : expression =
       [%expr
         let e = Imandrakit_twine.Decode.(read dec @@ deref_rec dec [%e self]) in
         [%e A.Exp.match_ [%expr e] branches]]
+    | Ptype_record [ label ] when has_attr_unboxed decl ->
+      (* just decode unique field and wrap *)
+      A.Exp.record ~loc
+        [
+          ( lid_of_str label.pld_name,
+            decode_expr_of_ty ~ty:label.pld_type [%expr self] );
+        ]
+        None
     | Ptype_record labels ->
       let fields, vbs =
         labels
