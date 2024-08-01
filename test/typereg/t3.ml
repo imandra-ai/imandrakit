@@ -1,3 +1,5 @@
+[@@@warning "-69"]
+
 open Util_
 
 (* test that typereg.name works to disambiguate types *)
