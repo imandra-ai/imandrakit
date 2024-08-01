@@ -19,6 +19,9 @@ let attr_name =
 let has_attr_unboxed (ty : type_declaration) : bool =
   List.exists (fun a -> a.attr_name.txt = "unboxed") ty.ptype_attributes
 
+let has_attr_twine_use_bytes (ty : core_type) : bool =
+  List.exists (fun a -> a.attr_name.txt = "twine.use_bytes") ty.ptyp_attributes
+
 let rec lid_to_str (lid : Longident.t) : string =
   match lid with
   | Longident.Lident s -> s
@@ -33,6 +36,16 @@ let rec mk_list ~loc = function
 (** Produce a [Ty_expr.t] *)
 let rec tyexpr_of_ty (ty : core_type) : expression =
   let loc = ty.ptyp_loc in
+
+  let add_attrs e =
+    if has_attr_twine_use_bytes ty then
+      [%expr Ty_expr.attrs [ "twine.use_bytes", "" ] [%e e]]
+    else
+      e
+  in
+
+  add_attrs
+  @@
   match ty with
   | [%type: int] -> [%expr Ty_expr.cstor "int" []]
   | [%type: int32] -> [%expr Ty_expr.cstor "int32" []]
