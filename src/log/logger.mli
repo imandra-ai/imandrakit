@@ -40,6 +40,9 @@ val add_output : t -> Output.t -> unit
 val to_outputs : Output.t list -> t
 (** Sends events to each output in the list *)
 
+val emit_ev : t -> Log_event.t -> unit
+(** [emit_ev logger ev] emits the log event through all of [logger]'s outputs *)
+
 val with_no_logger : unit -> (unit -> 'a) -> 'a
 (** [with_no_logger () f] calls [f()] in a context where there
   is no logger. Useful to avoid logging loops. *)

@@ -233,6 +233,9 @@ let bg_thread_loop_ (self : t) : unit =
 let fence_ : (unit -> unit Moonpool.Fut.t) ref =
   ref (fun () -> Moonpool.Fut.return ())
 
+let[@inline] emit_ev (self : t) ev : unit =
+  try Sync_queue.push self.q (T_emit ev) with Sync_queue.Closed -> ()
+
 let to_outputs (outs : Output.t list) : t =
   let outputs = Atomic.make outs in
   let events = Observer.create () in
