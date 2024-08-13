@@ -12,7 +12,7 @@ type t = {
   src: string;  (** Log source. *)
   meta: (string * string) list;  (** Additional metadata *)
 }
-[@@deriving show { with_path = false }, serpack]
+[@@deriving show { with_path = false }, serpack, twine]
 (** A log event, which we can store, serialize, send elsewhere, etc. *)
 
 type json = Yojson.Safe.t
