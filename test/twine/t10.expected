@@ -1,3 +1,5 @@
-serialized T10.B {x = 42} is:
-[0x0]: C_1(42)
+serialized T10.B {x = 42; y = [T10.Bar1]; z = (Some "a")} is:
+[0x0]: ["a"] (len=1)
+[0x3]: [C_0] (len=1)
+[0x5]: C_1(42,@0x3,@0x0)
 
