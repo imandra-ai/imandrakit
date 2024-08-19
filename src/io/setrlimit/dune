@@ -1,12 +1,10 @@
-
 (library
-  (name imandrakit_io_setrlimit)
-  (public_name imandrakit-io.setrlimit)
-  (synopsis "Basic resource control via setrlimit")
-  (c_library_flags :standard)
-  (foreign_stubs
-   (language c)
-   ;(include_dirs .)
-   (flags :standard -fPIC -std=c99)
-   (names libimandrakit_setrlimit_stubs)))
-
+ (name imandrakit_io_setrlimit)
+ (public_name imandrakit-io.setrlimit)
+ (synopsis "Basic resource control via setrlimit")
+ (c_library_flags :standard)
+ (foreign_stubs
+  (language c)
+  ;(include_dirs .)
+  (flags :standard -fPIC -std=c99)
+  (names libimandrakit_setrlimit_stubs)))

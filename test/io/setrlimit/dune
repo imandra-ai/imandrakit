@@ -1,4 +1,3 @@
-
 (tests
-  (names t1 t2)
-  (libraries imandrakit-io.setrlimit))
+ (names t1 t2)
+ (libraries imandrakit-io.setrlimit))
