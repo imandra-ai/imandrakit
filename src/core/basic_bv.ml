@@ -54,3 +54,6 @@ let to_list self : _ list =
   let l = ref [] in
   iter self (fun x -> l := x :: !l);
   !l
+
+let show self = spf "<bitvec len=%d>" (length self)
+let pp out (self : t) = Fmt.string out (show self)
