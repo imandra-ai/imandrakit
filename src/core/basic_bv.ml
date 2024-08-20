@@ -1,4 +1,4 @@
-type t = { b: bytes } [@@unboxed]
+type t = { b: (bytes[@twine.use_bytes]) } [@@unboxed] [@@deriving twine]
 
 let create n =
   let len = (n lsr 3) + 1 in

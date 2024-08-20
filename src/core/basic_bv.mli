@@ -1,6 +1,6 @@
 (** A really basic bitvector *)
 
-type t
+type t [@@deriving twine]
 
 val create : int -> t
 val get : t -> int -> bool
