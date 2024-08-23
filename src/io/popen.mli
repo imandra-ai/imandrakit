@@ -24,3 +24,6 @@ val res_code : t -> int Moonpool.Fut.t
 val wait : t -> int
 val kill : t -> unit
 val signal : t -> int -> unit
+
+val stopped : t -> bool
+(** We know that we have stopped the process *)

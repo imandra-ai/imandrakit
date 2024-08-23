@@ -18,6 +18,7 @@ type t = {
 
 let pp out self = Fmt.fprintf out "<pid=%d>" self.pid
 let show self = spf "<pid=%d>" self.pid
+let[@inline] stopped self = Atomic.get self._st.stopped
 
 let kill_and_close_ (self : t) =
   let already_stopped = Atomic.exchange self._st.stopped true in
