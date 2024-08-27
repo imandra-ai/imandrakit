@@ -17,12 +17,16 @@ CAMLprim value caml_imandrakit_setrlimit(value _res, value _value) {
   int resource = resources[Int_val(_res)];
   unsigned long limit = Int_val(_value);
 
-  const struct rlimit r = {
-      .rlim_cur = limit,
-      .rlim_max = limit,
+  struct rlimit old_limits;
+  if (getrlimit(resource, &old_limits) != 0)
+    CAMLreturn(false);
+
+  const struct rlimit new_limits = {
+      .rlim_cur = limit < old_limits.rlim_max ?  limit : old_limits.rlim_max,
+      .rlim_max = old_limits.rlim_max,
   };
 
-  int res = setrlimit(resource, &r);
+  int res = setrlimit(resource, &new_limits);
   bool isok = (res == 0);
 
   CAMLreturn(Val_bool(isok));
