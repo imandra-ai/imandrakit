@@ -5,4 +5,4 @@
   (pps ppx_deriving.std imandrakit.twine.ppx imandrakit.typereg.ppx))
  (flags :standard -open Imandrakit_common)
  (synopsis "Error library for imandrakit")
- (libraries imandrakit.common imandrakit.twine hmap logs containers))
+ (libraries exn_bt imandrakit.common imandrakit.twine hmap logs containers))
