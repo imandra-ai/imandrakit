@@ -22,7 +22,7 @@
  (synopsis "Core utils library for Imandra")
  (depends
   (ocaml
-   (>= 4.12))
+   (>= 4.14))
   dune
   (containers
    (>= 3.4))
@@ -67,7 +67,7 @@
  (synopsis "Logging utils for Imandra")
  (depends
   (ocaml
-   (>= 4.12))
+   (>= 4.14))
   (imandrakit
    (= :version))
   hmap
@@ -84,7 +84,7 @@
  (synopsis "IO utils for Imandra")
  (depends
   (ocaml
-   (>= 4.12))
+   (>= 4.14))
   (imandrakit
    (= :version))
   (imandrakit-log
