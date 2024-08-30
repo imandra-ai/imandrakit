@@ -19,6 +19,10 @@ jobs:
           dune-cache: true
           allow-prerelease-opam: true
 
+      # temporary until it's in a release
+      - run: opam pin https://github.com/c-cube/picos.git#simon/split-package -y -n
+      - run: opam pin https://github.com/c-cube/moonpool.git#simon/move-to-picos -y -n
+
       - run: opam pin . -y -n
       - run: opam install odig imandrakit imandrakit-thread imandrakit-io imandrakit-log
       - run: opam exec -- odig odoc --cache-dir=_doc/ imandrakit imandrakit-thread imandrakit-io imandrakit-log
