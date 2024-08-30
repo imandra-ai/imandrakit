@@ -9,7 +9,7 @@ tags: ["moonpool" "multicore" "thread" "logs" "logging"]
 homepage: "https://github.com/imandra-ai/imandrakit"
 bug-reports: "https://github.com/imandra-ai/imandrakit/issues"
 depends: [
-  "ocaml" {>= "4.12"}
+  "ocaml" {>= "4.14"}
   "dune" {>= "3.0"}
   "containers" {>= "3.4"}
   "iter" {>= "1.0"}
