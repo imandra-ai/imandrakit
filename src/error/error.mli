@@ -56,7 +56,7 @@ val guardf :
 val of_exn : ?bt:Printexc.raw_backtrace -> kind:Kind.t -> exn -> t
 (** Turn exception into an error. *)
 
-val of_exn_bt : kind:Kind.t -> Exn_bt.t -> t
+val of_exn_bt : kind:Kind.t -> Moonpool.Exn_bt.t -> t
 (** Turn exception into an error. *)
 
 val try_catch : kind:Kind.t -> unit -> (unit -> 'a) -> 'a result
