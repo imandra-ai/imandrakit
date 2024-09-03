@@ -32,7 +32,8 @@ let of_exn ?bt ~kind exn : t =
     let bt = Option.map Printexc.raw_backtrace_to_string bt in
     mk_error ?bt ~kind (Printexc.to_string exn)
 
-let[@inline] of_exn_bt ~kind { Exn_bt.exn; bt } : t = of_exn ~bt ~kind exn
+let[@inline] of_exn_bt ~kind (ebt : Moonpool.Exn_bt.t) : t =
+  of_exn ~bt:(Moonpool.Exn_bt.bt ebt) ~kind (Moonpool.Exn_bt.exn ebt)
 
 let[@inline] guardf ?let_pass k f =
   guard ?let_pass (fun () -> k (fun fmt -> Fmt.kasprintf message fmt)) f
