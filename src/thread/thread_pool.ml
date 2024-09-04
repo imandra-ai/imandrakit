@@ -16,8 +16,8 @@ let start ?(active = Switch.create ()) ?(on_exn = Executor.default_exn_handler)
   let around_task = (fun p () -> p), after_task in
   let on_init_thread ~dom_id:_ ~t_id () =
     let name_thread = spf "%s.%d" name t_id in
-    Trace.set_thread_name name_thread;
-    ignore (Thread.sigmask Unix.SIG_BLOCK [ Sys.sigint; Sys.sigpipe ] : _ list)
+    Trace.set_thread_name name_thread
+    (* ignore (Thread.sigmask Unix.SIG_BLOCK [ Sys.sigint; Sys.sigpipe ] : _ list) *)
   in
 
   let pool =
