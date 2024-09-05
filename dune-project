@@ -33,7 +33,6 @@
   ptime
   atomic
   hmap
-  exn_bt
   (yojson
    (>= 1.6))
   (mtime
