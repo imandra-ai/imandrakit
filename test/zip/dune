@@ -2,5 +2,5 @@
  (name run_tests)
  (package imandrakit)
  (enabled_if %{lib-available:imandrakit.zip})
- (libraries imandrakit.zip imandrakit.testlib containers)
+ (libraries imandrakit imandrakit.zip imandrakit.testlib containers)
  (flags :standard -open Imandrakit -open Imandrakit_zip))
