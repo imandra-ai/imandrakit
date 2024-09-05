@@ -1,13 +1,13 @@
 (** Run sub-processes.
 
- This gives more control than the equivalent {!Unix} APIs. *)
+     This gives more control than the equivalent {!Unix} APIs. *)
 
 type state
 
 type t = private {
-  stdin: out_channel;
-  stdout: in_channel;
-  stderr: in_channel;
+  stdin: Utils.Output.t;
+  stdout: Utils.Input.t;
+  stderr: Utils.Input.t;
   pid: int;
   _st: state;
 }

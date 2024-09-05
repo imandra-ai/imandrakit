@@ -2,7 +2,15 @@
  (name imandrakit_io)
  (public_name imandrakit-io)
  (synopsis "Utils around IO/unix")
- (libraries imandrakit imandrakit-log moonpool threads unix)
+ (libraries
+  imandrakit
+  imandrakit-log
+  iostream
+  moonpool
+  moonpool.fib
+  moonpool-io
+  threads
+  unix)
  (private_modules realpath_)
  (preprocess
   (pps ppx_deriving.std))

@@ -1,3 +1,4 @@
+module MIO = Moonpool_io
 module Popen = Popen
 module Xdg = Xdg
 

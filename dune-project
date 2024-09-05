@@ -92,6 +92,7 @@
    (= :version))
   (moonpool
    (>= 0.6))
+  (iostream (and (>= 0.2) (< 0.3)))
   (trace-tef :with-test)
   (odoc :with-doc)))
 

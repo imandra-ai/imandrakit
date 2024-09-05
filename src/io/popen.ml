@@ -1,4 +1,5 @@
 open Moonpool
+module Fd = Moonpool_io.Fd
 module Log = (val Imandrakit_log.Logger.mk_log_str "x.popen")
 
 type state = {
@@ -8,9 +9,9 @@ type state = {
 }
 
 type t = {
-  stdin: out_channel;
-  stdout: in_channel;
-  stderr: in_channel;
+  stdin: Utils.Output.t;
+  stdout: Utils.Input.t;
+  stderr: Utils.Input.t;
   pid: int;
   _st: state;
 }
@@ -25,17 +26,14 @@ let kill_and_close_ (self : t) =
   if not already_stopped then (
     Log.debug (fun k -> k "kill/close subprocess pid=%d" self.pid);
     (try Unix.kill self.pid 15 with _ -> ());
-    close_out_noerr self.stdin;
-    close_in_noerr self.stdout;
-    close_in_noerr self.stderr;
+    Utils.Output.close self.stdin;
+    Utils.Input.close self.stdout;
+    Utils.Input.close self.stderr;
+
     (* just to be sure, wait a second and kill dash nine *)
-    ignore
-      (Thread.create
-         (fun () ->
-           Thread.delay 1.;
-           try Unix.kill self.pid 9 with _ -> ())
-         ()
-        : Thread.t);
+    Moonpool_fib.spawn_ignore (fun () ->
+        Thread.delay 1.;
+        try Unix.kill self.pid 9 with _ -> ());
 
     (* kill zombies *)
     let code = try fst @@ Unix.waitpid [] self.pid with _ -> max_int in
@@ -53,9 +51,15 @@ let run_ ?(env = Unix.environment ()) cmd args : t =
   Unix.set_close_on_exec stdout;
   Unix.set_close_on_exec stderr;
   Unix.set_close_on_exec stdin;
-  let stdout = Unix.in_channel_of_descr stdout in
-  let stderr = Unix.in_channel_of_descr stderr in
-  let stdin = Unix.out_channel_of_descr stdin in
+  let stdout =
+    new Utils.Input.of_unix_fd ~buf:(Utils.Slice.create 512) @@ Fd.create stdout
+  in
+  let stderr =
+    new Utils.Input.of_unix_fd ~buf:(Utils.Slice.create 512) @@ Fd.create stderr
+  in
+  let stdin =
+    new Utils.Output.of_unix_fd ~buf:(Utils.Slice.create 512) @@ Fd.create stdin
+  in
   let pid = Unix.create_process_env cmd args env p_stdin p_stdout p_stderr in
   let res_code, promise_code = Fut.make () in
   Log.debug (fun k ->
