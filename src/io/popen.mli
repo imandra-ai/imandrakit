@@ -21,7 +21,8 @@ val run_shell : ?env:string array -> string -> t
 (** Run subprocess with given command *)
 
 val res_code : t -> int Moonpool.Fut.t
-val wait : t -> int
+val wait_block : t -> int
+val await : t -> int
 val kill : t -> unit
 val signal : t -> int -> unit
 

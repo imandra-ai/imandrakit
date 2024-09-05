@@ -21,7 +21,7 @@ let pp out self = Fmt.fprintf out "<pid=%d>" self.pid
 let show self = spf "<pid=%d>" self.pid
 let[@inline] stopped self = Atomic.get self._st.stopped
 
-let kill_and_close_ (self : t) =
+let kill_and_close_ ~spawn ~waitpid (self : t) =
   let already_stopped = Atomic.exchange self._st.stopped true in
   if not already_stopped then (
     Log.debug (fun k -> k "kill/close subprocess pid=%d" self.pid);
@@ -36,9 +36,26 @@ let kill_and_close_ (self : t) =
         try Unix.kill self.pid 9 with _ -> ());
 
     (* kill zombies *)
-    let code = try fst @@ Unix.waitpid [] self.pid with _ -> max_int in
-    Fut.fulfill_idempotent self._st.promise_code @@ Ok code
+    spawn (fun () ->
+        let code = try waitpid self.pid with _ -> max_int in
+        Fut.fulfill_idempotent self._st.promise_code @@ Ok code)
   )
+
+let waitpid_int_ (pid : int) : int =
+  match Unix.waitpid [ Unix.WUNTRACED ] pid with
+  | _, (Unix.WEXITED i | Unix.WSTOPPED i | Unix.WSIGNALED i) -> i
+  | exception _ -> 0
+
+let waitpid_int_nonblock_ (pid : int) : int =
+  (* non blocking wait *)
+  match Moonpool_io.Unix.waitpid [ Unix.WUNTRACED ] pid with
+  | _, (Unix.WEXITED i | Unix.WSTOPPED i | Unix.WSIGNALED i) -> i
+  | exception _ -> 0
+
+let kill_and_close_thread_ (self : t) =
+  kill_and_close_ self
+    ~spawn:(fun f -> ignore (Thread.create f () : Thread.t))
+    ~waitpid:waitpid_int_
 
 let run_ ?(env = Unix.environment ()) cmd args : t =
   (* block sigpipe *)
@@ -77,23 +94,26 @@ let run_ ?(env = Unix.environment ()) cmd args : t =
       _st = { stopped = Atomic.make false; res_code; promise_code };
     }
   in
-  Gc.finalise kill_and_close_ p;
+  Gc.finalise kill_and_close_thread_ p;
   p
 
 let run ?env cmd args : t = run_ ?env cmd (Array.of_list (cmd :: args))
 let res_code self = self._st.res_code
 let run_shell ?env cmd : t = run_ ?env "/bin/sh" [| "/bin/sh"; "-c"; cmd |]
-let kill self = kill_and_close_ self
+
+let kill self =
+  kill_and_close_
+    ~spawn:(fun f -> Moonpool_fib.spawn_ignore f)
+    ~waitpid:waitpid_int_nonblock_ self
+
 let signal self s = Unix.kill self.pid s
 
-let wait (self : t) : int =
-  let res =
-    try snd @@ Unix.waitpid [ Unix.WUNTRACED ] self.pid
-    with _ -> Unix.WEXITED 0
-  in
-  kill_and_close_ self;
-  let res =
-    match res with
-    | Unix.WEXITED i | Unix.WSTOPPED i | Unix.WSIGNALED i -> i
-  in
+let wait_block (self : t) : int =
+  let res = waitpid_int_ self.pid in
+  kill_and_close_ self ~waitpid:(fun _ -> res) ~spawn:(fun f -> f ());
+  res
+
+let await (self : t) : int =
+  let res = waitpid_int_nonblock_ self.pid in
+  kill_and_close_ self ~waitpid:(fun _ -> res) ~spawn:(fun f -> f ());
   res
