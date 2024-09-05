@@ -23,7 +23,10 @@ val run_shell : ?env:string array -> string -> t
 val res_code : t -> int Moonpool.Fut.t
 val wait_block : t -> int
 val await : t -> int
+
 val kill : t -> unit
+(** Kill process, close asynchronously *)
+
 val signal : t -> int -> unit
 
 val stopped : t -> bool
