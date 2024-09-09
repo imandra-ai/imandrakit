@@ -82,6 +82,24 @@
   (odoc :with-doc)))
 
 (package
+ (name imandrakit-debug)
+ (synopsis "Debugging utils for Imandra")
+ (depends
+  (ocaml
+   (>= 4.14))
+  (imandrakit
+   (= :version))
+  trace
+  trace-subscriber
+  ppx_deriving
+  ppx_deriving_yojson
+  hmap
+  dune
+  (moonpool
+   (>= 0.6))
+  (odoc :with-doc)))
+
+(package
  (name imandrakit-io)
  (synopsis "IO utils for Imandra")
  (depends
