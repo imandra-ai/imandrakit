@@ -13,6 +13,5 @@
   ptime.clock.os
   uuidm
   unix
-  moonpool
   trace.core
   yojson))
