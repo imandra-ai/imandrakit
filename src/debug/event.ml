@@ -1,4 +1,8 @@
-open Trace_core
+(** Event type for subscribers.
+
+    The {!Event.t} type corresponds closely to callbacks in
+    Trace subscribers. Because events are just values,
+    they can be serialized, forwarded to other processes, etc. *)
 
 type span = int64 [@@deriving show, yojson, twine]
 
