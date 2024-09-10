@@ -4,22 +4,7 @@
     Trace subscribers. Because events are just values,
     they can be serialized, forwarded to other processes, etc. *)
 
-type span = int64 [@@deriving show, yojson, twine]
-
-let _ : span -> Trace_core.span = Fun.id
-
-type user_data = Trace_subscriber.user_data =
-  | U_bool of bool
-  | U_float of float
-  | U_int of int
-  | U_none
-  | U_string of string
-[@@deriving show { with_path = false }, yojson, twine]
-
-type flavor = Trace_subscriber.flavor =
-  | Sync
-  | Async
-[@@deriving show { with_path = false }, yojson, twine]
+open Types
 
 type t =
   | E_init of { time_ns: float }

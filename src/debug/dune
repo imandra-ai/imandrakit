@@ -1,6 +1,21 @@
-
 (library
-  (name imandrakit_debug)
-  (public_name imandrakit-debug)
-  (preprocess (pps ppx_deriving.std ppx_deriving_yojson imandrakit.twine.ppx))
-  (libraries trace.core trace-subscriber))
+ (name imandrakit_debug)
+ (public_name imandrakit-debug)
+ (preprocess
+  (pps ppx_deriving.std ppx_deriving_yojson imandrakit.twine.ppx))
+ (flags
+  :standard
+  -open
+  Imandrakit_debug_core
+  -open
+  Imandrakit
+  -open
+  Imandrakit_thread)
+ (libraries
+  imandrakit
+  imandrakit-thread
+  unix
+  logs
+  trace.core
+  trace-subscriber
+  imandrakit-debug.core))

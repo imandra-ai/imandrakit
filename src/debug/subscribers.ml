@@ -38,62 +38,71 @@ let emit (Sub { st; callbacks = (module CB) } : Sub.t) (e : E.t) : unit =
   | E_exit_manual_span { time_ns; tid; name; data; flavor; trace_id; span } ->
     CB.on_exit_manual_span st ~time_ns ~tid ~name ~data ~flavor ~trace_id span
 
-let to_events (type st0) ~emit_ev (st0 : st0) : Sub.t =
-  let module M = struct
-    type st = {
-      st0: st0;
-      emit_ev: st0 -> E.t -> unit;
+module To_events_callbacks = struct
+  open E
+
+  (** State and callback *)
+  type st =
+    | St : {
+        st: 'a;
+        emit_ev: 'a -> E.t -> unit;
+      }
+        -> st
+
+  let on_init (St st) ~time_ns = st.emit_ev st.st @@ E_init { time_ns }
+  let on_shutdown (St st) ~time_ns = st.emit_ev st.st @@ E_shutdown { time_ns }
+
+  let on_name_thread (St st) ~time_ns ~tid ~name =
+    st.emit_ev st.st @@ E_name_thread { time_ns; tid; name }
+
+  let on_name_process (St st) ~time_ns ~tid ~name =
+    st.emit_ev st.st @@ E_name_process { time_ns; tid; name }
+
+  let on_enter_span (St st) ~__FUNCTION__ ~__FILE__ ~__LINE__ ~time_ns ~tid
+      ~data ~name span =
+    st.emit_ev st.st
+    @@ E_enter_span
+         { __FUNCTION__; __FILE__; __LINE__; time_ns; tid; data; name; span }
+
+  let on_exit_span (St st) ~time_ns ~tid span =
+    st.emit_ev st.st @@ E_exit_span { time_ns; tid; span }
+
+  let on_add_data (St st) ~data span =
+    st.emit_ev st.st @@ E_add_data { data; span }
+
+  let on_message (St st) ~time_ns ~tid ~span ~data msg =
+    st.emit_ev st.st @@ E_message { time_ns; tid; span; data; msg }
+
+  let on_counter (St st) ~time_ns ~tid ~data ~name n =
+    st.emit_ev st.st @@ E_counter { time_ns; tid; data; name; n }
+
+  let on_enter_manual_span (St st) ~__FUNCTION__ ~__FILE__ ~__LINE__ ~time_ns
+      ~tid ~parent ~data ~name ~flavor ~trace_id span =
+    st.emit_ev st.st
+    @@ E_enter_manual_span
+         {
+           __FUNCTION__;
+           __FILE__;
+           __LINE__;
+           time_ns;
+           tid;
+           parent;
+           data;
+           name;
+           flavor;
+           trace_id;
+           span;
+         }
+
+  let on_exit_manual_span (St st) ~time_ns ~tid ~name ~data ~flavor ~trace_id
+      span =
+    st.emit_ev st.st
+    @@ E_exit_manual_span { time_ns; tid; name; data; flavor; trace_id; span }
+end
+
+let to_events (type st) ~emit_ev (st : st) : Sub.t =
+  Sub.Subscriber.Sub
+    {
+      st = To_events_callbacks.St { st; emit_ev };
+      callbacks = (module To_events_callbacks);
     }
-
-    let on_init st ~time_ns = st.emit_ev st.st0 @@ E_init { time_ns }
-    let on_shutdown st ~time_ns = st.emit_ev st.st0 @@ E_shutdown { time_ns }
-
-    let on_name_thread st ~time_ns ~tid ~name =
-      st.emit_ev st.st0 @@ E_name_thread { time_ns; tid; name }
-
-    let on_name_process st ~time_ns ~tid ~name =
-      st.emit_ev st.st0 @@ E_name_process { time_ns; tid; name }
-
-    let on_enter_span st ~__FUNCTION__ ~__FILE__ ~__LINE__ ~time_ns ~tid ~data
-        ~name span =
-      st.emit_ev st.st0
-      @@ E_enter_span
-           { __FUNCTION__; __FILE__; __LINE__; time_ns; tid; data; name; span }
-
-    let on_exit_span st ~time_ns ~tid span =
-      st.emit_ev st.st0 @@ E_exit_span { time_ns; tid; span }
-
-    let on_add_data st ~data span =
-      st.emit_ev st.st0 @@ E_add_data { data; span }
-
-    let on_message st ~time_ns ~tid ~span ~data msg =
-      st.emit_ev st.st0 @@ E_message { time_ns; tid; span; data; msg }
-
-    let on_counter st ~time_ns ~tid ~data ~name n =
-      st.emit_ev st.st0 @@ E_counter { time_ns; tid; data; name; n }
-
-    let on_enter_manual_span st ~__FUNCTION__ ~__FILE__ ~__LINE__ ~time_ns ~tid
-        ~parent ~data ~name ~flavor ~trace_id span =
-      st.emit_ev st.st0
-      @@ E_enter_manual_span
-           {
-             __FUNCTION__;
-             __FILE__;
-             __LINE__;
-             time_ns;
-             tid;
-             parent;
-             data;
-             name;
-             flavor;
-             trace_id;
-             span;
-           }
-
-    let on_exit_manual_span st ~time_ns ~tid ~name ~data ~flavor ~trace_id span
-        =
-      st.emit_ev st.st0
-      @@ E_exit_manual_span { time_ns; tid; name; data; flavor; trace_id; span }
-  end in
-  let st : M.st = { st0; emit_ev } in
-  Sub.Subscriber.Sub { st; callbacks = (module M) }

@@ -89,6 +89,8 @@
    (>= 4.14))
   (imandrakit
    (= :version))
+  (imandrakit-thread
+   (= :version))
   trace
   trace-subscriber
   ppx_deriving
