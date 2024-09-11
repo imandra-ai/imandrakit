@@ -93,6 +93,7 @@
    (= :version))
   trace
   trace-subscriber
+  base-unix
   ppx_deriving
   ppx_deriving_yojson
   hmap

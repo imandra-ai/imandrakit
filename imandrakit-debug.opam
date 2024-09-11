@@ -10,8 +10,10 @@ bug-reports: "https://github.com/imandra-ai/imandrakit/issues"
 depends: [
   "ocaml" {>= "4.14"}
   "imandrakit" {= version}
+  "imandrakit-thread" {= version}
   "trace"
   "trace-subscriber"
+  "base-unix"
   "ppx_deriving"
   "ppx_deriving_yojson"
   "hmap"

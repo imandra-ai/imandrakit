@@ -19,10 +19,21 @@ type span_info = {
 }
 (** A regular synchronous span *)
 
+type thread_local_state = {
+  must_block: bool Atomic.t;
+  block: Blocker_.t;  (** if [must_block] is true, block on this *)
+}
+(** State local to each thread, available from within the thread *)
+
+(** Key to access current thread's local state *)
+let k_thead_state : thread_local_state TLS.t = TLS.create ()
+
 type thread_state = {
   tid: tid;
   spans: span_info Vec.vector;
   mutable name: string option;
+  ls: thread_local_state;
+      (** The state also available from within that thread *)
 }
 (** State for a given thread *)
 
@@ -85,7 +96,8 @@ let create_proc_state ~pid () : process_state =
     (* async = Lock.create @@ Str_tbl.create 16; *)
   }
 
-let broadcast_ev_ (self : t) ev : unit =
+(** Send [ev] to the clients that want notifications *)
+let broadcast_ev_to_clients_ (self : t) ev : unit =
   let clients = Immlock.get self.clients in
   Int_map.iter
     (fun _ cl ->
@@ -107,21 +119,52 @@ let create () : t =
     }
   in
   st.emit_ev_st <-
-    Some (Subscribers.To_events_callbacks.St { st; emit_ev = broadcast_ev_ });
+    Some
+      (Subscribers.To_events_callbacks.St
+         { st; emit_ev = broadcast_ev_to_clients_ });
   st
+
+let global_st : t = create ()
+
+let create_thread_ls () =
+  { must_block = Atomic.make false; block = Blocker_.create () }
 
 let with_add_or_create_thread_state_ (self : process_state) ~tid
     (f : thread_state -> 'a) : 'a =
   Tid_tbl.with_add_or_create self.threads tid
-    ~create:(fun tid -> { tid; name = None; spans = Vec.create () })
+    ~create:(fun tid ->
+      { tid; name = None; spans = Vec.create (); ls = create_thread_ls () })
     f
 
 let with_find_thread_state_ (self : process_state) ~tid
     (f : thread_state option -> 'a) : 'a =
   Tid_tbl.with_find self.threads tid f
 
+let suspend_thread (self : t) ~tid =
+  with_find_thread_state_ self.cur_proc ~tid @@ function
+  | None -> false
+  | Some t ->
+    Atomic.set t.ls.must_block true;
+    true
+
+let[@inline never] create_and_set_cur_thread_ls () : thread_local_state =
+  let@ st =
+    with_add_or_create_thread_state_ global_st.cur_proc
+      ~tid:(Thread.id @@ Thread.self ())
+  in
+  TLS.set k_thead_state st.ls;
+  st.ls
+
+(** Access the current thread's state *)
+let[@inline] get_cur_thread_ls () : thread_local_state =
+  match TLS.get_exn k_thead_state with
+  | ls -> ls
+  | exception TLS.Not_set -> create_and_set_cur_thread_ls ()
+
 module Client_state = struct
   type t = client_state
+
+  let is_active self = Atomic.get self.active
 
   let enable_notifications self =
     if not (Atomic.exchange self.wants_notifications true) then
@@ -144,25 +187,34 @@ module Callbacks : Trace_subscriber.Callbacks.S with type st = t = struct
     | Some s -> s
     | None -> assert false
 
+  (** See if the current thread has a breakpoint *)
+  let[@inline] check_breakpoint () =
+    let ls = get_cur_thread_ls () in
+    if Atomic.get ls.must_block then Blocker_.wait_block ls.block
+
   let on_init self ~time_ns =
     if Atomic.get self.n_clients_with_notifs > 0 then
-      EV_CB.on_init (_st self) ~time_ns
+      EV_CB.on_init (_st self) ~time_ns;
+    check_breakpoint ()
 
   let on_shutdown self ~time_ns =
     if Atomic.get self.n_clients_with_notifs > 0 then
-      EV_CB.on_shutdown (_st self) ~time_ns
+      EV_CB.on_shutdown (_st self) ~time_ns;
+    check_breakpoint ()
 
   let on_name_thread self ~time_ns ~tid ~name =
     (let@ st = with_add_or_create_thread_state_ self.cur_proc ~tid in
      st.name <- Some name);
 
     if Atomic.get self.n_clients_with_notifs > 0 then
-      EV_CB.on_name_thread (_st self) ~time_ns ~tid ~name
+      EV_CB.on_name_thread (_st self) ~time_ns ~tid ~name;
+    check_breakpoint ()
 
   let on_name_process self ~time_ns ~tid ~name =
     self.cur_proc.name <- Some name;
     if Atomic.get self.n_clients_with_notifs > 0 then
-      EV_CB.on_name_process (_st self) ~time_ns ~tid ~name
+      EV_CB.on_name_process (_st self) ~time_ns ~tid ~name;
+    check_breakpoint ()
 
   let on_enter_span self ~__FUNCTION__ ~__FILE__ ~__LINE__ ~time_ns ~tid ~data
       ~name span =
@@ -172,7 +224,8 @@ module Callbacks : Trace_subscriber.Callbacks.S with type st = t = struct
          : span_info));
     if Atomic.get self.n_clients_with_notifs > 0 then
       EV_CB.on_enter_span (_st self) ~__FUNCTION__ ~__FILE__ ~__LINE__ ~time_ns
-        ~tid ~data ~name span
+        ~tid ~data ~name span;
+    check_breakpoint ()
 
   let on_exit_span self ~time_ns ~tid span =
     (* update our local state *)
@@ -193,7 +246,8 @@ module Callbacks : Trace_subscriber.Callbacks.S with type st = t = struct
        | _sp -> ignore (Vec.pop_exn t.spans : span_info)));
 
     if Atomic.get self.n_clients_with_notifs > 0 then
-      EV_CB.on_exit_span (_st self) ~time_ns ~tid span
+      EV_CB.on_exit_span (_st self) ~time_ns ~tid span;
+    check_breakpoint ()
 
   let on_add_data self ~data span =
     (match Span_tbl.find_exn self.spans span with
@@ -201,11 +255,13 @@ module Callbacks : Trace_subscriber.Callbacks.S with type st = t = struct
     | exception Not_found ->
       Log.err (fun k -> k "span %a is not active" pp_span span));
     if Atomic.get self.n_clients_with_notifs > 0 then
-      EV_CB.on_add_data (_st self) ~data span
+      EV_CB.on_add_data (_st self) ~data span;
+    check_breakpoint ()
 
   let on_message self ~time_ns ~tid ~span ~data msg =
     if Atomic.get self.n_clients_with_notifs > 0 then
-      EV_CB.on_message (_st self) ~time_ns ~tid ~span ~data msg
+      EV_CB.on_message (_st self) ~time_ns ~tid ~span ~data msg;
+    check_breakpoint ()
 
   let on_counter self ~time_ns ~tid ~data ~name v =
     (let@ c =
@@ -216,7 +272,8 @@ module Callbacks : Trace_subscriber.Callbacks.S with type st = t = struct
      c.v <- v);
 
     if Atomic.get self.n_clients_with_notifs > 0 then
-      EV_CB.on_counter (_st self) ~time_ns ~tid ~data ~name v
+      EV_CB.on_counter (_st self) ~time_ns ~tid ~data ~name v;
+    check_breakpoint ()
 
   (* TODO: *)
   [@@@ocaml.warning "-27"]
@@ -324,3 +381,10 @@ let handle_req (self : t) (cl : client_state) (req : Commands.Request.t) :
     let l = ref [] in
     Counter_tbl.iter self.counters (fun _ c -> l := get_counter c :: !l);
     Res.R_all_counters !l
+
+module Private_ = struct
+  let block_current_thread () =
+    let ls = get_cur_thread_ls () in
+    Atomic.set ls.must_block true;
+    Blocker_.wait_block ls.block
+end

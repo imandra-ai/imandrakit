@@ -58,5 +58,7 @@ module Server_notification = struct
     | N_disabled
     | N_events of Event.t list
     | N_disconnect  (** Client gets disconnected *)
+    | N_interrupted of { tid: int }
+    | N_interrupted_all  (** All threads interrupted *)
   [@@deriving show { with_path = false }, yojson, twine]
 end
