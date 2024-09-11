@@ -1,0 +1,5 @@
+
+(executable
+  (name t1)
+  (libraries trace.core imandrakit-debug logs))
+
