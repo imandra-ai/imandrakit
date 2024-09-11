@@ -46,7 +46,7 @@ function emit(str) {
 
 emit(`(** ${schema.description} *)\n`);
 emit(`(* Auto-generated from json schema. Do not edit manually. *)\n\n`);
-emit(`include module type of Debug_protocol_types\n\n`);
+emit(`include module type of Types\n\n`);
 
 const toOcamlName = (() => {
   function toSnakeCase(key) {

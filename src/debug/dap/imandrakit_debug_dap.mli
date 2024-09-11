@@ -1,7 +1,7 @@
 (** The Debug Adapter Protocol defines the protocol used between an editor or IDE and a debugger or runtime. *)
 (* Auto-generated from json schema. Do not edit manually. *)
 
-include module type of Debug_protocol_types
+include module type of Types
 
 module Protocol_message : sig
   module Type : sig

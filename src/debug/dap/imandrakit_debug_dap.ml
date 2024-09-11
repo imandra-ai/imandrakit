@@ -3,7 +3,7 @@
 
 open Util
 
-include Debug_protocol_types
+include Types
 
 module Protocol_message = struct
   module Type = struct
@@ -18,7 +18,7 @@ module Protocol_message = struct
       | `String "request" -> Ok Request
       | `String "response" -> Ok Response
       | `String "event" -> Ok Event
-      | `String str -> Ok (Custom str)  | _ -> Error (print_exn_at_loc [%here])
+      | `String str -> Ok (Custom str)  | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
     let to_yojson = function
       | Request -> `String "request"
@@ -42,7 +42,7 @@ module Request = struct
 
     let of_yojson = function
       | `String "request" -> Ok Request
-      | _ -> Error (print_exn_at_loc [%here])
+      | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
     let to_yojson = function
       | Request -> `String "request"
@@ -65,7 +65,7 @@ module Event = struct
 
     let of_yojson = function
       | `String "event" -> Ok Event
-      | _ -> Error (print_exn_at_loc [%here])
+      | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
     let to_yojson = function
       | Event -> `String "event"
@@ -88,7 +88,7 @@ module Response = struct
 
     let of_yojson = function
       | `String "response" -> Ok Response
-      | _ -> Error (print_exn_at_loc [%here])
+      | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
     let to_yojson = function
       | Response -> `String "response"
@@ -105,7 +105,7 @@ module Response = struct
 
     let of_yojson = function
       | `String "cancelled" -> Ok Cancelled
-      | `String str -> Ok (Custom str)  | _ -> Error (print_exn_at_loc [%here])
+      | `String str -> Ok (Custom str)  | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
     let to_yojson = function
       | Cancelled -> `String "cancelled"
@@ -198,7 +198,7 @@ module Column_descriptor = struct
       | `String "number" -> Ok Number
       | `String "boolean" -> Ok Boolean
       | `String "unixTimestampUTC" -> Ok Unix_timestamp_utc
-      | _ -> Error (print_exn_at_loc [%here])
+      | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
     let to_yojson = function
       | String -> `String "string"
@@ -234,7 +234,7 @@ module Checksum_algorithm = struct
     | `String "SHA1" -> Ok SHA1
     | `String "SHA256" -> Ok SHA256
     | `String "timestamp" -> Ok Timestamp
-    | _ -> Error (print_exn_at_loc [%here])
+    | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
   let to_yojson = function
     | MD5 -> `String "MD5"
@@ -354,7 +354,7 @@ module Source = struct
       | `String "normal" -> Ok Normal
       | `String "emphasize" -> Ok Emphasize
       | `String "deemphasize" -> Ok Deemphasize
-      | _ -> Error (print_exn_at_loc [%here])
+      | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
     let to_yojson = function
       | Normal -> `String "normal"
@@ -397,7 +397,7 @@ module Stack_frame = struct
       | `String "normal" -> Ok Normal
       | `String "label" -> Ok Label
       | `String "subtle" -> Ok Subtle
-      | _ -> Error (print_exn_at_loc [%here])
+      | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
     let to_yojson = function
       | Normal -> `String "normal"
@@ -437,7 +437,7 @@ module Scope = struct
       | `String "arguments" -> Ok Arguments
       | `String "locals" -> Ok Locals
       | `String "registers" -> Ok Registers
-      | `String str -> Ok (Custom str)  | _ -> Error (print_exn_at_loc [%here])
+      | `String str -> Ok (Custom str)  | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
     let to_yojson = function
       | Arguments -> `String "arguments"
@@ -494,7 +494,7 @@ module Variable_presentation_hint = struct
       | `String "mostDerivedClass" -> Ok Most_derived_class
       | `String "virtual" -> Ok Virtual
       | `String "dataBreakpoint" -> Ok Data_breakpoint
-      | `String str -> Ok (Custom str)  | _ -> Error (print_exn_at_loc [%here])
+      | `String str -> Ok (Custom str)  | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
     let to_yojson = function
       | Property -> `String "property"
@@ -530,7 +530,7 @@ module Variable_presentation_hint = struct
       | `String "hasObjectId" -> Ok Has_object_id
       | `String "canHaveObjectId" -> Ok Can_have_object_id
       | `String "hasSideEffects" -> Ok Has_side_effects
-      | `String str -> Ok (Custom str)  | _ -> Error (print_exn_at_loc [%here])
+      | `String str -> Ok (Custom str)  | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
     let to_yojson = function
       | Static -> `String "static"
@@ -559,7 +559,7 @@ module Variable_presentation_hint = struct
       | `String "protected" -> Ok Protected
       | `String "internal" -> Ok Internal
       | `String "final" -> Ok Final
-      | `String str -> Ok (Custom str)  | _ -> Error (print_exn_at_loc [%here])
+      | `String str -> Ok (Custom str)  | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
     let to_yojson = function
       | Public -> `String "public"
@@ -657,7 +657,7 @@ module Data_breakpoint_access_type = struct
     | `String "read" -> Ok Read
     | `String "write" -> Ok Write
     | `String "readWrite" -> Ok Read_write
-    | _ -> Error (print_exn_at_loc [%here])
+    | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
   let to_yojson = function
     | Read -> `String "read"
@@ -725,7 +725,7 @@ module Stepping_granularity = struct
     | `String "statement" -> Ok Statement
     | `String "line" -> Ok Line
     | `String "instruction" -> Ok Instruction
-    | _ -> Error (print_exn_at_loc [%here])
+    | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
   let to_yojson = function
     | Statement -> `String "statement"
@@ -801,7 +801,7 @@ module Completion_item_type = struct
     | `String "file" -> Ok File
     | `String "reference" -> Ok Reference
     | `String "customcolor" -> Ok Customcolor
-    | _ -> Error (print_exn_at_loc [%here])
+    | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
   let to_yojson = function
     | Method -> `String "method"
@@ -907,7 +907,7 @@ module Exception_break_mode = struct
     | `String "always" -> Ok Always
     | `String "unhandled" -> Ok Unhandled
     | `String "userUnhandled" -> Ok User_unhandled
-    | _ -> Error (print_exn_at_loc [%here])
+    | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
   let to_yojson = function
     | Never -> `String "never"
@@ -972,7 +972,7 @@ module Invalidated_areas = struct
     | `String "stacks" -> Ok Stacks
     | `String "threads" -> Ok Threads
     | `String "variables" -> Ok Variables
-    | `String str -> Ok (Custom str)  | _ -> Error (print_exn_at_loc [%here])
+    | `String str -> Ok (Custom str)  | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
   let to_yojson = function
     | All -> `String "all"
@@ -1020,7 +1020,7 @@ module Stopped_event = struct
         | `String "function breakpoint" -> Ok Function_breakpoint
         | `String "data breakpoint" -> Ok Data_breakpoint
         | `String "instruction breakpoint" -> Ok Instruction_breakpoint
-        | `String str -> Ok (Custom str)  | _ -> Error (print_exn_at_loc [%here])
+        | `String str -> Ok (Custom str)  | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
       let to_yojson = function
         | Step -> `String "step"
@@ -1099,7 +1099,7 @@ module Thread_event = struct
       let of_yojson = function
         | `String "started" -> Ok Started
         | `String "exited" -> Ok Exited
-        | `String str -> Ok (Custom str)  | _ -> Error (print_exn_at_loc [%here])
+        | `String str -> Ok (Custom str)  | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
       let to_yojson = function
         | Started -> `String "started"
@@ -1133,7 +1133,7 @@ module Output_event = struct
         | `String "stdout" -> Ok Stdout
         | `String "stderr" -> Ok Stderr
         | `String "telemetry" -> Ok Telemetry
-        | `String str -> Ok (Custom str)  | _ -> Error (print_exn_at_loc [%here])
+        | `String str -> Ok (Custom str)  | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
       let to_yojson = function
         | Console -> `String "console"
@@ -1154,7 +1154,7 @@ module Output_event = struct
         | `String "start" -> Ok Start
         | `String "startCollapsed" -> Ok Start_collapsed
         | `String "end" -> Ok End
-        | _ -> Error (print_exn_at_loc [%here])
+        | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
       let to_yojson = function
         | Start -> `String "start"
@@ -1193,7 +1193,7 @@ module Breakpoint_event = struct
         | `String "changed" -> Ok Changed
         | `String "new" -> Ok New
         | `String "removed" -> Ok Removed
-        | `String str -> Ok (Custom str)  | _ -> Error (print_exn_at_loc [%here])
+        | `String str -> Ok (Custom str)  | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
       let to_yojson = function
         | Changed -> `String "changed"
@@ -1225,7 +1225,7 @@ module Module_event = struct
         | `String "new" -> Ok New
         | `String "changed" -> Ok Changed
         | `String "removed" -> Ok Removed
-        | _ -> Error (print_exn_at_loc [%here])
+        | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
       let to_yojson = function
         | New -> `String "new"
@@ -1257,7 +1257,7 @@ module Loaded_source_event = struct
         | `String "new" -> Ok New
         | `String "changed" -> Ok Changed
         | `String "removed" -> Ok Removed
-        | _ -> Error (print_exn_at_loc [%here])
+        | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
       let to_yojson = function
         | New -> `String "new"
@@ -1289,7 +1289,7 @@ module Process_event = struct
         | `String "launch" -> Ok Launch
         | `String "attach" -> Ok Attach
         | `String "attachForSuspendedLaunch" -> Ok Attach_for_suspended_launch
-        | _ -> Error (print_exn_at_loc [%here])
+        | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
       let to_yojson = function
         | Launch -> `String "launch"
@@ -1426,7 +1426,7 @@ module Run_in_terminal_command = struct
       let of_yojson = function
         | `String "integrated" -> Ok Integrated
         | `String "external" -> Ok External
-        | _ -> Error (print_exn_at_loc [%here])
+        | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
       let to_yojson = function
         | Integrated -> `String "integrated"
@@ -1479,7 +1479,7 @@ module Initialize_command = struct
       let of_yojson = function
         | `String "path" -> Ok Path
         | `String "uri" -> Ok Uri
-        | `String str -> Ok (Custom str)  | _ -> Error (print_exn_at_loc [%here])
+        | `String str -> Ok (Custom str)  | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
       let to_yojson = function
         | Path -> `String "path"
@@ -2055,7 +2055,7 @@ module Variables_command = struct
       let of_yojson = function
         | `String "indexed" -> Ok Indexed
         | `String "named" -> Ok Named
-        | _ -> Error (print_exn_at_loc [%here])
+        | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
       let to_yojson = function
         | Indexed -> `String "indexed"
@@ -2236,7 +2236,7 @@ module Evaluate_command = struct
         | `String "repl" -> Ok Repl
         | `String "hover" -> Ok Hover
         | `String "clipboard" -> Ok Clipboard
-        | `String str -> Ok (Custom str)  | _ -> Error (print_exn_at_loc [%here])
+        | `String str -> Ok (Custom str)  | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
       let to_yojson = function
         | Watch -> `String "watch"

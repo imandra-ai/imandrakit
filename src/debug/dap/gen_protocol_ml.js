@@ -47,7 +47,7 @@ function emit(str) {
 emit(`(** ${schema.description} *)\n`);
 emit(`(* Auto-generated from json schema. Do not edit manually. *)\n\n`);
 emit(`open Util\n\n`);
-emit(`include Debug_protocol_types\n\n`);
+emit(`include Types\n\n`);
 
 const toOcamlName = (() => {
   function toSnakeCase(key) {
@@ -276,7 +276,7 @@ function emitTypeDecl(emit, def, {generic, isEmitTypeModule} = {}) {
     if (isOpen) {
       emit(`  | \`String str -> Ok (Custom str)`);
     }
-    emit(`  | _ -> Error (print_exn_at_loc [%here])\n\n`);
+    emit(`  | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)\n\n`);
     emit(`let to_yojson = function\n`);
     for (const str of strs) {
       emit(`  | ${toOcamlName(str.replace(/ /g, '_'), true)} -> \`String "${str}"\n`);

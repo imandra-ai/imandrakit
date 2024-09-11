@@ -2,10 +2,11 @@
  (name imandrakit_debug_dap)
  (public_name imandrakit-debug.dap)
  (synopsis "DAP types")
+ (preprocess (pps ppx_deriving_yojson ppx_deriving.std))
  (libraries yojson ppx_deriving_yojson.runtime))
 
 (rule
- (targets debug_protocol.ml)
+ (targets imandrakit_debug_dap.ml)
  (alias gendap)
  (deps
   (:file debugAdapterProtocol.json)
@@ -22,7 +23,7 @@
     (run node %{script} %{file})))))
 
 (rule
- (targets debug_protocol.mli)
+ (targets imandrakit_debug_dap.mli)
  (alias gendap)
  (deps
   (:file debugAdapterProtocol.json)

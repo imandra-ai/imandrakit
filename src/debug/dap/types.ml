@@ -39,7 +39,7 @@ module Empty_dict = struct
 
   let of_yojson = function
     | `Assoc [] -> Ok ()
-    | _ -> Error (print_exn_at_loc [%here])
+    | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
   let to_yojson () = `Assoc []
 end
@@ -52,7 +52,7 @@ module Int_or_string = struct
   let of_yojson = function
     | `Int value -> Ok (Int value)
     | `String value -> Ok (String value)
-    | _ -> Error (print_exn_at_loc [%here])
+    | _ -> Error (print_exn_at_loc ~__FILE__ ~__LINE__)
 
   let to_yojson = function
     | Int value -> `Int value
@@ -107,7 +107,7 @@ module Dict = struct
               | Error msg -> failwith msg)
           in
           build empty l
-        | _ -> failwith (print_exn_at_loc [%here])
+        | _ -> failwith (print_exn_at_loc ~__FILE__ ~__LINE__)
       with
       | exception Failure msg -> Error msg
       | t -> Ok t
