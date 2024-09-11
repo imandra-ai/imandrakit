@@ -1,7 +1,7 @@
-
 (library
-  (name imandrakit_debug_core)
-  (public_name imandrakit-debug.core)
-  (synopsis "Core types for imandrakit-debug")
-  (preprocess (pps ppx_deriving.std ppx_deriving_yojson imandrakit.twine.ppx))
-  (libraries trace.core trace-subscriber))
+ (name imandrakit_debug_core)
+ (public_name imandrakit-debug.core)
+ (synopsis "Core types for imandrakit-debug")
+ (preprocess
+  (pps ppx_deriving.std ppx_deriving_yojson imandrakit.twine.ppx))
+ (libraries trace.core trace-subscriber))

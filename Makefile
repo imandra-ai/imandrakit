@@ -20,6 +20,10 @@ format:
 format-check:
 	@dune build $(DUNE_OPTS) @fmt --display=quiet
 
+gen-dap-bindings:
+	@echo "generating DAP bindings"
+	GEN_DAP=true dune build @gendap --auto-promote
+
 WATCH?= @check @runtest
 watch:
 	dune build $(DUNE_OPTS) -w $(WATCH)
