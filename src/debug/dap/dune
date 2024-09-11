@@ -1,0 +1,39 @@
+(library
+ (name imandrakit_debug_dap)
+ (public_name imandrakit-debug.dap)
+ (synopsis "DAP types")
+ (libraries yojson ppx_deriving_yojson.runtime))
+
+(rule
+ (targets debug_protocol.ml)
+ (alias gendap)
+ (deps
+  (:file debugAdapterProtocol.json)
+  (:script gen_protocol_ml.js)
+  hack_schema.js
+  package.json)
+ (enabled_if %{env:GEN_DAP=false})
+ (mode promote)
+ (action
+  (progn
+   (run npm install)
+   (with-stdout-to
+    %{targets}
+    (run node %{script} %{file})))))
+
+(rule
+ (targets debug_protocol.mli)
+ (alias gendap)
+ (deps
+  (:file debugAdapterProtocol.json)
+  (:script gen_protocol_mli.js)
+  hack_schema.js
+  package.json)
+ (enabled_if %{env:GEN_DAP=false})
+ (mode promote)
+ (action
+  (progn
+   (run npm install)
+   (with-stdout-to
+    %{targets}
+    (run node %{script} %{file})))))
