@@ -1,6 +1,8 @@
 open Common_
 module DAP = Imandrakit_debug_dap
 
+let default_port = 19525
+
 type t = {
   d: Debug.t;
   out_seq: int Atomic.t;

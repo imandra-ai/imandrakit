@@ -2,6 +2,7 @@
 
 type t
 
+val default_port : int
 val port : t -> int
 
 val setup : ?port:int -> unit -> unit
