@@ -1,16 +1,15 @@
 module Log = (val Logger.mk_log_str "x.log-reader")
 module Err = Imandrakit_error.Error
 
-class type t =
-  object
-    inherit Core_classes.named
+class type t = object
+  inherit Core_classes.named
 
-    method read_events :
-      only_above_level:Logger.level option ->
-      filter_meta:(string * string) list ->
-      unit ->
-      Logger.Log_event.t Iter.t
-  end
+  method read_events :
+    only_above_level:Logger.level option ->
+    filter_meta:(string * string) list ->
+    unit ->
+    Logger.Log_event.t Iter.t
+end
 
 class dummy : t =
   object

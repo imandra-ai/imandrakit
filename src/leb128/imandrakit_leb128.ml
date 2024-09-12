@@ -78,12 +78,12 @@ module Encode = struct
 
   external varint_size : (int64[@unboxed]) -> int
     = "caml_ix_leb128_varint_size_byte" "caml_ix_leb128_varint_size"
-    [@@noalloc]
+  [@@noalloc]
   (** Compute how many bytes this int would occupy as varint *)
 
   external varint_slice : bytes -> (int[@untagged]) -> (int64[@unboxed]) -> unit
     = "caml_ix_leb128_varint_byte" "caml_ix_leb128_varint"
-    [@@noalloc]
+  [@@noalloc]
   (** Write this int as varint into the given slice *)
 
   let[@inline] u64 (buf : Buf.t) (i : int64) =
