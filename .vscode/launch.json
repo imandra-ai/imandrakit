@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "imandrakitdebug",
+      "request": "attach",
+      "name": "debug1",
+      "port": 19525,
+      "continueOnAttach": true
+    },
+    {
+      "type": "imandrakitdebug",
+      "request": "launch",
+      "name": "debug2",
+      "port": ,
+      "continueOnAttach": true
+    },
+  ]
+}
