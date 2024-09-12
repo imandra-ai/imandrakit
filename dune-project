@@ -33,6 +33,8 @@
   ptime
   atomic
   hmap
+  (moonpool
+   (>= 0.7))
   (yojson
    (>= 1.6))
   (mtime
@@ -73,7 +75,7 @@
   hmap
   dune
   (moonpool
-   (>= 0.6))
+   (>= 0.7))
   logs
   thread-local-storage
   (trace-tef :with-test)
@@ -106,7 +108,7 @@
   hmap
   dune
   (moonpool
-   (>= 0.6))
+   (>= 0.7))
   thread-local-storage
   (trace-tef :with-test)
   (odoc :with-doc)))
