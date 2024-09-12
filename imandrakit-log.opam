@@ -8,11 +8,11 @@ license: "MIT"
 homepage: "https://github.com/imandra-ai/imandrakit"
 bug-reports: "https://github.com/imandra-ai/imandrakit/issues"
 depends: [
-  "ocaml" {>= "4.12"}
+  "ocaml" {>= "4.14"}
   "imandrakit" {= version}
   "hmap"
   "dune" {>= "3.0"}
-  "moonpool" {>= "0.6"}
+  "moonpool" {>= "0.7"}
   "logs"
   "thread-local-storage"
   "trace-tef" {with-test}

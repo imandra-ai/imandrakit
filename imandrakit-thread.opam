@@ -13,7 +13,7 @@ depends: [
   "logs"
   "hmap"
   "dune" {>= "3.0"}
-  "moonpool" {>= "0.6"}
+  "moonpool" {>= "0.7"}
   "thread-local-storage"
   "trace-tef" {with-test}
   "odoc" {with-doc}

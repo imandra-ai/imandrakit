@@ -9,8 +9,9 @@ let pp ppx out (self : _ t) : unit =
   match peek self with
   | None -> Fmt.fprintf out "<unresolved future>"
   | Some (Ok x) -> Fmt.fprintf out "<@[future res=%a@]>" ppx x
-  | Some (Error (e, _)) ->
-    Fmt.fprintf out "<@[future err=%S@]>" (Printexc.to_string e)
+  | Some (Error ebt) ->
+    Fmt.fprintf out "<@[future err=%S@]>"
+      (Printexc.to_string @@ Moonpool.Exn_bt.exn ebt)
 
 let[@inline] unwrap = function
   | Ok x -> x
@@ -19,7 +20,7 @@ let[@inline] unwrap = function
 let peek_exn self : _ option =
   match peek self with
   | Some (Ok x) -> Some x
-  | Some (Error (e, bt)) -> raise_with_bt e bt
+  | Some (Error ebt) -> Moonpool.Exn_bt.raise ebt
   | None -> None
 
 let map_iter ~f (it : _ Iter.t) : _ Iter.t t =

@@ -193,9 +193,9 @@ let rec ser_expr_of_ty (e : expression) ~(ty : core_type) : expression =
     in
     by_full_ser
       (if args = [] then
-        f
-      else
-        A.Exp.apply f args)
+         f
+       else
+         A.Exp.apply f args)
   | { ptyp_desc = Ptyp_tuple args; ptyp_loc = loc; _ } ->
     let ser_args =
       args
@@ -314,9 +314,9 @@ let rec deser_expr_of_ty (e : expression) ~(ty : core_type) : expression =
     in
     by_full_deser
       (if args = [] then
-        f
-      else
-        A.Exp.apply f args)
+         f
+       else
+         A.Exp.apply f args)
   | { ptyp_desc = Ptyp_tuple args; ptyp_loc = loc; _ } ->
     let deser_args =
       args

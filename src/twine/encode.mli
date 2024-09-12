@@ -59,7 +59,7 @@ val encode_to_string : 'a encoder -> 'a -> string
 (** Full entrypoint *)
 
 val to_string : 'a encoder -> 'a -> string
-  [@@deprecated "use encode_to_string instead"]
+[@@deprecated "use encode_to_string instead"]
 
 (** {2 Caching}
 

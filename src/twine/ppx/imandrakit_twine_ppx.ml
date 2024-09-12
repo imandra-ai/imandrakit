@@ -172,9 +172,9 @@ let rec immediate_expr_of_ty (e : expression) ~(ty : core_type) : expression =
     in
     by_encode
       (if args = [] then
-        f
-      else
-        A.Exp.apply f args)
+         f
+       else
+         A.Exp.apply f args)
   | { ptyp_desc = Ptyp_tuple args; ptyp_loc = loc; _ } ->
     let ser_args =
       args
@@ -297,9 +297,9 @@ let rec decode_expr_of_ty (e : expression) ~(ty : core_type) : expression =
     in
     by_full_dec
       (if args = [] then
-        f
-      else
-        A.Exp.apply f args)
+         f
+       else
+         A.Exp.apply f args)
   | { ptyp_desc = Ptyp_tuple args; ptyp_loc = loc; _ } ->
     let arity = List.length args in
 

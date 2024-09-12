@@ -105,9 +105,9 @@ let next_step_ (self : state) : next_step =
 
 let wait_ (self : state) delay =
   assert (delay > 0.);
-  let _ = Unix.select [ self.p_read ] [] [ self.p_read ] delay in
-  (* drain pipe *)
   try
+    let _ = Unix.select [ self.p_read ] [] [ self.p_read ] delay in
+    (* drain pipe *)
     while Unix.read self.p_read self.buf4 0 4 > 0 do
       ()
     done

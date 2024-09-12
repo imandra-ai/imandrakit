@@ -2,12 +2,11 @@ module Trace = Trace_core
 module LS = Moonpool.Task_local_storage
 
 (** Current parent scope for async spans *)
-let k_parent_scope : Trace.explicit_span option LS.key =
-  LS.new_key ~init:(fun () -> None) ()
+let k_parent_scope : Trace.explicit_span Hmap.key = Hmap.Key.create ()
 
 (** Set the parent scope by hand *)
-let set_parent_scope (sp : Trace.explicit_span) =
-  LS.set k_parent_scope (Some sp)
+let[@inline] set_parent_scope (sp : Trace.explicit_span) =
+  LS.set_in_local_hmap k_parent_scope sp
 
 let add_exn_to_span (sp : Trace.explicit_span) (exn : exn) =
   Trace.add_data_to_manual_span sp
@@ -19,12 +18,7 @@ let add_bt_to_span (sp : Trace.explicit_span) (bt : Printexc.raw_backtrace) =
 
 open struct
   let with_span_real_ ~level ?data ?__FUNCTION__ ~__FILE__ ~__LINE__ name f =
-    let storage = LS.get_current () in
-    let parent =
-      CCOption.flat_map
-        (fun store -> LS.Direct.get store k_parent_scope)
-        storage
-    in
+    let parent = LS.get_in_local_hmap_opt k_parent_scope in
     let span =
       match parent with
       | None ->
@@ -36,14 +30,14 @@ open struct
     in
 
     (* set current span as parent, for children *)
-    LS.set k_parent_scope (Some span);
+    LS.set_in_local_hmap k_parent_scope span;
 
     (* cleanup *)
     let finally () =
       (* restore previous parent span *)
-      Option.iter
-        (fun store -> LS.Direct.set store k_parent_scope parent)
-        storage;
+      (match parent with
+      | None -> LS.remove_in_local_hmap k_parent_scope
+      | Some p -> LS.set_in_local_hmap k_parent_scope p);
       Trace.exit_manual_span span
     in
 

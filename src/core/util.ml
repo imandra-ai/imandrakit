@@ -111,11 +111,11 @@ let format_duration_s (f : float) : string =
     print_aux "d" n_day ^ print_aux "h" n_hour ^ print_aux "m" n_min
     ^ string_of_int n
     ^ (if f -. floor f >= 0.01 then (
-        let s = Printf.sprintf "%.1f" (f -. floor f) in
-        (* remove the leading "0." *)
-        "." ^ snd @@ CCString.Split.left_exn ~by:"." s
-      ) else
-        "")
+         let s = Printf.sprintf "%.1f" (f -. floor f) in
+         (* remove the leading "0." *)
+         "." ^ snd @@ CCString.Split.left_exn ~by:"." s
+       ) else
+         "")
     ^ "s"
   ) else if f < 0.010 then
     spf "%.2fms" (f *. 1000.)

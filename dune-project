@@ -22,7 +22,7 @@
  (synopsis "Core utils library for Imandra")
  (depends
   (ocaml
-   (>= 4.12))
+   (>= 4.14))
   dune
   (containers
    (>= 3.4))
@@ -33,6 +33,8 @@
   ptime
   atomic
   hmap
+  (moonpool
+   (>= 0.7))
   (yojson
    (>= 1.6))
   (mtime
@@ -67,13 +69,13 @@
  (synopsis "Logging utils for Imandra")
  (depends
   (ocaml
-   (>= 4.12))
+   (>= 4.14))
   (imandrakit
    (= :version))
   hmap
   dune
   (moonpool
-   (>= 0.6))
+   (>= 0.7))
   logs
   thread-local-storage
   (trace-tef :with-test)
@@ -84,7 +86,7 @@
  (synopsis "IO utils for Imandra")
  (depends
   (ocaml
-   (>= 4.12))
+   (>= 4.14))
   (imandrakit
    (= :version))
   (imandrakit-log
@@ -106,7 +108,7 @@
   hmap
   dune
   (moonpool
-   (>= 0.6))
+   (>= 0.7))
   thread-local-storage
   (trace-tef :with-test)
   (odoc :with-doc)))
