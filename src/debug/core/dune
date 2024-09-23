@@ -4,4 +4,4 @@
  (synopsis "Core types for imandrakit-debug")
  (preprocess
   (pps ppx_deriving.std ppx_deriving_yojson imandrakit.twine.ppx))
- (libraries trace.core trace-subscriber))
+ (libraries trace.core trace.subscriber))
