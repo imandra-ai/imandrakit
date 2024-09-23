@@ -18,5 +18,5 @@
   unix
   logs
   trace.core
-  trace-subscriber
+  trace.subscriber
   imandrakit-debug.core))

@@ -11,8 +11,8 @@ depends: [
   "ocaml" {>= "4.14"}
   "imandrakit" {= version}
   "imandrakit-thread" {= version}
-  "trace"
-  "trace-subscriber"
+  "trace" {>= "0.8"}
+  "mtime" {>= "2.0"}
   "base-unix"
   "ppx_deriving"
   "ppx_deriving_yojson"

@@ -91,8 +91,8 @@
    (= :version))
   (imandrakit-thread
    (= :version))
-  trace
-  trace-subscriber
+  (trace (>= 0.8))
+  (mtime (>= 2.0)) ; for trace.subscriber
   base-unix
   ppx_deriving
   ppx_deriving_yojson
