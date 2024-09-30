@@ -10,9 +10,12 @@ let[@inline] set_parent_scope (sp : Trace.explicit_span) =
 
 let add_exn_to_span (sp : Trace.explicit_span) (exn : exn)
     (bt : Printexc.raw_backtrace) =
+  let msg = Printexc.to_string exn in
   Trace.add_data_to_manual_span sp
     [
-      "exception.message", `String (Printexc.to_string exn);
+      (* mark the status as failed *)
+      "otrace.error", `String msg;
+      "exception.message", `String msg;
       "exception.stacktrace", `String (Printexc.raw_backtrace_to_string bt);
     ]
 
