@@ -1,6 +1,6 @@
 (** Wall-clock timestamps as a float *)
 
-type t = (float[@printer Util.pp_duration_s])
+type t = (float[@printer Util.pp_datetime])
 [@@deriving show, eq, serpack, twine]
 (** Timestamps *)
 
