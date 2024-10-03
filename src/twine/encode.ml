@@ -28,7 +28,10 @@ type t = {
   cache: immediate Cache_tbl.t;
 }
 
-let create () : t = { buf = Buf.create ~cap:256 (); cache = Cache_tbl.create 8 }
+let create ?(cap = 256) () : t =
+  let cap = min Sys.max_string_length (max cap 32) in
+  { buf = Buf.create ~cap (); cache = Cache_tbl.create 8 }
+
 let clear self = Buf.clear self.buf
 let reset self = Buf.reset self.buf
 

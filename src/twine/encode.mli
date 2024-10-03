@@ -4,8 +4,9 @@ module Immediate = Immediate
 type immediate = Immediate.t
 type t
 
-val create : unit -> t
-(** New encoder. *)
+val create : ?cap:int -> unit -> t
+(** New encoder.
+    @param cap initialize capacity of the underlying byte buffer *)
 
 val clear : t -> unit
 (** Clear the encoder, to reuse it.
