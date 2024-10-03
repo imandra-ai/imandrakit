@@ -29,7 +29,8 @@ type t = {
 }
 
 let create () : t = { buf = Buf.create ~cap:256 (); cache = Cache_tbl.create 8 }
-let reset self = Buf.clear self.buf
+let clear self = Buf.clear self.buf
+let reset self = Buf.reset self.buf
 
 type 'a encoder = t -> 'a -> immediate
 

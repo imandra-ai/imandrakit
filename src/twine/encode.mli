@@ -7,9 +7,13 @@ type t
 val create : unit -> t
 (** New encoder. *)
 
+val clear : t -> unit
+(** Clear the encoder, to reuse it.
+    Previous slices obtained via {!finalize} are invalidated. *)
+
 val reset : t -> unit
-(** Reset the encoder. Previous slices obtained via {!finalize}
-are invalidated. *)
+(** Fully reset the encoder. Previous slices obtained via {!finalize}
+    are invalidated. *)
 
 type 'a encoder = t -> 'a -> immediate
 
