@@ -55,10 +55,10 @@ val finalize : t -> entrypoint:immediate -> slice
 val finalize_copy : t -> entrypoint:immediate -> string
 (** Finalize, and get a copy of the result. See {!finalize} *)
 
-val encode_to_string : 'a encoder -> 'a -> string
+val encode_to_string : ?encoder:t -> 'a encoder -> 'a -> string
 (** Full entrypoint *)
 
-val to_string : 'a encoder -> 'a -> string
+val to_string : ?encoder:t -> 'a encoder -> 'a -> string
 [@@deprecated "use encode_to_string instead"]
 
 (** {2 Caching}

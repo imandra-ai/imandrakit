@@ -235,10 +235,10 @@ let finalize (self : t) ~(entrypoint : immediate) : slice =
 let[@inline] finalize_copy self ~entrypoint : string =
   Slice.contents @@ finalize self ~entrypoint
 
-let encode_to_string (e : _ encoder) x : string =
-  let enc = create () in
-  let entrypoint = e enc x in
-  finalize_copy enc ~entrypoint
+let encode_to_string ?(encoder = create ()) (e : _ encoder) x : string =
+  reset encoder;
+  let entrypoint = e encoder x in
+  finalize_copy encoder ~entrypoint
 
 let to_string = encode_to_string
 
