@@ -1,6 +1,7 @@
 type t = {
   mutable bs: bytes;  (** Underlying bytes *)
   mutable len: int;  (** Length of the prefix of [bs] that is valid *)
+  bs0: bytes;  (** Initial buffer *)
 }
 
 val create : ?cap:int -> unit -> t
@@ -17,6 +18,11 @@ val capacity : t -> int
 
 val clear : t -> unit
 (** Clear the buffer, setting length to 0 *)
+
+val reset : t -> unit
+(** Clear buffer and reset it to its initial size.
+    This ensures the buffer doesn't monotonically grow to
+    its biggest size so far. *)
 
 val ensure_cap : t -> int -> unit
 (** [ensure_cap buf n] ensures that [capacity buf >= n]. *)

@@ -1,6 +1,7 @@
 type t = {
   mutable bs: bytes;
   mutable len: int;
+  bs0: bytes;
 }
 
 let create ?(cap = 0) () : t =
@@ -10,12 +11,16 @@ let create ?(cap = 0) () : t =
     else
       Bytes.create cap
   in
-  { len = 0; bs }
+  { len = 0; bs; bs0 = bs }
 
 let[@inline] capacity self : int = Bytes.length self.bs
 let[@inline] length self = self.len
 let[@inline] is_empty self = self.len = 0
 let[@inline] clear self = self.len <- 0
+
+let[@inline] reset self =
+  self.len <- 0;
+  self.bs <- self.bs0
 
 let grow_cap_ self =
   min Sys.max_string_length
@@ -86,12 +91,22 @@ let[@inline] set self i c =
 
 let[@inline] contents self = Bytes.sub_string self.bs 0 self.len
 let[@inline] contents_bytes self = Bytes.sub self.bs 0 self.len
-let[@inline] copy self = { bs = Bytes.copy self.bs; len = self.len }
+
+let copy self =
+  let bs = Bytes.copy self.bs in
+  let bs0 =
+    if self.bs == self.bs0 then
+      bs
+    else
+      Bytes.copy self.bs0
+  in
+  { bs; len = self.len; bs0 }
+
 let[@inline] append_iter self i = i (add_char self)
 let[@inline] append_seq self seq = Seq.iter (add_char self) seq
 
 let fold_left f acc self =
-  let { bs; len } = self in
+  let { bs; len; _ } = self in
 
   (* capture current content *)
   let acc = ref acc in
@@ -101,7 +116,7 @@ let fold_left f acc self =
   !acc
 
 let iter f self =
-  let { bs; len } = self in
+  let { bs; len; _ } = self in
   (* capture current content *)
   for i = 0 to len do
     f (Bytes.unsafe_get bs i)
@@ -120,7 +135,7 @@ let of_iter iter =
 let to_iter self yield = iter yield self
 
 let to_seq self =
-  let { bs; len } = self in
+  let { bs; len; _ } = self in
   let rec s i () =
     if i = len then
       Seq.Nil
