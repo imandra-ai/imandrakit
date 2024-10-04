@@ -24,7 +24,11 @@ let parse_or_resolve_inet_addr (s : string) ~port : t =
     | a :: _ -> a.Unix.ai_addr)
 
 let kind = function
-  | Unix.ADDR_INET _ -> Unix.PF_INET
+  | Unix.ADDR_INET (a, _) ->
+    if Unix.is_inet6_addr a then
+      Unix.PF_INET6
+    else
+      Unix.PF_INET
   | Unix.ADDR_UNIX _ -> Unix.PF_UNIX
 
 (** Error in address parsing *)
