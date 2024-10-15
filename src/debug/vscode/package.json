@@ -1,0 +1,121 @@
+{
+  "name": "imandrakit-debug",
+  "displayName": "Imandrax Debug",
+  "description": "Debugger for ImandraX",
+  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/imandra-ai/imandrakit-debug-vscode"
+  },
+  "engines": {
+    "vscode": "^1.93.0"
+  },
+  "categories": [
+    "Debuggers"
+  ],
+  "private": true,
+  "activationEvents": ["onDebug"],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "breakpoints": [{ "language": "markdown" }],
+    "debuggers": [
+      {
+        "type": "imandrakit-debug",
+        "label": "Imandrax Debug",
+
+        "program": "./out/imandrakit-debug.js",
+        "runtime": "node",
+
+        "configurationAttributes": {
+          "launch": {
+            "required": ["program"],
+            "properties": {
+              "program": {
+                "type": "string",
+                "description": "Debuggee binary.",
+                "default": "imandrax-cli"
+              },
+              "stopOnEntry": {
+                "type": "boolean",
+                "description": "Automatically stop after launch.",
+                "default": true
+              },
+              "args": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Debuggee arguments",
+                "default": []
+              },
+              "cwd": {
+                "type": "string",
+                "description": "Working directory",
+                "default": "${workspaceFolder}"
+              },
+              "env": {
+                "type": "object",
+                "description": "Environment variables",
+                "default": {}
+              }
+            }
+          }
+        },
+
+        "initialConfigurations": [
+          {
+            "type": "imandrakit-debug",
+            "request": "launch",
+            "name": "Dbg cfg name",
+            "program": "imandrax-cli",
+            "stopOnEntry": true
+          }
+        ],
+
+        "configurationSnippets": [
+          {
+            "label": "Imandrax Debug: Launch",
+            "description": "A new configuration for launching a imandrakit-debug debugger",
+            "body": {
+              "type": "imandrax",
+              "request": "launch",
+              "name": "${2:Launch Program}",
+              "program": "^\"\\${workspaceFolder}/${1:Program}\""
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "npm run check-types && npm run lint && node esbuild.js",
+    "watch": "npm-run-all -p watch:*",
+    "watch:esbuild": "node esbuild.js --watch",
+    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+    "package": "npm run check-types && npm run lint && node esbuild.js --production",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "dependencies": {
+		"await-notify": "^1.0.1",
+		"vscode-debugadapter": "^1.51.0"
+	},
+  "devDependencies": {
+    "@types/vscode": "^1.93.0",
+    "@types/mocha": "^10.0.7",
+    "@types/node": "20.x",
+    "@typescript-eslint/eslint-plugin": "^8.6.0",
+    "@typescript-eslint/parser": "^8.6.0",
+    "eslint": "^9.11.0",
+    "esbuild": "^0.23.1",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.5.4",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1"
+  }
+}
