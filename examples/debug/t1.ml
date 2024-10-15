@@ -4,11 +4,14 @@ module Trace = Trace_core
 let ( let@ ) = ( @@ )
 
 let loop3 i j : unit =
+  let s = "some string" in
+  let f = 1.123 in
   let@ _sp =
     Trace.with_span ~__FILE__ ~__LINE__ "loop3" ~data:(fun () ->
-        [ "i", `Int i; "j", `Int j ])
+        [ "i", `Int i; "j", `Int j; "s", `String s; "f", `Float f ])
   in
-  Thread.delay 0.001
+  Thread.delay 0.001;
+  Debug.break ()
 
 let loop2 i : unit =
   let@ _sp =
@@ -16,8 +19,8 @@ let loop2 i : unit =
         [ "i", `Int i ])
   in
   Logs.debug (fun k -> k "loop2");
-  for j = 1 to 5 do
-    loop3 i j;
+  for j = 2 to 6 do
+    loop3 (i + 1) j;
     Thread.delay 0.05
   done;
   ()
@@ -34,7 +37,7 @@ let loop1 () =
 
     Thread.delay 0.1;
 
-    Debug.suspend ()
+    Debug.break ()
   done
 
 let setup_logs () =

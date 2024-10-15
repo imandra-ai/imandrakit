@@ -1,19 +1,18 @@
 {
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "type": "imandrakitdebug",
-      "request": "attach",
-      "name": "debug1",
-      "port": 19525,
-      "continueOnAttach": true
-    },
-    {
-      "type": "imandrakitdebug",
-      "request": "launch",
-      "name": "debug2",
-      "port": ,
-      "continueOnAttach": true
-    },
-  ]
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "imandrakit-debug",
+			"request": "launch",
+			"name": "Example t1",
+			"program": "/home/cwinter/work/imandrakit-dap/_build/default/examples/debug/t1.exe",
+			"args": [],
+			"env": {
+				"DEBUG": "1",
+			},
+			"cwd": "${workspaceFolder}",
+			"stopOnEntry": false,
+			"preLaunchTask": "dune: build /examples/debug/dune"
+		}
+	]
 }
