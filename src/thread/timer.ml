@@ -118,8 +118,10 @@ let run_task_ (self : state) (task : task) : unit =
     try task.run ()
     with e ->
       let bt = Printexc.get_raw_backtrace () in
-      let err = Error.of_exn ~bt ~kind:timer_error e in
-      Log.err (fun k -> k "error in task:@ %a" Error.pp err)
+      if not (Atomic.get self.closed) then (
+        let err = Error.of_exn ~bt ~kind:timer_error e in
+        Log.err (fun k -> k "Error in timer task:@ %a" Error.pp err)
+      )
   in
 
   match Atomic.get task.state with
