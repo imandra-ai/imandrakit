@@ -70,10 +70,10 @@ module Output = struct
     | Logs.App -> Fmt.fprintf out "@{<green>app@}");
 
     let pp_ts out ts =
-      if log_time_ then Fmt.fprintf out ":%a" Util.pp_datetime ts
+      if log_time_ then Fmt.fprintf out "|%a" Util.pp_datetime ts
     in
 
-    Fmt.fprintf out "%a:%s]@ %a@]@?" pp_ts ev.ts ev.src Util.pp_text_newlines
+    Fmt.fprintf out "%a|%s]@ %a@]@?" pp_ts ev.ts ev.src Util.pp_text_newlines
       ev.msg;
 
     Buf_fmt.get_contents buf_fmt
