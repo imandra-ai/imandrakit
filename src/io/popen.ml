@@ -23,7 +23,7 @@ let[@inline] stopped self = Atomic.get self._st.stopped
 let kill_and_close_ (self : t) =
   let already_stopped = Atomic.exchange self._st.stopped true in
   if not already_stopped then (
-    Log.debug (fun k -> k "kill/close subprocess pid=%d" self.pid);
+    Log.debug (fun k -> k "(popen.kill-and-close :pid %d)" self.pid);
     (try Unix.kill self.pid 15 with _ -> ());
     close_out_noerr self.stdin;
     close_in_noerr self.stdout;
@@ -73,20 +73,21 @@ let run_ ?(env = Unix.environment ()) cmd args : t =
       _st = { stopped = Atomic.make false; res_code; promise_code };
     }
   in
-  Gc.finalise kill_and_close_ p;
   p
 
 let run ?env cmd args : t = run_ ?env cmd (Array.of_list (cmd :: args))
 let res_code self = self._st.res_code
 let run_shell ?env cmd : t = run_ ?env "/bin/sh" [| "/bin/sh"; "-c"; cmd |]
-let kill self = kill_and_close_ self
+
+let kill self =
+  Log.debug (fun k -> k "(popen.kill %a)" pp self);
+  kill_and_close_ self
+
 let signal self s = Unix.kill self.pid s
 
 let wait (self : t) : int =
-  let res =
-    try snd @@ Unix.waitpid [ Unix.WUNTRACED ] self.pid
-    with _ -> Unix.WEXITED 0
-  in
+  Log.debug (fun k -> k "(popen.wait %a)" pp self);
+  let res = try snd @@ Unix.waitpid [] self.pid with _ -> Unix.WEXITED 0 in
   kill_and_close_ self;
   let res =
     match res with
