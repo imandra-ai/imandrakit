@@ -66,17 +66,14 @@ module Output = struct
     | Logs.Debug -> Fmt.fprintf out "@{<Blue>debug@}"
     | Logs.Info -> Fmt.fprintf out "@{<cyan>info@}"
     | Logs.Error -> Fmt.fprintf out "@{<Red>error@}"
-    | Logs.Warning -> Fmt.fprintf out "@{<yellow>warning@}"
+    | Logs.Warning -> Fmt.fprintf out "@{<yellow>warn@}"
     | Logs.App -> Fmt.fprintf out "@{<green>app@}");
 
     let pp_ts out ts =
-      if log_time_ then
-        Fmt.fprintf out ":%a" Util.pp_datetime ts
-      else
-        ()
+      if log_time_ then Fmt.fprintf out ":%a" Util.pp_datetime ts
     in
 
-    Fmt.fprintf out ":%s%a]@ %a@]@?" ev.src pp_ts ev.ts Util.pp_text_newlines
+    Fmt.fprintf out "%a:%s]@ %a@]@?" pp_ts ev.ts ev.src Util.pp_text_newlines
       ev.msg;
 
     Buf_fmt.get_contents buf_fmt
