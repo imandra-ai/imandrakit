@@ -1,9 +1,9 @@
 (** Concise type definition *)
 
-type ty = Ty_expr.t [@@deriving show, eq, yojson]
+type ty = Ty_expr.t [@@deriving show, eq, yojson, twine]
 
 type record = { fields: (string * ty) list }
-[@@deriving show { with_path = false }, eq, yojson]
+[@@deriving show { with_path = false }, eq, yojson, twine]
 
 let map_record ~f { fields } : record =
   { fields = List.map (fun (s, ty) -> s, f ty) fields }
@@ -16,7 +16,7 @@ type cstor = {
   labels: string list option;
       (** Present for inline records. Length = args.len *)
 }
-[@@deriving show { with_path = false }, eq, yojson]
+[@@deriving show { with_path = false }, eq, yojson, twine]
 
 let map_cstor ~f (c : cstor) : cstor = { c with args = List.map f c.args }
 let iter_cstor ~f c : unit = List.iter f c.args
@@ -26,7 +26,7 @@ type decl =
   | Alias of ty
   | Alg of cstor list
   | Record of record
-[@@deriving show { with_path = false }, eq, yojson]
+[@@deriving show { with_path = false }, eq, yojson, twine]
 
 let map_decl ~f (d : decl) : decl =
   match d with
@@ -47,9 +47,9 @@ type t = {
   decl: decl;
   unboxed: bool;
 }
-[@@deriving show { with_path = false }, eq, yojson]
+[@@deriving show { with_path = false }, eq, yojson, twine]
 
-type clique = t list [@@deriving eq, yojson, show]
+type clique = t list [@@deriving eq, yojson, show, twine]
 
 let map ~f (self : t) : t = { self with decl = map_decl ~f self.decl }
 let iter_ty ~f (self : t) = iter_decl ~f self.decl

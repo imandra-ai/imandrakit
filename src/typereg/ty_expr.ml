@@ -3,9 +3,9 @@
 type label_kind =
   | Label
   | Optional
-[@@deriving show { with_path = false }, eq, yojson]
+[@@deriving show { with_path = false }, eq, yojson, twine]
 
-type attrs = (string * string) list [@@deriving show, eq, yojson]
+type attrs = (string * string) list [@@deriving show, eq, yojson, twine]
 
 type t =
   | Var of string
@@ -13,7 +13,7 @@ type t =
   | Arrow of (label_kind * string) option * t * t
   | Tuple of t list
   | Attrs of t * attrs
-[@@deriving show { with_path = false }, eq, yojson]
+[@@deriving show { with_path = false }, eq, yojson, twine]
 
 let map_shallow ~f (self : t) : t =
   match self with

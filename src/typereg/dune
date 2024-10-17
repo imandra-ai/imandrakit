@@ -3,6 +3,6 @@
  (public_name imandrakit.typereg)
  (synopsis "Type registry")
  (preprocess
-  (pps ppx_deriving.std ppx_deriving_yojson))
+  (pps ppx_deriving.std ppx_deriving_yojson imandrakit.twine.ppx))
  (flags :standard)
  (libraries containers iter))
