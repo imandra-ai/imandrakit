@@ -49,6 +49,18 @@ type t = {
 }
 [@@deriving show { with_path = false }, eq, yojson, twine]
 
+module As_key = struct
+  type nonrec t = t
+
+  let equal a b = a.path = b.path && a.name = b.name
+  let hash a = Hashtbl.hash (a.path, a.name)
+end
+
+let () =
+  Imandrakit_twine.Encode.add_cache (module As_key) to_twine_ref;
+  Imandrakit_twine.Decode.add_cache of_twine_ref;
+  ()
+
 type clique = t list [@@deriving eq, yojson, show, twine]
 
 let map ~f (self : t) : t = { self with decl = map_decl ~f self.decl }

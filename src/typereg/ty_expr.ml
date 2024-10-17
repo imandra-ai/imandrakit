@@ -43,3 +43,21 @@ let attrs attrs ty : t =
     ty
   else
     Attrs (ty, attrs)
+
+let () =
+  (* partial hashconsing *)
+  let module As_key_partial = struct
+    type nonrec t = t
+
+    let rec equal a b =
+      match a, b with
+      | Var a, Var b -> a = b
+      | Cstor (c1, l1), Cstor (c2, l2) -> c1 = c2 && CCList.equal equal l1 l2
+      | Tuple l1, Tuple l2 -> CCList.equal equal l1 l2
+      | _ -> false
+
+    let hash = Hashtbl.hash
+  end in
+  Imandrakit_twine.Encode.add_cache (module As_key_partial) to_twine_ref;
+  Imandrakit_twine.Decode.add_cache of_twine_ref;
+  ()
