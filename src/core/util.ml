@@ -88,7 +88,7 @@ let format_datetime (time : float) : string =
   let tm = Unix.localtime time in
   let msec = (time -. floor time) *. 1_000. |> int_of_float in
   Printf.sprintf "%02d-%02d-%02dT%02d:%02d:%02d.%03d" (tm.tm_year - 100)
-    tm.tm_mday (tm.tm_mon + 1) tm.tm_hour tm.tm_min tm.tm_sec msec
+    (tm.tm_mon + 1) tm.tm_mday tm.tm_hour tm.tm_min tm.tm_sec msec
 
 let pp_datetime = Fmt.of_to_string format_datetime
 
