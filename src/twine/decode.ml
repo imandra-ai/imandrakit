@@ -14,6 +14,7 @@ end
 type t = {
   sl: slice;
   cache: cached array;
+  mutable hmap: Hmap.t;
 }
 
 type cstor_index = int [@@deriving show]
@@ -28,8 +29,13 @@ let show_cursor (self : cursor) =
   spf "<twine.cursor :off=%d :num-items=%d>" self.c_offset self.c_num_items
 
 let pp_cursor = Fmt.of_to_string show_cursor
-let[@inline] create sl : t = { sl; cache = Array.make sl.len Miss }
+
+let[@inline] create sl : t =
+  { sl; cache = Array.make sl.len Miss; hmap = Hmap.empty }
+
 let[@inline] of_string s = create @@ Slice.of_string s
+let[@inline] hmap_set self k v = self.hmap <- Hmap.add k v self.hmap
+let[@inline] hmap_get self k = Hmap.find k self.hmap
 
 type 'a decoder = t -> offset -> 'a
 type num_bytes_consumed = int

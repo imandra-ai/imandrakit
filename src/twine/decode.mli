@@ -4,6 +4,8 @@ type t
 
 val create : slice -> t
 val of_string : string -> t
+val hmap_set : t -> 'a Hmap.key -> 'a -> unit
+val hmap_get : t -> 'a Hmap.key -> 'a option
 
 type 'a decoder = t -> offset -> 'a
 type cstor_index = int
