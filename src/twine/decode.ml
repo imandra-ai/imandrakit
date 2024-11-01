@@ -393,8 +393,9 @@ let get_entrypoint (self : t) : offset =
 let read_entrypoint (self : t) : Value.t =
   read self @@ deref_rec self @@ get_entrypoint self
 
-let decode_string (d : _ decoder) (s : string) =
+let decode_string ?(init = ignore) (d : _ decoder) (s : string) =
   let self = of_string s in
+  init self;
   let off = deref_rec self @@ get_entrypoint self in
   d self off
 

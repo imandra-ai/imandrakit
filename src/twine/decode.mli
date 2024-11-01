@@ -99,7 +99,7 @@ val get_entrypoint : t -> offset
 val read_entrypoint : t -> Value.t
 (** Read the entrypoint, from the end of the slice *)
 
-val decode_string : 'a decoder -> string -> 'a
+val decode_string : ?init:(t -> unit) -> 'a decoder -> string -> 'a
 
 (** {2 Caching}
 
