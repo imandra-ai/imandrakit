@@ -8,7 +8,20 @@ type state =
     }
   | Off
 
-type t = { st: state Atomic.t } [@@unboxed]
+type run_on =
+  [ `Sync
+  | `Runner of Moonpool.Runner.t
+  ]
+
+type t = {
+  st: state Atomic.t;
+  run_on: run_on;
+}
+
+let run_on (r : run_on) f : unit =
+  match r with
+  | `Sync -> f ()
+  | `Runner runner -> Moonpool.Runner.run_async runner f
 
 let update_ (type a) (self : t) (f : state -> a * state) : a =
   let rec loop () =
@@ -27,7 +40,7 @@ let on_turn_off (self : t) (f : cb) : unit =
       | Off -> true, Off
       | On r -> false, On { r with l = f :: r.l })
   in
-  if must_fire then (* call now *) f ()
+  if must_fire then (* call now *) run_on self.run_on f
 
 let with_on_turn_off (self : t) (cb : cb) f =
   let must_fire, cb_handle =
@@ -40,7 +53,7 @@ let with_on_turn_off (self : t) (cb : cb) f =
 
   if must_fire then (
     (* switch is already off, just call [cb] now and tailcall into [f] *)
-    cb ();
+    run_on self.run_on cb;
     f ()
   ) else (
     (* cleanup: remove the callback *)
@@ -53,22 +66,26 @@ let with_on_turn_off (self : t) (cb : cb) f =
     Fun.protect f ~finally:remove_cb
   )
 
-let turn_off' ?(trace = true) self =
+let turn_off_ ~trace self =
   (* When calling turn_off' from a signal handler, Trace.message may cause the thread
      to be killed. For this reason, we provide a way to disable tracing here. *)
   if trace then Trace.message "switch.turn-off";
   match Atomic.exchange self.st Off with
   | Off -> `Was_off
   | On { l; m; n = _ } ->
-    List.iter (fun f -> f ()) l;
-    Int_map.iter (fun _ f -> f ()) m;
+    List.iter (fun f -> run_on self.run_on f) l;
+    Int_map.iter (fun _ f -> run_on self.run_on f) m;
     `Was_on
+
+let turn_off' ?(trace = true) self = turn_off_ ~trace self
 
 let[@inline] turn_off ?(trace = true) self =
   ignore (turn_off' self ~trace : [> `Was_on ])
 
-let create ?parent () : t =
-  let self = { st = Atomic.make (On { l = []; n = 0; m = Int_map.empty }) } in
+let create ~run_on ?parent () : t =
+  let self =
+    { run_on; st = Atomic.make (On { l = []; n = 0; m = Int_map.empty }) }
+  in
   Option.iter (fun p -> on_turn_off p (fun () -> turn_off self)) parent;
   self
 
