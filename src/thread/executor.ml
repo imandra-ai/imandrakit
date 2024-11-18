@@ -2,6 +2,7 @@
 
 type t = Moonpool.Runner.t
 
+let size = Moonpool.Runner.size
 let pp out _ = Fmt.string out "<executor>"
 let run = Moonpool.Runner.run_async
 let shutdown = Moonpool.Runner.shutdown
