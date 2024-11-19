@@ -1,5 +1,18 @@
 # Changelog
 
+## main
+
+## 3.15
+
+- Add `CCList.split_result` (#459)
+- pretty printer in MultiSet
+- `CCHeap`: building a heap from an almost-sorted sequence
+- perf: `CCHeap`: building a heap from n elements is now in time O(n)
+  instead of O(n log n)
+- perf: `CCHeap`: `filter` and `delete_all` are now in time O(n)
+  instead of O(n log n), and they ensure physical equality
+  (for `delete_all` this is a bugfix)
+
 ## 3.14
 
 
