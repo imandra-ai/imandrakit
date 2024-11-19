@@ -63,9 +63,10 @@ open struct
 end
 
 (** Wrap [f()] in a async span. *)
-let with_span ?(level = Trace.get_default_level ()) ?data ?__FUNCTION__
+let with_span ?(level = Trace.get_default_level ()) ?parent ?data ?__FUNCTION__
     ~__FILE__ ~__LINE__ name (f : Trace.explicit_span -> 'a) : 'a =
   if Trace.enabled () && level <= Trace.get_current_level () then
-    with_span_real_ ~level ?data ?__FUNCTION__ ~__FILE__ ~__LINE__ name f
+    with_span_real_ ~level ?parent ?data ?__FUNCTION__ ~__FILE__ ~__LINE__ name
+      f
   else
     f Trace.Collector.dummy_explicit_span
