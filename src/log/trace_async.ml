@@ -23,9 +23,14 @@ let add_exn_to_span (sp : Trace.explicit_span) (exn : exn)
     ]
 
 open struct
-  let with_span_real_ ~level ?data ?__FUNCTION__ ~__FILE__ ~__LINE__ name f =
-    let parent = LS.get_in_local_hmap_opt k_parent_scope in
+  let with_span_real_ ~level ?parent ?data ?__FUNCTION__ ~__FILE__ ~__LINE__
+      name f =
     let span =
+      let parent =
+        match parent with
+        | Some _ as p -> p
+        | None -> LS.get_in_local_hmap_opt k_parent_scope
+      in
       match parent with
       | None ->
         Trace.enter_manual_toplevel_span ~flavor:`Async ?data ~level
