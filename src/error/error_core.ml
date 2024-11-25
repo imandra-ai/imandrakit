@@ -32,8 +32,10 @@ module Message = struct
   let pp out (self : t) : unit =
     let pp_bt out () =
       match self.bt with
-      | None | Some "" -> ()
-      | Some bt -> Fmt.fprintf out "@ backtrace:@ %a" Fmt.string_lines bt
+      | Some "" -> ()
+      | Some bt when Printexc.backtrace_status () ->
+        Fmt.fprintf out "@ backtrace:@ %a" Fmt.string_lines bt
+      | _ -> ()
     and pp_data out d =
       Data.iter d (fun (Data.B (k, v)) -> Data.Key.pp k out v)
     in
