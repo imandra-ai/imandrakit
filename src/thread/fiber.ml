@@ -14,6 +14,9 @@ let[@inline] get_from_rcontext (k : 'a Hmap.key) : 'a option =
 let[@inline] add_to_rcontext (k : 'a Hmap.key) (x : 'a) : unit =
   FLS.set_in_local_hmap k x
 
+let add_on_cancel' fib k : unit = ignore (add_on_cancel fib k : cancel_handle)
+let add_on_cancel_any' (Any fib) k : unit = add_on_cancel' fib k
+
 (** An easy starting point to mimic future-returning APIs *)
 let spawn_top_and_return_fut ~on (f : unit -> 'a) : 'a Fut.t =
   spawn_top ~on f |> res
