@@ -2,7 +2,7 @@ type t = Executor.t
 
 let pp out _self = Fmt.string out "<background thread>"
 
-let start ?(active = Switch.create ()) ?on_exn ~name () : t =
+let start ?(active = Switch.create ~run_on:`Sync ()) ?on_exn ~name () : t =
   let size_name_ = spf "%s.queue-size" name in
   let around_task =
     if Trace.enabled () then (

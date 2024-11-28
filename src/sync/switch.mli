@@ -4,8 +4,10 @@
 
 type t [@@deriving show]
 
-val create : ?parent:t -> unit -> t
+val create :
+  run_on:[ `Sync | `Runner of Moonpool.Runner.t ] -> ?parent:t -> unit -> t
 (** New switch.
+   @param run_on decides where callbacks will run when the switch is turned off.
    @param parent inherit from this switch. It means that the result switches
    off if the parent does, but conversely we can turn the result off
    without affecting the parent.

@@ -5,4 +5,4 @@
  (synopsis "Sync primitives")
  (preprocess
   (pps ppx_deriving.std))
- (libraries containers threads.posix imandrakit))
+ (libraries containers moonpool threads.posix imandrakit))
