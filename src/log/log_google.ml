@@ -12,6 +12,7 @@ let event_to_json ?(other_fields = []) (ev : Log_event.t) : json =
   let { Log_event.lvl; msg; ts; src; meta } = ev in
   let labels = List.rev_map (fun (k, v) -> k, `String v) meta in
   let labels = ("src", `String src) :: labels in
+  let msg = Ansi_clean.remove_escape_codes msg in
   let fields =
     [
       "severity", `String (level_to_severity lvl);
