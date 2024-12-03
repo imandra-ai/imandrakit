@@ -25,6 +25,10 @@ module Output : sig
 
   val to_chan_jsonl : out_channel -> t
   (** Write into the channel as jsonl. *)
+
+  val buf_pool : Buffer.t Apool.t
+  (** Buffer pool for loggers. Please hold onto buffers for only
+      a short period of time. *)
 end
 
 type t

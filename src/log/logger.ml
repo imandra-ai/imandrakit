@@ -104,7 +104,7 @@ module Output = struct
 
   let buf_pool : Buffer.t Apool.t =
     Apool.create ~clear:Buffer.reset
-      ~mk_item:(fun () -> Buffer.create 64)
+      ~mk_item:(fun () -> Buffer.create 256)
       ~max_size:8 ()
 
   (** Logger that writes events, one per line, on the given channel. *)
