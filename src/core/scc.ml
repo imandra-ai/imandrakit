@@ -47,7 +47,7 @@ module Make (A : ARG) = struct
       A.node list A.Node_tbl.t * _ list =
     let res = A.Node_tbl.create 8 in
     let tbl = A.Node_tbl.create 16 in
-    let sorted = ref [] in
+    let scc_l = ref [] in
 
     (* stack of nodes being explored, for the DFS *)
     let to_explore = Stack.create () in
@@ -90,7 +90,7 @@ module Make (A : ARG) = struct
           (* pop from stack if SCC found *)
           if cell.id = cell.min_id then (
             let scc = pop_down_to ~id:cell.id [] stack in
-            sorted := scc :: !sorted;
+            scc_l := scc :: !scc_l;
             List.iter (fun node -> A.Node_tbl.add res node scc) scc
           )
       done
@@ -98,11 +98,11 @@ module Make (A : ARG) = struct
 
     List.iter explore_from nodes;
     assert (Stack.is_empty stack);
-    res, !sorted
+    res, !scc_l
 
   let sccs ~graph ~nodes = fst @@ sccs_ ~graph ~nodes
 
   let sccs_sorted ~graph ~nodes =
-    let tbl, sorted = sccs_ ~graph ~nodes in
-    tbl, List.rev sorted
+    let tbl, scc_l = sccs_ ~graph ~nodes in
+    tbl, List.rev scc_l
 end
