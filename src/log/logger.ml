@@ -326,8 +326,8 @@ let parse_level_per_source (str : string) : _ list Error.result =
   let src_set = all_sources_str |> Str_set.of_iter in
 
   let parse_command s =
-    match CCString.Split.left ~by:"=" s with
-    | None -> failwith @@ spf "Expected `src=level`, got `%s`." s
+    match CCString.Split.left ~by:":" s with
+    | None -> failwith @@ spf {|Expected "src:level", got %S.|} s
     | Some (src, _) when not (Str_set.mem src src_set) ->
       let suggestions =
         all_sources_str
