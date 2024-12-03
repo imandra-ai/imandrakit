@@ -5,6 +5,7 @@
 
 module Log_ctx = Log_ctx
 module Log_event = Log_event
+module Log_google = Log_google
 module Log_level = Log_level
 module Log_reader = Log_reader
 module Logger = Logger
