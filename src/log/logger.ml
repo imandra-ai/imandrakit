@@ -318,42 +318,45 @@ let setup_level_per_source (it : _ Iter.t) : unit =
       | None -> ()
       | Some lvl -> Logs.Src.set_level src lvl)
 
-let parse_error = Error_kind.make ~name:"LoggerParseError" ()
+let parse_level_per_source (str : string) : (_ list, string) result =
+  try
+    let l = String.split_on_char ',' str in
+    let src_set = all_sources_str |> Str_set.of_iter in
 
-let parse_level_per_source (str : string) : _ list Error.result =
-  let@ () = Error.try_catch ~kind:parse_error () in
-  let l = String.split_on_char ',' str in
-  let src_set = all_sources_str |> Str_set.of_iter in
-
-  let parse_command s =
-    match CCString.Split.left ~by:":" s with
-    | None -> failwith @@ spf {|Expected "src:level", got %S.|} s
-    | Some (src, _) when not (Str_set.mem src src_set) ->
-      let suggestions =
-        all_sources_str
-        |> Iter.filter (fun src' ->
-               CCString.edit_distance ~cutoff:4 src src' <= 2)
-        |> Iter.to_rev_list
-      in
-      failwith
-      @@ spf "Unknown logging source %S.%s" src
-           (match suggestions with
-           | [] -> ""
-           | [ s ] -> spf " Did you mean %S?" s
-           | l ->
-             spf " Did you mean one of %s?"
-               (String.concat ", " @@ List.map (spf "%S") l))
-    | Some (src, ("none" | "off")) -> src, None
-    | Some (src, lvl) ->
-      (match Log_level.parse lvl with
-      | None ->
+    let parse_command s =
+      match CCString.Split.left ~by:":" s with
+      | None -> failwith @@ spf {|Expected "src:level", got %S.|} s
+      | Some (src, _) when not (Str_set.mem src src_set) ->
+        let suggestions =
+          all_sources_str
+          |> Iter.filter (fun src' ->
+                 CCString.edit_distance ~cutoff:4 src src' <= 2)
+          |> Iter.to_rev_list
+        in
         failwith
-        @@ spf
-             "Invalid log level %S (valid: app|debug|info|warn|error|none|off)."
-             lvl
-      | Some _ as lvl -> src, lvl)
-  in
-  List.map parse_command l
+        @@ spf "Unknown logging source %S.%s" src
+             (match suggestions with
+             | [] -> ""
+             | [ s ] -> spf " Did you mean %S?" s
+             | l ->
+               spf " Did you mean one of %s?"
+                 (String.concat ", " @@ List.map (spf "%S") l))
+      | Some (src, ("none" | "off")) -> src, None
+      | Some (src, lvl) ->
+        (match Log_level.parse lvl with
+        | None ->
+          failwith
+          @@ spf
+               "Invalid log level %S (valid: \
+                app|debug|info|warn|error|none|off)."
+               lvl
+        | Some _ as lvl -> src, lvl)
+    in
+    let r = List.map parse_command l in
+    Ok r
+  with
+  | Failure msg -> Error msg
+  | exn -> Error (Printexc.to_string exn)
 
 let setup_level_per_source_str str =
   match parse_level_per_source str with

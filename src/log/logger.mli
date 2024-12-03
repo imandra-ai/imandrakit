@@ -91,8 +91,9 @@ val all_sources_str : string Iter.t
 val setup_level_per_source : (string * level option) Iter.t -> unit
 (** Set level for certain sources *)
 
-val parse_level_per_source : string -> (string * level option) list Error.result
+val parse_level_per_source :
+  string -> ((string * level option) list, string) result
 (** Parse a logging command, ie a list of "src=level" separated by "," *)
 
-val setup_level_per_source_str : string -> unit Error.result
+val setup_level_per_source_str : string -> (unit, string) result
 (** Parse a logging command from the string, and apply it. *)
