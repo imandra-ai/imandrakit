@@ -25,3 +25,12 @@ let of_yojson : json -> (t, string) result = function
   | `String "warn" -> Ok Warning
   | `String lvl -> Error (spf "unknown log level %S" lvl)
   | _ -> Error "expected log level, got invalid json"
+
+let parse str : _ option =
+  match str with
+  | "app" -> Some App
+  | "debug" -> Some Debug
+  | "error" -> Some Error
+  | "info" -> Some Info
+  | "warn" -> Some Warning
+  | _ -> None
