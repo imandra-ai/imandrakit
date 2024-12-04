@@ -6,10 +6,10 @@ let k_parent_scope : Trace.explicit_span Hmap.key = Hmap.Key.create ()
 
 (** Set the parent scope by hand *)
 let[@inline] set_parent_scope (sp : Trace.explicit_span) =
-  LS.set_in_local_hmap k_parent_scope sp
+  try LS.set_in_local_hmap k_parent_scope sp with _ -> ()
 
 let[@inline] get_parent_scope () : Trace.explicit_span option =
-  LS.get_in_local_hmap_opt k_parent_scope
+  try LS.get_in_local_hmap_opt k_parent_scope with _ -> None
 
 let add_exn_to_span (sp : Trace.explicit_span) (exn : exn)
     (bt : Printexc.raw_backtrace) =
