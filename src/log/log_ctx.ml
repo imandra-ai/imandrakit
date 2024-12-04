@@ -9,7 +9,8 @@ let create_tag ?doc name pp : _ tag = Logs.Tag.def ?doc name pp
 
 let get_tags_from_ctx () : Logs.Tag.set =
   let map =
-    LS.get_in_local_hmap_opt ctx_k |> Option.value ~default:Str_map.empty
+    try LS.get_in_local_hmap_opt ctx_k |> Option.value ~default:Str_map.empty
+    with _ -> Str_map.empty (* might be running outside of a fiber/task *)
   in
   (* build the current set of tags *)
   Str_map.fold
@@ -17,9 +18,13 @@ let get_tags_from_ctx () : Logs.Tag.set =
     map Logs.Tag.empty
 
 let with_tag (tag : _ tag) v (f : unit -> 'b) : 'b =
-  let old_map =
+  match
     LS.get_in_local_hmap_opt ctx_k |> Option.value ~default:Str_map.empty
-  in
-  let new_map = Str_map.add (Logs.Tag.name tag) (Logs.Tag.V (tag, v)) old_map in
-  LS.set_in_local_hmap ctx_k new_map;
-  Fun.protect ~finally:(fun () -> LS.set_in_local_hmap ctx_k old_map) f
+  with
+  | exception _ -> f ()
+  | old_map ->
+    let new_map =
+      Str_map.add (Logs.Tag.name tag) (Logs.Tag.V (tag, v)) old_map
+    in
+    LS.set_in_local_hmap ctx_k new_map;
+    Fun.protect ~finally:(fun () -> LS.set_in_local_hmap ctx_k old_map) f
