@@ -158,7 +158,7 @@ open struct
 
   let get_ambient_meta_ () =
     match LS.get_exn LS.k_local_hmap with
-    | exception LS.Not_set -> Str_map.empty
+    | exception _ -> Str_map.empty
     | m -> (try Hmap.get k_ambient_meta m with _ -> Str_map.empty)
 
   let add_ambient_meta_ k v : unit =
