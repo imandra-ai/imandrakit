@@ -213,7 +213,9 @@ let to_event_if_ (p : level -> bool) ~emit_ev : Logs.reporter =
       let src = name_of_src src in
 
       (* get surrounding tags *)
-      let ambient_tags = Log_ctx.get_tags_from_ctx () in
+      let ambient_tags =
+        try Log_ctx.get_tags_from_ctx () with _ -> Logs.Tag.empty
+      in
 
       let k (tags : Logs.Tag.set) msg =
         (* remove and convert rich tags *)
