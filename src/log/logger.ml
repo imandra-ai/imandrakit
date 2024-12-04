@@ -157,13 +157,17 @@ open struct
   let k_ambient_meta : Log_meta.t Str_map.t Hmap.key = Hmap.Key.create ()
 
   let get_ambient_meta_ () =
-    LS.get_in_local_hmap_opt k_ambient_meta
-    |> Option.value ~default:Str_map.empty
+    match LS.get_exn LS.k_local_hmap with
+    | exception LS.Not_set -> Str_map.empty
+    | m -> (try Hmap.get k_ambient_meta m with _ -> Str_map.empty)
 
   let add_ambient_meta_ k v : unit =
-    let old_map = get_ambient_meta_ () in
-    let new_map = Str_map.add k v old_map in
-    LS.set_in_local_hmap k_ambient_meta new_map
+    match LS.get_in_local_hmap_opt k_ambient_meta with
+    | exception _ -> ()
+    | m ->
+      let old_map = Option.value m ~default:Str_map.empty in
+      let new_map = Str_map.add k v old_map in
+      LS.set_in_local_hmap k_ambient_meta new_map
 
   let with_ambient_meta_ k v f =
     let old_map = get_ambient_meta_ () in
