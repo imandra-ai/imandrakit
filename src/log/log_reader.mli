@@ -9,7 +9,7 @@ class type t = object
 
   method read_events :
     only_above_level:Logger.level option ->
-    filter_meta:(string * string) list ->
+    filter_meta:(string * Log_meta.t) list ->
     unit ->
     Logger.Log_event.t Iter.t
   (** Read events, in order, from the underlying log source.
@@ -24,7 +24,7 @@ class dummy : t
 
 val accept_ev :
   only_above_level:Logs.level option ->
-  filter_meta:(string * string) list ->
+  filter_meta:(string * Log_meta.t) list ->
   Log_event.t ->
   bool
 

@@ -6,7 +6,7 @@ class type t = object
 
   method read_events :
     only_above_level:Logger.level option ->
-    filter_meta:(string * string) list ->
+    filter_meta:(string * Log_meta.t) list ->
     unit ->
     Logger.Log_event.t Iter.t
 end
@@ -25,7 +25,7 @@ let accept_ev ~only_above_level ~filter_meta (ev : Log_event.t) : bool =
   && List.for_all
        (fun (k, v) ->
          match List.assoc_opt k ev.meta with
-         | Some v' -> v = v'
+         | Some v' -> Log_meta.equal v v'
          | None -> false)
        filter_meta
 
@@ -34,7 +34,7 @@ module File_json_l = struct
     file: string;
     buf: Buffer.t;
     only_above_level: Log_level.t option;
-    filter_meta: (string * string) list;
+    filter_meta: (string * Log_meta.t) list;
   }
 
   (** read a single line *)

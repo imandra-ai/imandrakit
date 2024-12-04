@@ -10,7 +10,7 @@ type t = {
   ts: float;  (** Timestamp, in seconds, since the UNIX epoch. *)
   msg: string;  (** Log message. *)
   src: string;  (** Log source. *)
-  meta: (string * string) list;  (** Additional metadata *)
+  meta: (string * Log_meta.t) list;  (** Additional metadata *)
 }
 [@@deriving show { with_path = false }, serpack, twine]
 (** A log event, which we can store, serialize, send elsewhere, etc. *)
@@ -26,7 +26,8 @@ let to_yojson : t -> json =
   let meta_dict : (string * json) list =
     match meta with
     | [] -> []
-    | _ -> [ "meta", `Assoc (List.map (fun (k, v) -> k, `String v) meta) ]
+    | _ ->
+      [ "meta", `Assoc (List.map (fun (k, v) -> k, Log_meta.to_yojson v) meta) ]
   in
   `Assoc
     (meta_dict
@@ -56,7 +57,7 @@ let of_yojson_ (j : json) : t Err.result =
       match JU.member "meta" j with
       | exception _ -> []
       | `Null -> []
-      | `Assoc l -> List.map (fun (k, v) -> k, JU.to_string v) l
+      | `Assoc l -> List.map (fun (k, v) -> k, Log_meta.of_yojson v) l
       | _ -> Err.fail ~kind:json_error "expected null or object for 'meta'"
     in
     Ok { lvl; ts; msg; src; meta }

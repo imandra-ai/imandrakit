@@ -131,6 +131,54 @@ type task =
   | T_fence of { wakeup: unit Moonpool.Fut.promise }
   | T_emit of Log_event.t
 
+type capture_meta_hook = unit -> (string * Log_meta.t) list
+
+open struct
+  let capture_meta_hooks : capture_meta_hook list Atomic.t = Atomic.make []
+
+  let add_capture_meta_hook c =
+    while
+      let l = Atomic.get capture_meta_hooks in
+      not (Atomic.compare_and_set capture_meta_hooks l (c :: l))
+    do
+      ()
+    done
+
+  let add_hooks_results l : _ list =
+    let hooks = Atomic.get capture_meta_hooks in
+    List.fold_left (fun l h -> List.rev_append (h ()) l) l hooks
+end
+
+let add_capture_meta_hook = add_capture_meta_hook
+
+open struct
+  module LS = Moonpool.Task_local_storage
+
+  let k_ambient_meta : Log_meta.t Str_map.t Hmap.key = Hmap.Key.create ()
+
+  let get_ambient_meta_ () =
+    LS.get_in_local_hmap_opt k_ambient_meta
+    |> Option.value ~default:Str_map.empty
+
+  let add_ambient_meta_ k v : unit =
+    let old_map = get_ambient_meta_ () in
+    let new_map = Str_map.add k v old_map in
+    LS.set_in_local_hmap k_ambient_meta new_map
+
+  let with_ambient_meta_ k v f =
+    let old_map = get_ambient_meta_ () in
+    let new_map = Str_map.add k v old_map in
+    LS.set_in_local_hmap k_ambient_meta new_map;
+    Fun.protect f ~finally:(fun () ->
+        LS.set_in_local_hmap k_ambient_meta old_map)
+
+  let[@inline] add_ambient_meta_to_list l : _ list =
+    Str_map.fold (fun k v l -> (k, v) :: l) (get_ambient_meta_ ()) l
+end
+
+let add_ambient_meta = add_ambient_meta_
+let with_ambient_meta = with_ambient_meta_
+
 type t = {
   q: task Sync_queue.t;
   events: Log_event.t Observer.t;
@@ -166,7 +214,7 @@ let add_tags_to_meta (tags : Logs.Tag.set) acc : _ list =
     (fun (Logs.Tag.V (t_def, v)) l ->
       let k = Logs.Tag.name t_def in
       let v = Fmt.to_string (Logs.Tag.printer t_def) v in
-      (k, v) :: l)
+      (k, Log_meta.String v) :: l)
     tags acc
 
 let to_event_if_ (p : level -> bool) ~emit_ev : Logs.reporter =
@@ -174,12 +222,16 @@ let to_event_if_ (p : level -> bool) ~emit_ev : Logs.reporter =
     if p level then (
       let ts = Util.ptime_now () in
       let src = name_of_src src in
+
       (* get surrounding tags *)
       let ambient_tags = Log_ctx.get_tags_from_ctx () in
 
       let k (tags : Logs.Tag.set) msg =
+        (* gather all metadata in this spot *)
         let meta =
-          [] |> add_tags_to_meta tags |> add_tags_to_meta ambient_tags
+          [] |> add_tags_to_meta tags
+          |> add_tags_to_meta ambient_tags
+          |> add_ambient_meta_to_list |> add_hooks_results
         in
         let ev = { Log_event.msg; ts; src; lvl = level; meta } in
 
@@ -188,9 +240,12 @@ let to_event_if_ (p : level -> bool) ~emit_ev : Logs.reporter =
         if Trace_core.enabled () then (
           let msg = Ansi_clean.remove_escape_codes msg in
           Trace_core.message msg ~data:(fun () ->
-              let meta = List.map (fun (k, v) -> k, `String v) meta in
-              [ "src", `String ev.src; "lvl", `String (show_level level) ]
-              @ meta)
+              let meta =
+                List.map (fun (k, v) -> k, Log_meta.to_trace_data v) meta
+              in
+              ("src", `String ev.src)
+              :: ("lvl", `String (show_level level))
+              :: meta)
         );
 
         emit_ev ev;

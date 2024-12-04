@@ -10,16 +10,14 @@ let level_to_severity (l : Log_level.t) : string =
 
 let event_to_json ?(other_fields = []) (ev : Log_event.t) : json =
   let { Log_event.lvl; msg; ts; src; meta } = ev in
-  let labels = List.rev_map (fun (k, v) -> k, `String v) meta in
-  let labels = ("src", `String src) :: labels in
+  let meta = List.rev_map (fun (k, v) -> k, Log_meta.to_yojson v) meta in
   let msg = Ansi_clean.remove_escape_codes msg in
   let fields =
-    [
-      "severity", `String (level_to_severity lvl);
-      "timestamp", `String (Timestamp_s.to_string_rfc3339 ~tz_offset_s:0 ts);
-      "textPayload", `String msg;
-      "labels", `Assoc labels;
-    ]
+    ("severity", `String (level_to_severity lvl))
+    :: ("timestamp", `String (Timestamp_s.to_string_rfc3339 ~tz_offset_s:0 ts))
+    :: ("message", `String msg)
+    :: ("imandrax.src", `String src)
+    :: meta
   in
   `Assoc (List.rev_append other_fields fields)
 

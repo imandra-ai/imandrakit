@@ -31,6 +31,19 @@ module Output : sig
       a short period of time. *)
 end
 
+type capture_meta_hook = unit -> (string * Log_meta.t) list
+(** A metadata capture hook, returning a list of metadata *)
+
+val add_capture_meta_hook : capture_meta_hook -> unit
+(** Add a global hook, called at logging point to capture
+  metadata from the ambient context. *)
+
+val add_ambient_meta : string -> Log_meta.t -> unit
+(** [add_ambient_meta str v] sets a piece of metadata for all subsequent
+    calls to the logger in the current task *)
+
+val with_ambient_meta : string -> Log_meta.t -> (unit -> 'a) -> 'a
+
 type t
 (** Main logger. This obtains events from {!Logs} and
     writes them to the current set of {!Output.t}. *)
