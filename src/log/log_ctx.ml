@@ -17,6 +17,17 @@ let get_tags_from_ctx () : Logs.Tag.set =
     (fun _ (Logs.Tag.V (tag, v)) set -> Logs.Tag.add tag v set)
     map Logs.Tag.empty
 
+let set_tag (tag : _ tag) v : unit =
+  match
+    LS.get_in_local_hmap_opt ctx_k |> Option.value ~default:Str_map.empty
+  with
+  | exception _ -> ()
+  | old_map ->
+    let new_map =
+      Str_map.add (Logs.Tag.name tag) (Logs.Tag.V (tag, v)) old_map
+    in
+    LS.set_in_local_hmap ctx_k new_map
+
 let with_tag (tag : _ tag) v (f : unit -> 'b) : 'b =
   match
     LS.get_in_local_hmap_opt ctx_k |> Option.value ~default:Str_map.empty
