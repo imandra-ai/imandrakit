@@ -38,11 +38,9 @@ val add_capture_meta_hook : capture_meta_hook -> unit
 (** Add a global hook, called at logging point to capture
   metadata from the ambient context. *)
 
-val add_ambient_meta : string -> Log_meta.t -> unit
-(** [add_ambient_meta str v] sets a piece of metadata for all subsequent
-    calls to the logger in the current task *)
-
-val with_ambient_meta : string -> Log_meta.t -> (unit -> 'a) -> 'a
+val add_rich_tag : 'a Logs.Tag.def -> ('a -> Log_meta.t) -> unit
+(** Special tag that we convert to a {!Log_meta.t} instead of just
+   a string *)
 
 type t
 (** Main logger. This obtains events from {!Logs} and

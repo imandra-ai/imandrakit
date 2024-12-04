@@ -152,36 +152,21 @@ end
 let add_capture_meta_hook = add_capture_meta_hook
 
 open struct
-  module LS = Moonpool.Task_local_storage
+  type rich_tag = RT : 'a Logs.Tag.def * ('a -> Log_meta.t) -> rich_tag
 
-  let k_ambient_meta : Log_meta.t Str_map.t Hmap.key = Hmap.Key.create ()
+  let rich_tags : rich_tag list Atomic.t = Atomic.make []
 
-  let get_ambient_meta_ () =
-    match LS.get_exn LS.k_local_hmap with
-    | exception _ -> Str_map.empty
-    | m -> (try Hmap.get k_ambient_meta m with _ -> Str_map.empty)
-
-  let add_ambient_meta_ k v : unit =
-    match LS.get_in_local_hmap_opt k_ambient_meta with
-    | exception _ -> ()
-    | m ->
-      let old_map = Option.value m ~default:Str_map.empty in
-      let new_map = Str_map.add k v old_map in
-      LS.set_in_local_hmap k_ambient_meta new_map
-
-  let with_ambient_meta_ k v f =
-    let old_map = get_ambient_meta_ () in
-    let new_map = Str_map.add k v old_map in
-    LS.set_in_local_hmap k_ambient_meta new_map;
-    Fun.protect f ~finally:(fun () ->
-        LS.set_in_local_hmap k_ambient_meta old_map)
-
-  let[@inline] add_ambient_meta_to_list l : _ list =
-    Str_map.fold (fun k v l -> (k, v) :: l) (get_ambient_meta_ ()) l
+  let add_rich_tag def f =
+    let st = RT (def, f) in
+    while
+      let l = Atomic.get rich_tags in
+      not (Atomic.compare_and_set rich_tags l (st :: l))
+    do
+      ()
+    done
 end
 
-let add_ambient_meta = add_ambient_meta_
-let with_ambient_meta = with_ambient_meta_
+let add_rich_tag = add_rich_tag
 
 type t = {
   q: task Sync_queue.t;
@@ -231,11 +216,24 @@ let to_event_if_ (p : level -> bool) ~emit_ev : Logs.reporter =
       let ambient_tags = Log_ctx.get_tags_from_ctx () in
 
       let k (tags : Logs.Tag.set) msg =
+        (* remove and convert rich tags *)
+        let tags = ref tags in
+        let rich_tags =
+          List.fold_left
+            (fun acc (RT (def, f)) ->
+              match Logs.Tag.find def !tags with
+              | None -> acc
+              | Some x ->
+                tags := Logs.Tag.rem def !tags;
+                (Logs.Tag.name def, f x) :: acc)
+            [] (Atomic.get rich_tags)
+        in
+
         (* gather all metadata in this spot *)
         let meta =
-          [] |> add_tags_to_meta tags
+          rich_tags |> add_tags_to_meta !tags
           |> add_tags_to_meta ambient_tags
-          |> add_ambient_meta_to_list |> add_hooks_results
+          |> add_hooks_results
         in
         let ev = { Log_event.msg; ts; src; lvl = level; meta } in
 
