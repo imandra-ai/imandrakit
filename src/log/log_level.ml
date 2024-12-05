@@ -10,12 +10,15 @@ type t = Logs.level =
   | Debug
 [@@deriving show { with_path = false }, enum, eq, ord, serpack, twine]
 
-let to_yojson : t -> json = function
-  | App -> `String "app"
-  | Debug -> `String "debug"
-  | Error -> `String "error"
-  | Info -> `String "info"
-  | Warning -> `String "warn"
+(** Print in a way that can be parsed back *)
+let to_string : t -> string = function
+  | App -> "app"
+  | Debug -> "debug"
+  | Error -> "error"
+  | Info -> "info"
+  | Warning -> "warn"
+
+let to_yojson : t -> json = fun lvl -> `String (to_string lvl)
 
 let of_yojson : json -> (t, string) result = function
   | `String "app" -> Ok App
