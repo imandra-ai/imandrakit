@@ -37,6 +37,10 @@ let[@inline] of_string s = create @@ Slice.of_string s
 let[@inline] hmap_set self k v = self.hmap <- Hmap.add k v self.hmap
 let[@inline] hmap_get self k = Hmap.find k self.hmap
 
+let hmap_transfer d1 ~into:d2 : unit =
+  d2.hmap <-
+    Hmap.fold (fun (Hmap.B (k, v)) h2 -> Hmap.add k v h2) d1.hmap d2.hmap
+
 type 'a decoder = t -> offset -> 'a
 type num_bytes_consumed = int
 

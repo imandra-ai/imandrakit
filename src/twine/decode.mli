@@ -7,6 +7,9 @@ val of_string : string -> t
 val hmap_set : t -> 'a Hmap.key -> 'a -> unit
 val hmap_get : t -> 'a Hmap.key -> 'a option
 
+val hmap_transfer : t -> into:t -> unit
+(** Transfer all hmap pairs from the first decode to the second *)
+
 type 'a decoder = t -> offset -> 'a
 type cstor_index = int
 
