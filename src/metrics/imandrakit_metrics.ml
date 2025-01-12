@@ -13,14 +13,24 @@ type 'a m = {
 (* FIXME: this will not be needed once we have prometheus export *)
 [@@ocaml.warning "-69"]
 
+type histogram_data = {
+  name: string;
+  bucket_boundaries: float array;  (** sorted *)
+  buckets: Float.Array.t;
+      (** size: bucket_boundaries+1, as there's a underflow bucket *)
+}
+
 type state = {
   ints: int m list;
   floats: float m list;
+  histograms: histogram_data Lock.t list;
   updates: (unit -> unit) list;
   gc_metrics: bool;
 }
 
-let empty : state = { ints = []; floats = []; updates = []; gc_metrics = false }
+let empty : state =
+  { ints = []; floats = []; histograms = []; updates = []; gc_metrics = false }
+
 let global : state Immlock.t = Immlock.create empty
 
 let add_int_ c =
@@ -31,6 +41,9 @@ let add_float_ c =
 
 let add_on_update_ c =
   Immlock.update global (fun st -> { st with updates = c :: st.updates })
+
+let add_hist_ h =
+  Immlock.update global (fun st -> { st with histograms = h :: st.histograms })
 
 module M_ = struct
   type 'a t = 'a m
@@ -67,6 +80,36 @@ module Gauge = struct
   let create_float = create_float Gauge
 end
 
+module Histogram = struct
+  type t = histogram_data Lock.t
+
+  let create name ~buckets : t =
+    let bucket_boundaries = buckets in
+    Array.sort compare bucket_boundaries;
+    let buckets =
+      Array.Floatarray.create (Array.length bucket_boundaries + 1)
+    in
+    let h = Lock.create { name; bucket_boundaries; buckets } in
+    add_hist_ h;
+    h
+
+  let add_sample_ (self : histogram_data) v : unit =
+    let i = ref 0 in
+    let continue = ref true in
+    while !continue do
+      if !i = Array.length self.bucket_boundaries then
+        continue := false
+      else if v < Array.get self.bucket_boundaries !i then
+        continue := false
+      else
+        incr i
+    done;
+    Float.Array.set self.buckets !i v
+
+  let add_sample (self : t) (v : float) : unit =
+    Lock.with_lock self (fun h -> add_sample_ h v)
+end
+
 let add_on_refresh = add_on_update_
 
 let add_gc_metrics () : unit =
@@ -97,16 +140,19 @@ let add_gc_metrics () : unit =
         Counter.set c_major_heap_size (float (8 * stat.heap_words)))
   )
 
-let iter_all ~int ~float () =
+let iter_all ~int ~float ~hist () =
   let st = Immlock.get global in
   List.iter (fun f -> f ()) st.updates;
   List.iter (fun m -> int m.kind m.name @@ A.get m.v) st.ints;
-  List.iter (fun m -> float m.kind m.name @@ A.get m.v) st.floats
+  List.iter (fun m -> float m.kind m.name @@ A.get m.v) st.floats;
+  List.iter (fun h -> Lock.with_lock h hist) st.histograms;
+  ()
 
 let emit_trace_ () =
   iter_all
     ~int:(fun _k name v -> Trace.counter_int name v)
     ~float:(fun _k name v -> Trace.counter_float name v)
+    ~hist:(fun _ -> ())
     ()
 
 let emit_trace () = if Trace.enabled () then emit_trace_ ()
