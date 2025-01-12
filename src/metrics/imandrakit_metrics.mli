@@ -5,6 +5,14 @@ type kind =
   | Gauge
 [@@deriving show]
 
+type histogram_data = private {
+  name: string;
+  bucket_boundaries: float array;  (** sorted *)
+  buckets: Float.Array.t;
+      (** size: bucket_boundaries+1, as there's a underflow bucket *)
+}
+(** A histogram *)
+
 (** A counter, increasing monotonically *)
 module Counter : sig
   type 'a t
@@ -28,6 +36,19 @@ module Gauge : sig
   val set : 'a t -> 'a -> unit
 end
 
+module Histogram : sig
+  type t
+  (** A histogram with explicit buckets *)
+
+  val create : string -> buckets:float array -> t
+  (** [create_int name ~buckets] makes a histogram. Each item in [buckets] (which will be sorted)
+is used as the lower bound of a bucket. An additional bucket is created for values below the lowest
+    item in [buckets] *)
+
+  val add_sample : t -> float -> unit
+  (** Add a value in the histogram. *)
+end
+
 val add_on_refresh : (unit -> unit) -> unit
 (** Register a function to be called every time metrics
     are about to be emitted *)
@@ -38,6 +59,7 @@ val add_gc_metrics : unit -> unit
 val iter_all :
   int:(kind -> string -> int -> unit) ->
   float:(kind -> string -> float -> unit) ->
+  hist:(histogram_data -> unit) ->
   unit ->
   unit
 (** Iterate on all metrics. This first calls every callback
