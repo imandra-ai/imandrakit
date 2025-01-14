@@ -29,7 +29,8 @@ module Value : sig
     | Float of float
     | String of slice
     | Blob of slice
-    | Pointer of offset
+    | Ref of offset  (** Explicit reference *)
+    | Pointer of offset  (** Implicit reference, followed implicitly *)
     | Array of array_cursor
     | Dict of dict_cursor
     | Tag of int * offset
@@ -93,6 +94,9 @@ val array : Array_cursor.t decoder
 val dict : Dict_cursor.t decoder
 val tag : (int * offset) decoder
 val cstor : (cstor_index * Array_cursor.t) decoder
+
+val ref_ : offset decoder
+(** Read a reference *)
 
 (** {2 Entrypoint} *)
 

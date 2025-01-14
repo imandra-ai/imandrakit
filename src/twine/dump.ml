@@ -59,6 +59,7 @@ let rec dump_primitive (self : state) (v : Decode.Value.t) =
     else
       spf "%S" s
   | Blob b -> dump_bytes_summary ~string_ellipsis_threshold @@ Slice.contents b
+  | Ref p -> spf "ref(0x%x)" p
   | Pointer p -> spf "@0x%x" p
   | Tag (n, v) -> spf "%d(@0x%x)" n v
   | Array c -> spf "[…[%d omitted]]" (Decode.Array_cursor.length c)
@@ -77,7 +78,7 @@ let rec dump_rec (self : state) (off : offset) : unit =
   let decode_sub off =
     let v = Decode.read ~auto_deref:false self.dec off in
     match v with
-    | Pointer p ->
+    | Pointer p | Ref p ->
       dump_rec self p;
       v
     | _ -> v
@@ -121,6 +122,9 @@ let rec dump_rec (self : state) (off : offset) : unit =
             l;
           bpf out "} (len=%d)" (List.length l);
           Buffer.contents out)
+      | Ref p ->
+        let pointee = Decode.read self.dec @@ deref_rec self.dec p in
+        spf "ref(0x%x) (%s)" (off - p - 1) (dump_primitive self pointee)
       | Pointer p ->
         let pointee = Decode.read self.dec @@ deref_rec self.dec p in
         spf "@0x%x (%s)" (off - p - 1) (dump_primitive self pointee)
