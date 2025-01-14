@@ -102,6 +102,14 @@ open struct
     ignore_offset (write_first_byte_and_int self ~high:15 ~n);
     off
 
+  let[@inline] write_ref (self : t) (p : offset) =
+    let off = self.buf.len in
+    assert (off > p);
+    (* compute relative offset to [p] *)
+    let n = off - p - 1 in
+    ignore_offset (write_first_byte_and_int self ~high:14 ~n);
+    off
+
   let write_float32 (self : t) (f : float) =
     let off = reserve_space_ self 5 in
     Bytes.set self.buf.bs off (first_byte_ ~high:3 ~low:0);
@@ -144,6 +152,7 @@ let write_immediate (self : t) (v : immediate) : offset =
   | Float f -> write_float self f
   | String s -> write_string_slice self s
   | Blob s -> write_blob_slice self s
+  | Ref r -> write_ref self r
   | Pointer p -> write_pointer self p
   | Cstor0 index -> write_cstor0 self ~index
 

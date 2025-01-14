@@ -60,6 +60,7 @@ module Value = struct
     | Float of float
     | String of slice
     | Blob of slice
+    | Ref of offset
     | Pointer of offset
     | Array of array_cursor
     | Dict of dict_cursor
@@ -217,7 +218,10 @@ let read ?(auto_deref = true) (self : t) (offset : offset) : Value.t =
       }
     in
     Value.CstorN (idx_cstor, c)
-  | 13 | 14 -> invalid_first_byte_ ~offset ~high ~low "type is reserved"
+  | 13 -> invalid_first_byte_ ~offset ~high ~low "type is reserved"
+  | 14 ->
+    let n, _ = get_int_truncate_ self offset ~low in
+    Value.Ref (offset - n - 1)
   | 15 ->
     let n, _ = get_int_truncate_ self offset ~low in
     Value.Pointer (offset - n - 1)
@@ -246,8 +250,8 @@ let skip_ (self : t) (offset : offset) : num_bytes_consumed =
     1 + n
   | 11 -> fail "Twine: decode.skip: cannot skip over cstor1"
   | 12 -> fail "Twine: decode.skip: cannot skip over cstorN"
-  | 13 | 14 -> invalid_first_byte_ ~offset ~high ~low "type is reserved"
-  | 15 ->
+  | 13 -> invalid_first_byte_ ~offset ~high ~low "type is reserved"
+  | 14 | 15 ->
     let _, size_n = get_int_truncate_ self offset ~low in
     size_n + 1
   | _ -> assert false
@@ -387,6 +391,15 @@ let cstor self offset =
     in
     idx_cstor, c
   | _ -> fail_decode_type_ ~what:"cstor" offset
+
+let ref_ (self : t) offset : offset =
+  let offset = deref_rec self offset in
+  let c = get_char_ self offset in
+  let high = get_high c in
+  if high <> 14 then fail_decode_type_ ~what:"ref" offset;
+  let low = get_low c in
+  let p, _ = get_int_truncate_ self (offset + 1) ~low in
+  offset - p - 1
 
 let get_entrypoint (self : t) : offset =
   assert (Slice.len self.sl > 0);

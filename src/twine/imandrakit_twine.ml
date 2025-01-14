@@ -67,5 +67,6 @@ module Dump = Dump
 module Util = Util
 
 type immediate = Immediate.t
+type offset = Types.offset [@@deriving eq, show, ord]
 type 'a encoder = 'a Encode.encoder
 type 'a decoder = 'a Decode.decoder

@@ -10,6 +10,7 @@ type t =
   | Float of float
   | String of slice
   | Blob of slice
+  | Ref of offset
   | Pointer of offset
   | Cstor0 of int
 [@@deriving show { with_path = false }]
@@ -22,6 +23,7 @@ let[@inline] int64 x = Int x
 let[@inline] int x = Int (Int64.of_int x)
 let[@inline] float32 x = Float32 x
 let[@inline] float x = Float x
+let[@inline] ref_ x : t = Ref x
 let[@inline] cstor0 ~index : t = Cstor0 index
 
 let[@inline] bool b =
