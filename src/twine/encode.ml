@@ -260,37 +260,43 @@ let create_cache_key (type a) (module H : Hashtbl.HashedType with type t = a) :
   end)
 
 let default_string_cache_threshold = 20
+let const_false_ _ = false
 
 let with_cache ?(max_string_size = default_string_cache_threshold)
-    (key : 'a cache_key) (enc : 'a encoder) : 'a encoder =
+    ?(skip = const_false_) (key : 'a cache_key) (enc : 'a encoder) : 'a encoder
+    =
  fun st (x : 'a) : immediate ->
-  let k = K (key, x) in
-  match Cache_tbl.find_opt st.cache k with
-  | Some v -> v
-  | None ->
-    (* encode and save the pointer *)
-    let v = enc st x in
-    let v =
-      match v with
-      | (Immediate.String s | Immediate.Blob s)
-        when Slice.len s > max_string_size ->
-        (* for large strings, write them once and point to them *)
-        Immediate.pointer @@ write_immediate st v
-      | _ -> v
-    in
+  if skip x then
+    enc st x
+  else (
+    let k = K (key, x) in
+    match Cache_tbl.find_opt st.cache k with
+    | Some v -> v
+    | None ->
+      (* encode and save the pointer *)
+      let v = enc st x in
+      let v =
+        match v with
+        | (Immediate.String s | Immediate.Blob s)
+          when Slice.len s > max_string_size ->
+          (* for large strings, write them once and point to them *)
+          Immediate.pointer @@ write_immediate st v
+        | _ -> v
+      in
 
-    Cache_tbl.add st.cache k v;
-    v
+      Cache_tbl.add st.cache k v;
+      v
+  )
 
-let add_cache ?max_string_size h (enc_ref : _ encoder ref) : unit =
+let add_cache ?max_string_size ?skip h (enc_ref : _ encoder ref) : unit =
   let key = create_cache_key h in
-  enc_ref := with_cache ?max_string_size key !enc_ref
+  enc_ref := with_cache ?max_string_size ?skip key !enc_ref
 
-let add_cache_with (type t) ?max_string_size ~eq ~hash enc_ref =
+let add_cache_with (type t) ?max_string_size ?skip ~eq ~hash enc_ref =
   let module M = struct
     type nonrec t = t
 
     let equal = eq
     let hash = hash
   end in
-  add_cache ?max_string_size (module M) enc_ref
+  add_cache ?max_string_size ?skip (module M) enc_ref

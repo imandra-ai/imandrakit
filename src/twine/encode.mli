@@ -85,7 +85,11 @@ val create_cache_key :
     will result in sub-par or inexistant caching. *)
 
 val with_cache :
-  ?max_string_size:int -> 'a cache_key -> 'a encoder -> 'a encoder
+  ?max_string_size:int ->
+  ?skip:('a -> bool) ->
+  'a cache_key ->
+  'a encoder ->
+  'a encoder
 (** [with_cache key enc] is the same encoder as [enc], but
     with caching. When encoding a value [x:'a],
     the cache [key] is used to detect if [x] was already
@@ -97,6 +101,7 @@ val with_cache :
 
 val add_cache :
   ?max_string_size:int ->
+  ?skip:('a -> bool) ->
   (module Hashtbl.HashedType with type t = 'a) ->
   'a encoder ref ->
   unit
@@ -106,10 +111,12 @@ val add_cache :
       {[
 let key = create_cache_key (module …)
 let () = enc_ref := with_cache key !enc_ref
-      ]} *)
+      ]}
+    @param skip if true, do not attempt to cache this value. *)
 
 val add_cache_with :
   ?max_string_size:int ->
+  ?skip:('a -> bool) ->
   eq:('a -> 'a -> bool) ->
   hash:('a -> int) ->
   'a encoder ref ->
