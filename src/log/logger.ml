@@ -44,7 +44,7 @@ module Buf_fmt = struct
 end
 
 open struct
-  let log_time_ : bool =
+  let log_time_pid_tid_ : bool =
     match Sys.getenv_opt "LOG_TIME" with
     | Some ("0" | "false") -> false
     | _ -> true
@@ -70,7 +70,7 @@ module Output = struct
     | Logs.App -> Fmt.fprintf out "@{<green>app@}");
 
     let pp_ts out ts =
-      if log_time_ then Fmt.fprintf out "|%a" Util.pp_datetime ts
+      if log_time_pid_tid_ then Fmt.fprintf out "|%a" Util.pp_datetime ts
     in
 
     let pp_pid out () =
@@ -220,8 +220,6 @@ let add_tags_to_meta (tags : Logs.Tag.set) acc : _ list =
       (k, Log_meta.String v) :: l)
     tags acc
 
-let capture_pid_tid_ : bool = not (Util.true_in_env "NO_LOG_PID_TID")
-
 let to_event_if_ (p : level -> bool) ~emit_ev : Logs.reporter =
   let report src level ~over k msgf =
     if p level then (
@@ -255,7 +253,7 @@ let to_event_if_ (p : level -> bool) ~emit_ev : Logs.reporter =
         in
 
         let meta =
-          if capture_pid_tid_ then
+          if log_time_pid_tid_ then
             ("pid", Log_meta.Int (Unix.getpid ()))
             :: ("tid", Log_meta.Int (Thread.id @@ Thread.self ()))
             :: meta
