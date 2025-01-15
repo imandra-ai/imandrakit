@@ -72,6 +72,7 @@ module Output = struct
     let pp_ts out ts =
       if log_time_ then Fmt.fprintf out "|%a" Util.pp_datetime ts
     in
+
     let pp_pid out () =
       match List.assoc "pid" ev.meta with
       | exception Not_found -> ()
@@ -215,6 +216,8 @@ let add_tags_to_meta (tags : Logs.Tag.set) acc : _ list =
       (k, Log_meta.String v) :: l)
     tags acc
 
+let capture_pid_tid_ : bool = not (Util.true_in_env "NO_LOG_PID_TID")
+
 let to_event_if_ (p : level -> bool) ~emit_ev : Logs.reporter =
   let report src level ~over k msgf =
     if p level then (
@@ -246,10 +249,14 @@ let to_event_if_ (p : level -> bool) ~emit_ev : Logs.reporter =
           |> add_tags_to_meta ambient_tags
           |> add_hooks_results
         in
+
         let meta =
-          ("pid", Log_meta.Int (Unix.getpid ()))
-          :: ("tid", Log_meta.Int (Thread.id @@ Thread.self ()))
-          :: meta
+          if capture_pid_tid_ then
+            ("pid", Log_meta.Int (Unix.getpid ()))
+            :: ("tid", Log_meta.Int (Thread.id @@ Thread.self ()))
+            :: meta
+          else
+            meta
         in
 
         let ev = { Log_event.msg; ts; src; lvl = level; meta } in
