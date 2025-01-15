@@ -8,7 +8,7 @@ t2:
           labels = None };
         { c = "D";
           args =
-          [(Attrs ((Cstor ("int", [])), [("twine_skip_field", "")]));
+          [(Attrs ((Cstor ("int", [])), [("ocaml_only", "")]));
             (Cstor ("list",
                [(Tuple [(Cstor ("string", [])); (Cstor ("foo", []))])]))
             ];

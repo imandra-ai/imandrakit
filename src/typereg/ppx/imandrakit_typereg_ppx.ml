@@ -22,9 +22,9 @@ let has_attr_unboxed (ty : type_declaration) : bool =
 let has_attr_twine_use_bytes (ty : core_type) : bool =
   List.exists (fun a -> a.attr_name.txt = "twine.use_bytes") ty.ptyp_attributes
 
-let has_attr_twine_skip_field (ty : core_type) : bool =
-  (* indicates that this field is skipped when we serialize *)
-  List.exists (fun a -> a.attr_name.txt = "twine_skip_field") ty.ptyp_attributes
+let has_attr_ocaml_only (ty : core_type) : bool =
+  (* indicates that this field exists only in the OCaml API and is skipped when we serialize *)
+  List.exists (fun a -> a.attr_name.txt = "ocaml_only") ty.ptyp_attributes
 
 let rec lid_to_str (lid : Longident.t) : string =
   match lid with
@@ -45,8 +45,8 @@ let rec tyexpr_of_ty (ty : core_type) : expression =
     let attrs =
       List.flatten
         [
-          (if has_attr_twine_skip_field ty then
-             [ [%expr "twine_skip_field", ""] ]
+          (if has_attr_ocaml_only ty then
+             [ [%expr "ocaml_only", ""] ]
            else
              []);
           (if has_attr_twine_use_bytes ty then

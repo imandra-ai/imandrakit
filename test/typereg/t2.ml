@@ -13,7 +13,7 @@ type bar =
   | B of int
   | C of int * string
   | D of {
-      x: (int[@twine_skip_field]);
+      x: (int[@ocaml_only]);
       y: (string * foo) list;
     }
 [@@deriving typereg]
