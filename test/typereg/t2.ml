@@ -13,7 +13,7 @@ type bar =
   | B of int
   | C of int * string
   | D of {
-      x: int; [@twine_skip_field]
+      x: (int[@twine_skip_field]);
       y: (string * foo) list;
     }
 [@@deriving typereg]
