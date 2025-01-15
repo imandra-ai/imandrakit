@@ -72,9 +72,18 @@ module Output = struct
     let pp_ts out ts =
       if log_time_ then Fmt.fprintf out "|%a" Util.pp_datetime ts
     in
+    let pp_pid out () =
+      match List.assoc "pid" ev.meta with
+      | exception Not_found -> ()
+      | s -> Fmt.fprintf out "|pid=%a" Log_meta.pp s
+    and pp_tid out () =
+      match List.assoc "tid" ev.meta with
+      | exception Not_found -> ()
+      | s -> Fmt.fprintf out "|tid=%a" Log_meta.pp s
+    in
 
-    Fmt.fprintf out "%a|%s]@ %a@]@?" pp_ts ev.ts ev.src Util.pp_text_newlines
-      ev.msg;
+    Fmt.fprintf out "%a|%s%a%a]@ %a@]@?" pp_ts ev.ts ev.src pp_pid () pp_tid ()
+      Util.pp_text_newlines ev.msg;
 
     Buf_fmt.get_contents buf_fmt
 
@@ -237,6 +246,12 @@ let to_event_if_ (p : level -> bool) ~emit_ev : Logs.reporter =
           |> add_tags_to_meta ambient_tags
           |> add_hooks_results
         in
+        let meta =
+          ("pid", Log_meta.Int (Unix.getpid ()))
+          :: ("tid", Log_meta.Int (Thread.id @@ Thread.self ()))
+          :: meta
+        in
+
         let ev = { Log_event.msg; ts; src; lvl = level; meta } in
 
         (* NOTE: we need to emit to trace here, not in the BG thread, because
