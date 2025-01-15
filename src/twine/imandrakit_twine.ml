@@ -68,5 +68,9 @@ module Util = Util
 
 type immediate = Immediate.t
 type offset = Types.offset [@@deriving eq, show, ord]
+
+let[@inline] offset_to_twine _enc (o : offset) = Immediate.ref_ o
+let offset_of_twine : offset Decode.decoder = Decode.ref_
+
 type 'a encoder = 'a Encode.encoder
 type 'a decoder = 'a Decode.decoder
