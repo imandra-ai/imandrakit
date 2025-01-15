@@ -9,7 +9,11 @@
  (alias runtest)
  (package imandrakit)
  (action
-  ; fails, there's a collision
-  (with-accepted-exit-codes
-   2
-   (run ./t1.exe))))
+  (progn
+   ; fails, there's a collision
+   (with-accepted-exit-codes
+    2
+    (with-stderr-to
+     t1.out
+     (run ./t1.exe)))
+   (diff t1.expected t1.out))))
