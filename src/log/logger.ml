@@ -76,11 +76,15 @@ module Output = struct
     let pp_pid out () =
       match List.assoc "pid" ev.meta with
       | exception Not_found -> ()
-      | s -> Fmt.fprintf out "|pid=%a" Log_meta.pp s
+      | Log_meta.Int s -> Fmt.fprintf out "|pid=%d" s
+      | Log_meta.String s -> Fmt.fprintf out "|pid=%s" s
+      | _ -> ()
     and pp_tid out () =
       match List.assoc "tid" ev.meta with
       | exception Not_found -> ()
-      | s -> Fmt.fprintf out "|tid=%a" Log_meta.pp s
+      | Log_meta.Int s -> Fmt.fprintf out "|tid=%d" s
+      | Log_meta.String s -> Fmt.fprintf out "|tid=%s" s
+      | _ -> ()
     in
 
     Fmt.fprintf out "%a|%s%a%a]@ %a@]@?" pp_ts ev.ts ev.src pp_pid () pp_tid ()
