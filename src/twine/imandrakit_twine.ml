@@ -40,9 +40,10 @@ kinds:
 - 11: cstor1, constructor index is [n], a single immediate argument follows
 - 12: cstorN, constructor index is [n], length as LEB128 follows
       (probably just one byte), then immediate arguments follow
-- 13, 14: reserved
-  (possible extension: 14: pointer with metadata? [n] is relative offset,
-    [n2:LEB128] is pointer to metadata)
+- 13: reserved
+- 14: ref, relative offset to the pointed value is [n].
+  If we're at offset [i], then the reference points to [i-n-1].
+  Not automatically dereferenced on parsing.
 - 15: pointer, relative offset to the pointed value is [n].
   If we're at offset [i], then the pointer points to [i-n-1].
 
