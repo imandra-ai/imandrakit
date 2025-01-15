@@ -22,6 +22,10 @@ let has_attr_unboxed (ty : type_declaration) : bool =
 let has_attr_twine_use_bytes (ty : core_type) : bool =
   List.exists (fun a -> a.attr_name.txt = "twine.use_bytes") ty.ptyp_attributes
 
+let has_attr_twine_skip_field (ty : core_type) : bool =
+  (* indicates that this field is skipped when we serialize *)
+  List.exists (fun a -> a.attr_name.txt = "twine_skip_field") ty.ptyp_attributes
+
 let rec lid_to_str (lid : Longident.t) : string =
   match lid with
   | Longident.Lident s -> s
@@ -38,9 +42,23 @@ let rec tyexpr_of_ty (ty : core_type) : expression =
   let loc = ty.ptyp_loc in
 
   let add_attrs e =
-    if has_attr_twine_use_bytes ty then
-      [%expr Ty_expr.attrs [ "twine.use_bytes", "" ] [%e e]]
-    else
+    let attrs =
+      List.flatten
+        [
+          (if has_attr_twine_skip_field ty then
+             [ [%expr "twine_skip_field", ""] ]
+           else
+             []);
+          (if has_attr_twine_use_bytes ty then
+             [ [%expr "twine.use_bytes", ""] ]
+           else
+             []);
+        ]
+    in
+    if attrs <> [] then (
+      let attrs = mk_list ~loc attrs in
+      [%expr Ty_expr.attrs [%e attrs] [%e e]]
+    ) else
       e
   in
 
