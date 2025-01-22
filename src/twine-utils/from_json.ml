@@ -65,7 +65,8 @@ let run (self : Commands.from_json) : unit =
     let module Conv = Conv (struct
       let string_sharing_threshold = self.string_sharing_threshold
     end) in
-    Twine.Encode.encode_to_string Conv.json_to_twine j
+    Twine.Encode.encode_to_string ~finalizer:(not self.no_finalizer)
+      Conv.json_to_twine j
   in
   Log.debug (fun k -> k "got %dB of twine" (String.length twine));
 

@@ -34,6 +34,7 @@ type from_json = {
       (** String strictly above this size will be interned to enable sharing *)
   dump_string_ellipsis_threshold: int option;  (** Control ellipsis in dump *)
   output: output; [@term output_cmdliner_term ()]
+  no_finalizer: bool;  (** Skip writing the finalizer block *)
   dump: bool;  (** Result is a dump of the resulting twine blob *)
   size: bool;  (** Result is the byte size of the resulting twine blob*)
   hexdump: bool;  (** Result is a hexdump of the resulting twine blob *)
