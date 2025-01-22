@@ -248,10 +248,16 @@ let finalize (self : t) ~(entrypoint : immediate) : slice =
 let[@inline] finalize_copy self ~entrypoint : string =
   Slice.contents @@ finalize self ~entrypoint
 
-let encode_to_string ?(encoder = create ()) (e : _ encoder) x : string =
+let encode_to_string ?(finalizer = true) ?(encoder = create ()) (e : _ encoder)
+    x : string =
   reset encoder;
   let entrypoint = e encoder x in
-  finalize_copy encoder ~entrypoint
+  if finalizer then
+    finalize_copy encoder ~entrypoint
+  else (
+    ignore (write_or_ref_immediate encoder entrypoint : offset);
+    Slice.contents @@ Buf.to_slice encoder.buf
+  )
 
 let to_string = encode_to_string
 
