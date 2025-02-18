@@ -98,6 +98,9 @@ val cstor : (cstor_index * Array_cursor.t) decoder
 val ref_ : offset decoder
 (** Read a reference *)
 
+val ref_for : 'a offset_for decoder
+(** Read a typed reference (same as a reference) *)
+
 (** {2 Entrypoint} *)
 
 val get_entrypoint : t -> offset
@@ -105,6 +108,9 @@ val get_entrypoint : t -> offset
 
 val read_entrypoint : t -> Value.t
 (** Read the entrypoint, from the end of the slice *)
+
+val read_ref : t -> 'a decoder -> 'a offset_for -> 'a
+(** Decode an explicit reference *)
 
 val decode_string : ?init:(t -> unit) -> 'a decoder -> string -> 'a
 

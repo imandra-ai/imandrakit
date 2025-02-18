@@ -161,6 +161,11 @@ let write_or_ref_immediate (self : t) (v : immediate) : offset =
   | Pointer p -> p
   | _ -> write_immediate self v
 
+let write_offset_for (self : t) (enc : 'a encoder) (x : 'a) : 'a offset_for =
+  let imm = enc self x in
+  let off = write_or_ref_immediate self imm in
+  Offset_for off
+
 let tag (self : t) ~tag ~(v : immediate) : immediate =
   let off = write_first_byte_and_int self ~high:8 ~n:tag in
   write_immediate self v |> ignore_offset;

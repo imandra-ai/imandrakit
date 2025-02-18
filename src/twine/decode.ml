@@ -401,6 +401,9 @@ let ref_ (self : t) offset : offset =
   let p, _ = get_int_truncate_ self (offset + 1) ~low in
   offset - p - 1
 
+let[@inline] ref_for (self : t) offset : _ offset_for =
+  Offset_for (ref_ self offset)
+
 let get_entrypoint (self : t) : offset =
   assert (Slice.len self.sl > 0);
   let last = Slice.len self.sl - 1 in
@@ -415,6 +418,10 @@ let decode_string ?(init = ignore) (d : _ decoder) (s : string) =
   init self;
   let off = deref_rec self @@ get_entrypoint self in
   d self off
+
+let[@inline] read_ref (self : t) (d : 'a decoder)
+    (Offset_for offset : 'a offset_for) : 'a =
+  d self offset
 
 module Array_cursor = struct
   type t = cursor [@@deriving show]

@@ -32,6 +32,9 @@ val write_or_ref_immediate : t -> immediate -> offset
     and if [i] is [Pointer p], it returns [p]; otherwise
     it writes down [i] and returns a pointer to it. *)
 
+val write_offset_for : t -> 'a encoder -> 'a -> 'a offset_for
+(** Write a value, return a typed offset to it *)
+
 val tag : t -> tag:int -> v:immediate -> immediate
 
 (** {2 Arrays} *)

@@ -136,6 +136,8 @@ let rec immediate_expr_of_ty (e : expression) ~(ty : core_type) : expression =
   | [%type: float] -> [%expr Imandrakit_twine.Immediate.Float [%e e]]
   | [%type: Imandrakit_twine.offset] ->
     [%expr Imandrakit_twine.Immediate.Ref [%e e]]
+  | [%type: _ Imandrakit_twine.offset_for] ->
+    [%expr Imandrakit_twine.Immediate.ref_for [%e e]]
   | [%type: [%t? ty_arg0] option] ->
     [%expr
       match [%e e] with
@@ -259,6 +261,8 @@ let rec decode_expr_of_ty (e : expression) ~(ty : core_type) : expression =
   | [%type: float] -> by_full_dec [%expr Imandrakit_twine.Decode.float]
   | [%type: Imandrakit_twine.offset] ->
     by_full_dec [%expr Imandrakit_twine.Decode.ref_]
+  | [%type: [%t? _] Imandrakit_twine.offset_for] ->
+    by_full_dec [%expr Imandrakit_twine.Decode.ref_for]
   | [%type: [%t? ty_arg0] option] ->
     [%expr
       match Imandrakit_twine.Decode.(read dec [%e e]) with

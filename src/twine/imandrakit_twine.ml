@@ -72,6 +72,9 @@ type offset = Types.offset [@@deriving eq, show, ord]
 
 let[@inline] offset_to_twine _enc (o : offset) = Immediate.ref_ o
 let offset_of_twine : offset Decode.decoder = Decode.ref_
+let[@inline] offset_for_to_twine' _enc (o : _ offset_for) = Immediate.ref_for o
+let[@inline] offset_for_to_twine _ _enc (o : _ offset_for) = Immediate.ref_for o
+let offset_for_of_twine : _ offset_for Decode.decoder = Decode.ref_for
 
 type 'a encoder = 'a Encode.encoder
 type 'a decoder = 'a Decode.decoder
