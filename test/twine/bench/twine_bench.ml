@@ -113,12 +113,22 @@ let () =
   | "parse" ->
     let s = CCIO.File.read_exn "data.twine" in
     Gc.full_major ();
+
+    let stat1 = Gc.quick_stat () in
+
     let n = 20 in
     timeit ~n (spf "decoding %d times" n) @@ fun () ->
     for _i = 1 to n do
       let (_ : proof) =
-        Imandrakit_twine.Decode.decode_string proof_of_twine s
+        Sys.opaque_identity
+          (Imandrakit_twine.Decode.decode_string proof_of_twine s)
       in
       ()
-    done
+    done;
+
+    let stat2 = Gc.quick_stat () in
+    Format.printf "allocated %a minor, %a major@." Imandrakit.Util.pp_byte_size
+      (int_of_float (stat2.minor_words -. stat1.minor_words))
+      Imandrakit.Util.pp_byte_size
+      (int_of_float (stat2.major_words -. stat1.major_words))
   | _ -> failwith "expect parse|gen"
