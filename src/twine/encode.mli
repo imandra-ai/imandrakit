@@ -4,6 +4,12 @@ module Immediate = Immediate
 type immediate = Immediate.t
 type t
 
+(** Some sort of writer, ie byte sink.
+    See [Iostream.Out] for example. *)
+class type out = object
+  method output : bytes -> int -> int -> unit
+end
+
 val create : ?cap:int -> unit -> t
 (** New encoder.
     @param cap initialize capacity of the underlying byte buffer *)
@@ -15,6 +21,12 @@ val clear : t -> unit
 val reset : t -> unit
 (** Fully reset the encoder. Previous slices obtained via {!finalize}
     are invalidated. *)
+
+val internal_size : t -> int
+(** Number of bytes in the internal buffer *)
+
+val write_internal_data : t -> #out -> unit
+(** Write internal data to the given output *)
 
 type 'a encoder = t -> 'a -> immediate
 

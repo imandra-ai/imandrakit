@@ -23,14 +23,21 @@ module Cache_tbl = Hashtbl.Make (struct
   let hash (K ((module C), v)) = C.hash v
 end)
 
+(** Some sort of writer. *)
+class type out = object
+  method output : bytes -> int -> int -> unit
+end
+
 type t = {
   buf: Buf.t;
+  mutable global_offset: int;
+      (** How many bytes have been written to some byte sink, if any? *)
   cache: immediate Cache_tbl.t;
 }
 
 let create ?(cap = 256) () : t =
   let cap = min Sys.max_string_length (max cap 32) in
-  { buf = Buf.create ~cap (); cache = Cache_tbl.create 8 }
+  { buf = Buf.create ~cap (); global_offset = 0; cache = Cache_tbl.create 8 }
 
 let clear self = Buf.clear self.buf
 let reset self = Buf.reset self.buf
@@ -38,51 +45,77 @@ let reset self = Buf.reset self.buf
 type 'a encoder = t -> 'a -> immediate
 
 let ignore_offset : offset -> unit = ignore
-
-(** [reserve_space_ self n] reserves [n] bytes at the end of the
-    buffer, bumps the buffer by [n] bytes, and returns the offset
-    to the beginning of the newly reserved area. *)
-let[@inline] reserve_space_ (self : t) (n : int) =
-  let off = self.buf.len in
-  Buf.ensure_free self.buf n;
-  self.buf.len <- self.buf.len + n;
-  off
-
 let u8_to_char_ = Char.unsafe_chr
 
 external int_of_bool : bool -> int = "%identity"
 
+let[@inline] internal_size (self : t) : int = self.buf.len
+
+let write_internal_data (self : t) (out : #out) : unit =
+  let len = self.buf.len in
+  out#output self.buf.bs 0 len;
+  self.buf.len <- 0;
+  self.global_offset <- self.global_offset + len
+
 (** Write the first byte. See [decode.ml] for the list *)
 let[@inline] first_byte_ ~high ~low : char = u8_to_char_ ((high lsl 4) lor low)
 
-(** Write a single byte value *)
-let[@inline] write_first_byte_ (self : t) ~high ~low : offset =
-  let off = reserve_space_ self 1 in
-  Bytes.set self.buf.bs off (first_byte_ ~high ~low);
-  off
+module To_buf : sig
+  type buf_offset [@@immediate]
 
-let write_first_byte_and_int (self : t) ~high ~(n : int) : offset =
-  assert (n >= 0);
-  if n < 15 then
-    write_first_byte_ self ~high ~low:n
-  else (
-    let off = write_first_byte_ self ~high ~low:15 in
-    LEB128.Encode.uint self.buf (n - 15);
+  val to_offset : t -> buf_offset -> offset
+  val write_first_byte_and_int : t -> high:offset -> n:offset -> buf_offset
+  val write_null : t -> unit -> buf_offset
+  val write_bool : t -> bool -> buf_offset
+  val write_int64 : t -> int64 -> buf_offset
+  val write_pointer : t -> offset -> buf_offset
+  val write_ref : t -> offset -> buf_offset
+  val write_float32 : t -> float -> buf_offset
+  val write_float : t -> float -> buf_offset
+  val write_string_slice : t -> slice -> buf_offset
+  val write_blob_slice : t -> slice -> buf_offset
+  val write_cstor0 : t -> index:offset -> buf_offset
+end = struct
+  type buf_offset = offset
+
+  let[@inline] to_offset (self : t) o : offset = self.global_offset + o
+
+  (** [reserve_space_ self n] reserves [n] bytes at the end of the
+    buffer, bumps the buffer by [n] bytes, and returns the offset
+    to the beginning of the newly reserved area. *)
+  let[@inline] reserve_space_ (self : t) (n : int) =
+    let off = self.buf.len in
+    Buf.ensure_free self.buf n;
+    self.buf.len <- self.buf.len + n;
     off
-  )
 
-(** Write the first byte, followed by an integer (possibly fitting in [low]) *)
-let write_first_byte_and_int64 (self : t) ~high ~(n : int64) : offset =
-  if Int64.(equal (of_int (to_int n)) n) then
-    write_first_byte_and_int self ~high ~n:(Int64.to_int n)
-  else (
-    assert (Int64.compare n 0L >= 0);
-    let off = write_first_byte_ self ~high ~low:15 in
-    LEB128.Encode.u64 self.buf Int64.(sub n 15L);
+  (** Write a single byte value *)
+  let[@inline] write_first_byte_ (self : t) ~high ~low : offset =
+    let off = reserve_space_ self 1 in
+    Bytes.set self.buf.bs off (first_byte_ ~high ~low);
     off
-  )
 
-open struct
+  let write_first_byte_and_int (self : t) ~high ~(n : int) : offset =
+    assert (n >= 0);
+    if n < 15 then
+      write_first_byte_ self ~high ~low:n
+    else (
+      let off = write_first_byte_ self ~high ~low:15 in
+      LEB128.Encode.uint self.buf (n - 15);
+      off
+    )
+
+  (** Write the first byte, followed by an integer (possibly fitting in [low]) *)
+  let write_first_byte_and_int64 (self : t) ~high ~(n : int64) : offset =
+    if Int64.(equal (of_int (to_int n)) n) then
+      write_first_byte_and_int self ~high ~n:(Int64.to_int n)
+    else (
+      assert (Int64.compare n 0L >= 0);
+      let off = write_first_byte_ self ~high ~low:15 in
+      LEB128.Encode.u64 self.buf Int64.(sub n 15L);
+      off
+    )
+
   let[@inline] write_null (self : t) () = write_first_byte_ self ~high:0 ~low:2
 
   let[@inline] write_bool (self : t) b =
@@ -94,20 +127,22 @@ open struct
     else
       write_first_byte_and_int64 self ~high:1 ~n
 
-  let[@inline] write_pointer (self : t) (p : offset) =
+  let[@inline] write_pointer (self : t) (p : offset) : offset =
     let off = self.buf.len in
-    assert (off > p);
+    let actual_off = self.global_offset + off in
+    assert (actual_off > p);
     (* compute relative offset to [p] *)
-    let n = off - p - 1 in
-    ignore_offset (write_first_byte_and_int self ~high:15 ~n);
+    let delta = actual_off - p - 1 in
+    ignore_offset (write_first_byte_and_int self ~high:15 ~n:delta);
     off
 
   let[@inline] write_ref (self : t) (p : offset) =
     let off = self.buf.len in
-    assert (off > p);
+    let actual_off = self.global_offset + off in
+    assert (actual_off > p);
     (* compute relative offset to [p] *)
-    let n = off - p - 1 in
-    ignore_offset (write_first_byte_and_int self ~high:14 ~n);
+    let delta = actual_off - p - 1 in
+    ignore_offset (write_first_byte_and_int self ~high:14 ~n:delta);
     off
 
   let write_float32 (self : t) (f : float) =
@@ -143,18 +178,22 @@ open struct
 end
 
 let write_immediate (self : t) (v : immediate) : offset =
-  match v with
-  | Null -> write_null self ()
-  | True -> write_bool self true
-  | False -> write_bool self false
-  | Int i -> write_int64 self i
-  | Float32 f -> write_float32 self f
-  | Float f -> write_float self f
-  | String s -> write_string_slice self s
-  | Blob s -> write_blob_slice self s
-  | Ref r -> write_ref self r
-  | Pointer p -> write_pointer self p
-  | Cstor0 index -> write_cstor0 self ~index
+  let open To_buf in
+  let boff =
+    match v with
+    | Null -> write_null self ()
+    | True -> write_bool self true
+    | False -> write_bool self false
+    | Int i -> write_int64 self i
+    | Float32 f -> write_float32 self f
+    | Float f -> write_float self f
+    | String s -> write_string_slice self s
+    | Blob s -> write_blob_slice self s
+    | Ref r -> write_ref self r
+    | Pointer p -> write_pointer self p
+    | Cstor0 index -> write_cstor0 self ~index
+  in
+  to_offset self boff
 
 let write_or_ref_immediate (self : t) (v : immediate) : offset =
   match v with
@@ -167,13 +206,17 @@ let write_offset_for (self : t) (enc : 'a encoder) (x : 'a) : 'a offset_for =
   Offset_for off
 
 let tag (self : t) ~tag ~(v : immediate) : immediate =
-  let off = write_first_byte_and_int self ~high:8 ~n:tag in
+  let off =
+    To_buf.write_first_byte_and_int self ~high:8 ~n:tag |> To_buf.to_offset self
+  in
   write_immediate self v |> ignore_offset;
   Immediate.pointer off
 
 let array (self : t) vs : immediate =
   let n = Array.length vs in
-  let off = write_first_byte_and_int self ~high:6 ~n in
+  let off =
+    To_buf.write_first_byte_and_int self ~high:6 ~n |> To_buf.to_offset self
+  in
   for i = 0 to n - 1 do
     let v = Array.unsafe_get vs i in
     write_immediate self v |> ignore_offset
@@ -191,7 +234,10 @@ let array_init (self : t) n f : immediate =
   array self vs
 
 let list (self : t) vs : immediate =
-  let off = write_first_byte_and_int self ~high:6 ~n:(List.length vs) in
+  let off =
+    To_buf.write_first_byte_and_int self ~high:6 ~n:(List.length vs)
+    |> To_buf.to_offset self
+  in
   List.iter (fun v -> ignore_offset @@ write_immediate self v) vs;
   Immediate.pointer off
 
@@ -199,7 +245,9 @@ let array_iter (self : t) iter : immediate = list self @@ Iter.to_list iter
 
 let dict (self : t) n f : immediate =
   let pairs : (immediate * immediate) array = Array.init n f in
-  let off = write_first_byte_and_int self ~high:7 ~n in
+  let off =
+    To_buf.write_first_byte_and_int self ~high:7 ~n |> To_buf.to_offset self
+  in
   for i = 0 to n - 1 do
     let k, v = Array.unsafe_get pairs i in
     ignore_offset @@ write_immediate self k;
@@ -208,7 +256,10 @@ let dict (self : t) n f : immediate =
   Immediate.pointer off
 
 let dict_list (self : t) pairs : immediate =
-  let off = write_first_byte_and_int self ~high:7 ~n:(List.length pairs) in
+  let off =
+    To_buf.write_first_byte_and_int self ~high:7 ~n:(List.length pairs)
+    |> To_buf.to_offset self
+  in
   List.iter
     (fun (k, v) ->
       ignore_offset @@ write_immediate self k;
@@ -223,11 +274,17 @@ let cstor (self : t) ~(index : int) (args : immediate array) : immediate =
   match Array.length args with
   | 0 -> Immediate.cstor0 ~index
   | 1 ->
-    let off = write_first_byte_and_int self ~high:11 ~n:index in
+    let off =
+      To_buf.write_first_byte_and_int self ~high:11 ~n:index
+      |> To_buf.to_offset self
+    in
     ignore_offset @@ write_immediate self args.(0);
     Immediate.pointer off
   | _ ->
-    let off = write_first_byte_and_int self ~high:12 ~n:index in
+    let off =
+      To_buf.write_first_byte_and_int self ~high:12 ~n:index
+      |> To_buf.to_offset self
+    in
     (* now write number of arguments *)
     LEB128.Encode.uint self.buf (Array.length args);
     Array.iter (fun v -> ignore_offset @@ write_immediate self v) args;
@@ -235,13 +292,15 @@ let cstor (self : t) ~(index : int) (args : immediate array) : immediate =
 
 let finalize (self : t) ~(entrypoint : immediate) : slice =
   let top = write_or_ref_immediate self entrypoint in
-  assert (top < self.buf.len);
+
+  let total_len = self.global_offset + self.buf.len in
+  assert (top < total_len);
 
   let rec finalize_offset top =
-    let delta = self.buf.len - top - 1 in
+    let delta = total_len - top - 1 in
     if delta > 250 then (
       (* go through intermediate pointer (uncommon, can happen if last value is ginormous) *)
-      let ptr_to_top = write_pointer self top in
+      let ptr_to_top = To_buf.write_pointer self top |> To_buf.to_offset self in
       finalize_offset ptr_to_top
     ) else (
       Buf.add_char self.buf (u8_to_char_ delta);
