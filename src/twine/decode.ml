@@ -4,7 +4,6 @@ module Slice = Byte_slice
 module LEB128 = Imandrakit_leb128.Decode
 
 type cached = ..
-type cached += Miss
 
 module type CACHE_KEY = sig
   type elt
@@ -13,7 +12,7 @@ end
 
 type t = {
   sl: slice;
-  cache: cached array;
+  cache: cached Int_tbl.t;
   mutable hmap: Hmap.t;
 }
 
@@ -31,7 +30,7 @@ let show_cursor (self : cursor) =
 let pp_cursor = Fmt.of_to_string show_cursor
 
 let[@inline] create sl : t =
-  { sl; cache = Array.make sl.len Miss; hmap = Hmap.empty }
+  { sl; cache = Int_tbl.create 32; hmap = Hmap.empty }
 
 let[@inline] of_string s = create @@ Slice.of_string s
 let[@inline] hmap_set self k v = self.hmap <- Hmap.add k v self.hmap
@@ -544,12 +543,12 @@ let with_cache (type a) (key : a cache_key) (dec : a decoder) : a decoder =
     dec st off
   else (
     (* go through the cache *)
-    match st.cache.(off) with
-    | K.C v -> v
-    | Miss ->
+    match Int_tbl.find st.cache off with
+    | exception Not_found ->
       let v = dec st off in
-      st.cache.(off) <- K.C v;
+      Int_tbl.add st.cache off (K.C v);
       v
+    | K.C v -> v
     | _ -> (* weird collision, just don't cache… *) dec st off
   )
 
