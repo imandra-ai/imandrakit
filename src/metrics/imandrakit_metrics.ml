@@ -16,7 +16,7 @@ type 'a m = {
 type histogram_data = {
   name: string;
   bucket_boundaries: Float.Array.t;  (** sorted *)
-  buckets: Float.Array.t;
+  buckets: int array;
       (** size: bucket_boundaries+1, as there's a underflow bucket *)
 }
 
@@ -86,9 +86,7 @@ module Histogram = struct
   let create name ~buckets : t =
     let bucket_boundaries = Float.Array.of_list @@ Array.to_list buckets in
     Float.Array.sort compare bucket_boundaries;
-    let buckets =
-      Float.Array.create (Float.Array.length bucket_boundaries + 1)
-    in
+    let buckets = Array.make (Float.Array.length bucket_boundaries + 1) 0 in
     let h = Lock.create { name; bucket_boundaries; buckets } in
     add_hist_ h;
     h
@@ -104,7 +102,10 @@ module Histogram = struct
       else
         incr i
     done;
-    Float.Array.set self.buckets !i v
+    Array.set self.buckets !i (Array.get self.buckets !i + 1)
+
+  let[@inline] clear_ (self : histogram_data) : unit =
+    Array.fill self.buckets 0 (Array.length self.buckets) 0
 
   let add_sample (self : t) (v : float) : unit =
     Lock.with_lock self (fun h -> add_sample_ h v)
@@ -140,12 +141,17 @@ let add_gc_metrics () : unit =
         Counter.set c_major_heap_size (float (8 * stat.heap_words)))
   )
 
-let iter_all ~int ~float ~hist () =
+let iter_all ~int ~float ~(hist : histogram_data -> unit) () =
   let st = Immlock.get global in
   List.iter (fun f -> f ()) st.updates;
   List.iter (fun m -> int m.kind m.name @@ A.get m.v) st.ints;
   List.iter (fun m -> float m.kind m.name @@ A.get m.v) st.floats;
-  List.iter (fun h -> Lock.with_lock h hist) st.histograms;
+  List.iter
+    (fun h ->
+      let@ h = Lock.with_lock h in
+      hist h;
+      Histogram.clear_ h)
+    st.histograms;
   ()
 
 let emit_trace_ () =

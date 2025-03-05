@@ -8,7 +8,7 @@ type kind =
 type histogram_data = private {
   name: string;
   bucket_boundaries: Float.Array.t;  (** sorted *)
-  buckets: Float.Array.t;
+  buckets: int array;
       (** size: bucket_boundaries+1, as there's a underflow bucket *)
 }
 (** A histogram *)
