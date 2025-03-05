@@ -15,7 +15,7 @@ type 'a m = {
 
 type histogram_data = {
   name: string;
-  bucket_boundaries: float array;  (** sorted *)
+  bucket_boundaries: Float.Array.t;  (** sorted *)
   buckets: Float.Array.t;
       (** size: bucket_boundaries+1, as there's a underflow bucket *)
 }
@@ -84,10 +84,10 @@ module Histogram = struct
   type t = histogram_data Lock.t
 
   let create name ~buckets : t =
-    let bucket_boundaries = buckets in
-    Array.sort compare bucket_boundaries;
+    let bucket_boundaries = Float.Array.of_list @@ Array.to_list buckets in
+    Float.Array.sort compare bucket_boundaries;
     let buckets =
-      Array.Floatarray.create (Array.length bucket_boundaries + 1)
+      Float.Array.create (Float.Array.length bucket_boundaries + 1)
     in
     let h = Lock.create { name; bucket_boundaries; buckets } in
     add_hist_ h;
@@ -97,9 +97,9 @@ module Histogram = struct
     let i = ref 0 in
     let continue = ref true in
     while !continue do
-      if !i = Array.length self.bucket_boundaries then
+      if !i = Float.Array.length self.bucket_boundaries then
         continue := false
-      else if v < Array.get self.bucket_boundaries !i then
+      else if v < Float.Array.get self.bucket_boundaries !i then
         continue := false
       else
         incr i

@@ -7,7 +7,7 @@ type kind =
 
 type histogram_data = private {
   name: string;
-  bucket_boundaries: float array;  (** sorted *)
+  bucket_boundaries: Float.Array.t;  (** sorted *)
   buckets: Float.Array.t;
       (** size: bucket_boundaries+1, as there's a underflow bucket *)
 }
