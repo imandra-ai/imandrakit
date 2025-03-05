@@ -4,7 +4,6 @@ module Slice = Byte_slice
 module LEB128 = Imandrakit_leb128.Decode
 
 type cached = ..
-type cached += Miss
 
 module type CACHE_KEY = sig
   type elt
@@ -15,7 +14,7 @@ type t =
   | Decode : {
       st: 'st;
       ops: 'st ops;
-      cache: cached array;
+      cache: cached Int_tbl.t;
       mutable hmap: Hmap.t;
     }
       -> t
@@ -119,15 +118,12 @@ let show_cursor (self : cursor) =
 
 let pp_cursor = Fmt.of_to_string show_cursor
 
-let[@inline] create (st : 'st) (ops : 'st ops) cache : t =
-  Decode { st; ops; cache; hmap = Hmap.empty }
+let[@inline] create (st : 'st) (ops : 'st ops) : t =
+  Decode { st; ops; cache = Int_tbl.create 32; hmap = Hmap.empty }
 
-let[@inline] of_slice s : t = create s slice_ops (Array.make (Slice.len s) Miss)
-
-let[@inline] of_string s : t =
-  create (Slice.of_string s) slice_ops (Array.make (String.length s) Miss)
-
-let[@inline] of_in_channel c : t = create c in_channel_ops (Array.make 0 Miss)
+let[@inline] of_slice s : t = create s slice_ops
+let[@inline] of_string s : t = create (Slice.of_string s) slice_ops
+let[@inline] of_in_channel c : t = create c in_channel_ops
 
 let[@inline] hmap_set self k v =
   match self with
@@ -646,16 +642,13 @@ let with_cache (type a) (key : a cache_key) (dec : a decoder) : a decoder =
   else (
     (* go through the cache *)
     let (Decode { cache; _ }) = st in
-    if off < Array.length cache then (
-      match cache.(off) with
-      | K.C v -> v
-      | Miss ->
-        let v = dec st off in
-        cache.(off) <- K.C v;
-        v
-      | _ -> (* weird collision, just don't cache… *) dec st off
-    ) else
-      dec st off
+    match Int_tbl.find cache off with
+    | exception Not_found ->
+      let v = dec st off in
+      Int_tbl.add cache off (K.C v);
+      v
+    | K.C v -> v
+    | _ -> (* weird collision, just don't cache… *) dec st off
   )
 
 let add_cache (dec_ref : _ decoder ref) : unit =
