@@ -74,7 +74,7 @@ module To_buf : sig
   val write_float : t -> float -> buf_offset
   val write_string_slice : t -> slice -> buf_offset
   val write_blob_slice : t -> slice -> buf_offset
-  val write_cstor0 : t -> index:offset -> buf_offset
+  val write_cstor0 : t -> index:int -> buf_offset
 end = struct
   type buf_offset = offset
 
@@ -293,10 +293,10 @@ let cstor (self : t) ~(index : int) (args : immediate array) : immediate =
 let finalize (self : t) ~(entrypoint : immediate) : slice =
   let top = write_or_ref_immediate self entrypoint in
 
-  let total_len = self.global_offset + self.buf.len in
-  assert (top < total_len);
+  assert (top < self.global_offset + self.buf.len);
 
   let rec finalize_offset top =
+    let total_len = self.global_offset + self.buf.len in
     let delta = total_len - top - 1 in
     if delta > 250 then (
       (* go through intermediate pointer (uncommon, can happen if last value is ginormous) *)
