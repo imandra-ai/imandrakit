@@ -12,7 +12,7 @@ type foo = {
 type foos = { foos: foo Imandrakit_twine.offset_for list }
 [@@unboxed] [@@deriving eq, show, twine]
 
-let test ~n_items () =
+let test ?(dump = false) ~n_items () =
   let open struct
     let encoded_normal : string =
       let enc = Imandrakit_twine.Encode.create () in
@@ -59,6 +59,10 @@ let test ~n_items () =
       Buffer.contents buf
 
     let () =
+      Printf.printf "=== test n_items=%d\n" n_items;
+      if dump then
+        Printf.printf "raw value:\n%s\n"
+          (Imandrakit_twine.Dump.dump_string encoded_normal);
       Printf.printf "normal.size=%d, flush.size=%d\n%!"
         (String.length encoded_normal)
         (String.length encoded_flush);
@@ -84,6 +88,6 @@ let test ~n_items () =
   end in
   ()
 
-let () = test ~n_items:10 ()
+let () = test ~n_items:10 ~dump:true ()
 let () = test ~n_items:1_000 ()
 let () = test ~n_items:100_000 ()
