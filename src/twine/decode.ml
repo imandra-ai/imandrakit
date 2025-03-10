@@ -398,7 +398,7 @@ let ref_ (self : t) offset : offset =
   let high = get_high c in
   if high <> 14 then fail_decode_type_ ~what:"ref" offset;
   let low = get_low c in
-  let p, _ = get_int_truncate_ self (offset + 1) ~low in
+  let p, _ = get_int_truncate_ self offset ~low in
   offset - p - 1
 
 let[@inline] ref_for (self : t) offset : _ offset_for =
