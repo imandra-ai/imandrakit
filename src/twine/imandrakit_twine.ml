@@ -67,6 +67,8 @@ module Decode = Decode
 module Dump = Dump
 module Util = Util
 
+let () = if Sys.word_size < 64 then failwith "sorry, twine requires 64bits"
+
 type immediate = Immediate.t
 type offset = Types.offset [@@deriving eq, show, ord]
 
