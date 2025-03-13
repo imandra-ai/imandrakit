@@ -38,13 +38,18 @@ let kill_and_close_ (self : t) =
         : Thread.t);
 
     (* kill zombies *)
-    let code = try fst @@ Unix.waitpid [] self.pid with _ -> max_int in
+    let code =
+      try
+        ignore (Unix.sigprocmask Unix.SIG_BLOCK [ Sys.sigchld ]);
+        fst @@ Unix.waitpid [] self.pid
+      with _ -> max_int
+    in
     Fut.fulfill_idempotent self._st.promise_code @@ Ok code
   )
 
 let run_ ?(env = Unix.environment ()) cmd args : t =
   (* block sigpipe *)
-  ignore (Unix.sigprocmask Unix.SIG_BLOCK [ Sys.sigpipe ]);
+  ignore (Unix.sigprocmask Unix.SIG_BLOCK [ Sys.sigpipe; Sys.sigchld ]);
   (* make pipes, to give the appropriate ends to the subprocess *)
   let stdout, p_stdout = Unix.pipe () in
   let stderr, p_stderr = Unix.pipe () in
@@ -87,7 +92,12 @@ let signal self s = Unix.kill self.pid s
 
 let wait (self : t) : int =
   Log.debug (fun k -> k "(popen.wait %a)" pp self);
-  let res = try snd @@ Unix.waitpid [] self.pid with _ -> Unix.WEXITED 0 in
+  let res =
+    try
+      ignore (Unix.sigprocmask Unix.SIG_BLOCK [ Sys.sigchld ]);
+      snd @@ Unix.waitpid [] self.pid
+    with _ -> Unix.WEXITED 0
+  in
   kill_and_close_ self;
   let res =
     match res with
