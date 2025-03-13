@@ -41,6 +41,9 @@ val with_signal : ?signal:int -> on_sig:(int -> unit) -> (unit -> 'a) -> 'a
 val block_sigpipe_sigint : unit -> unit
 (** Block these signals in this thread *)
 
+val block_signals : unit -> unit
+(** Block a reasonable collection of signals in this thread *)
+
 val read_i32_framed : in_channel -> string
 (** [read_i32_framed ic] reads a int32_le-framed message from [ic] *)
 
