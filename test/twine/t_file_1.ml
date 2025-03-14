@@ -12,7 +12,7 @@ class twine_out_channel (oc : out_channel) =
     method output bs i len = output oc bs i len
   end
 
-let _ =
+let () =
   let tfn = Filename.temp_file "imandrakit." ".test" in
   Fun.protect ~finally:(fun _ -> Sys.remove tfn) @@ fun () ->
   (* Start a twine file with some immediate values *)
