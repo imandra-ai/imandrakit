@@ -149,7 +149,7 @@ let default_string_ellipsis_threshold = 30
 
 let dump_slice ?(string_ellipsis_threshold = default_string_ellipsis_threshold)
     (sl : slice) : string =
-  let dec = Decode.create sl in
+  let dec = Decode.of_slice sl in
   let st = { offset = Int_map.empty; dec; string_ellipsis_threshold } in
   dump_rec st (Decode.get_entrypoint dec);
   let buf = Buffer.create 32 in

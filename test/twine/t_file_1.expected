@@ -1,0 +1,7 @@
+t_out: { T_file_1.a = 43; b = (Types.Offset_for 13);
+         c = (Types.Offset_for 13) }
+t_in : { T_file_1.a = 43; b = (Types.Offset_for 13);
+         c = (Types.Offset_for 13) }
+a=43 b=XYZ c=XYZ
+00000000: 4c55 4e55 5345 4420 5354 5546 4643 5859  LUNUSED STUFFCXY
+00000001: 5a63 1f1c e6e7 04                        Zc.....

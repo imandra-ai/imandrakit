@@ -32,7 +32,7 @@ module Decode = struct
     let res = ref 0L in
     let continue = ref true in
 
-    let off = ref off in
+    let off = ref (sl.off + off) in
     let n_consumed = ref 0 in
 
     while !continue do
