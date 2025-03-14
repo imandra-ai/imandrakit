@@ -79,13 +79,13 @@ let in_channel_ops : in_channel ops =
       (fun (st : in_channel) (offset : int) ->
         let bs = Bytes.create 4 in
         In_channel.seek st (Int64.of_int offset);
-        let _ = In_channel.input st bs 0 4 in
+        let _ = In_channel.really_input st bs 0 4 in
         Bytes.get_int32_le bs 0);
     read_int64 =
       (fun (st : in_channel) (offset : int) ->
         let bs = Bytes.create 8 in
         In_channel.seek st (Int64.of_int offset);
-        let _ = In_channel.input st bs 0 8 in
+        let _ = In_channel.really_input st bs 0 8 in
         Bytes.get_int64_le bs 0);
     read_blob =
       (fun (st : in_channel) (offset : int) (length : int) ->
@@ -93,7 +93,7 @@ let in_channel_ops : in_channel ops =
         let length = min length remaining in
         let bs = Bytes.create length in
         In_channel.seek st (Int64.of_int offset);
-        let _ = In_channel.input st bs 0 length in
+        let _ = In_channel.really_input st bs 0 length in
         Slice.create bs);
     read_leb128 =
       (fun (st : in_channel) (offset : int) ->
@@ -101,7 +101,7 @@ let in_channel_ops : in_channel ops =
         let length = min 16 remaining in
         let bs = Bytes.create length in
         In_channel.seek st (Int64.of_int offset);
-        let _ = In_channel.input st bs 0 length in
+        let _ = In_channel.really_input st bs 0 length in
         LEB128.u64 (Slice.create bs) 0);
   }
 
