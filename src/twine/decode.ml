@@ -247,8 +247,6 @@ let[@inline] deref_rec self off : offset =
   else
     off
 
-exception Foo of string
-
 let read ?(auto_deref = true) (self : t) (offset : offset) : Value.t =
   let offset =
     if auto_deref then
