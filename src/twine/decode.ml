@@ -36,7 +36,7 @@ let read_char t offset =
   let (Decode { st; ops; _ }) = t in
   ops.read_char st offset
 
-let read_int32 (type a) t offset =
+let read_int32 t offset =
   let (Decode { st; ops; _ }) = t in
   ops.read_int32 st offset
 
