@@ -11,11 +11,100 @@ module type CACHE_KEY = sig
   type cached += C of elt
 end
 
-type t = {
-  sl: slice;
-  cache: cached array;
-  mutable hmap: Hmap.t;
+type t =
+  | Decode : {
+      st: 'st;
+      ops: 'st ops;
+      cache: cached array;
+      mutable hmap: Hmap.t;
+    }
+      -> t
+
+and 'st ops = {
+  length: 'st -> int;
+  read_char: 'st -> int -> char;
+  read_int32: 'st -> int -> int32;
+  read_int64: 'st -> int -> int64;
+  read_blob: 'st -> int -> int -> slice;
+  read_leb128: 'st -> int -> int64 * offset;
 }
+
+let st_len t =
+  let (Decode { st; ops; _ }) = t in
+  ops.length st
+
+let read_char t offset =
+  let (Decode { st; ops; _ }) = t in
+  ops.read_char st offset
+
+let read_int32 (type a) t offset =
+  let (Decode { st; ops; _ }) = t in
+  ops.read_int32 st offset
+
+let read_int64 t offset =
+  let (Decode { st; ops; _ }) = t in
+  ops.read_int64 st offset
+
+let read_blob t offset length =
+  let (Decode { st; ops; _ }) = t in
+  ops.read_blob st offset length
+
+let read_leb128 t offset =
+  let (Decode { st; ops; _ }) = t in
+  ops.read_leb128 st offset
+
+let slice_ops : slice ops =
+  {
+    length = (fun (st : slice) -> Slice.len st);
+    read_char = (fun (st : slice) (offset : int) -> Slice.get st offset);
+    read_int32 =
+      (fun (st : slice) (offset : int) ->
+        Bytes.get_int32_le st.bs (st.off + offset));
+    read_int64 =
+      (fun (st : slice) (offset : int) ->
+        Bytes.get_int64_le st.bs (st.off + offset));
+    read_blob =
+      (fun (st : slice) (offset : int) (length : int) ->
+        Slice.sub st offset (min length (Slice.len st - st.off - offset)));
+    read_leb128 = (fun (st : slice) (offset : int) -> LEB128.u64 st offset);
+  }
+
+let in_channel_ops : in_channel ops =
+  {
+    length = (fun (st : in_channel) -> Int64.to_int (In_channel.length st));
+    read_char =
+      (fun (st : in_channel) (offset : int) ->
+        In_channel.seek st (Int64.of_int offset);
+        Option.get (In_channel.input_char st));
+    read_int32 =
+      (fun (st : in_channel) (offset : int) ->
+        let bs = Bytes.create 4 in
+        In_channel.seek st (Int64.of_int offset);
+        let _ = In_channel.input st bs 0 4 in
+        Bytes.get_int32_le bs 0);
+    read_int64 =
+      (fun (st : in_channel) (offset : int) ->
+        let bs = Bytes.create 8 in
+        In_channel.seek st (Int64.of_int offset);
+        let _ = In_channel.input st bs 0 8 in
+        Bytes.get_int64_le bs 0);
+    read_blob =
+      (fun (st : in_channel) (offset : int) (length : int) ->
+        let remaining = Int64.to_int (In_channel.length st) - offset in
+        let length = min length remaining in
+        let bs = Bytes.create length in
+        In_channel.seek st (Int64.of_int offset);
+        let _ = In_channel.input st bs 0 length in
+        Slice.create bs);
+    read_leb128 =
+      (fun (st : in_channel) (offset : int) ->
+        let remaining = Int64.to_int (In_channel.length st) - offset in
+        let length = min 16 remaining in
+        let bs = Bytes.create length in
+        In_channel.seek st (Int64.of_int offset);
+        let _ = In_channel.input st bs 0 length in
+        LEB128.u64 (Slice.create bs) 0);
+  }
 
 type cstor_index = int [@@deriving show]
 
@@ -30,16 +119,29 @@ let show_cursor (self : cursor) =
 
 let pp_cursor = Fmt.of_to_string show_cursor
 
-let[@inline] create sl : t =
-  { sl; cache = Array.make sl.len Miss; hmap = Hmap.empty }
+let[@inline] create (st : 'st) (ops : 'st ops) cache : t =
+  Decode { st; ops; cache; hmap = Hmap.empty }
 
-let[@inline] of_string s = create @@ Slice.of_string s
-let[@inline] hmap_set self k v = self.hmap <- Hmap.add k v self.hmap
-let[@inline] hmap_get self k = Hmap.find k self.hmap
+let[@inline] of_slice s : t = create s slice_ops (Array.make (Slice.len s) Miss)
+
+let[@inline] of_string s : t =
+  create (Slice.of_string s) slice_ops (Array.make (String.length s) Miss)
+
+let[@inline] of_in_channel c : t = create c in_channel_ops (Array.make 0 Miss)
+
+let[@inline] hmap_set self k v =
+  match self with
+  | Decode d -> d.hmap <- Hmap.add k v d.hmap
+
+let[@inline] hmap_get self k =
+  match self with
+  | Decode d -> Hmap.find k d.hmap
 
 let hmap_transfer d1 ~into:d2 : unit =
-  d2.hmap <-
-    Hmap.fold (fun (Hmap.B (k, v)) h2 -> Hmap.add k v h2) d1.hmap d2.hmap
+  match d1, d2 with
+  | Decode d1, Decode d2 ->
+    d2.hmap <-
+      Hmap.fold (fun (Hmap.B (k, v)) h2 -> Hmap.add k v h2) d1.hmap d2.hmap
 
 type 'a decoder = t -> offset -> 'a
 type num_bytes_consumed = int
@@ -77,7 +179,7 @@ let invalid_first_byte_ msg ~offset ~high ~low =
   failf "Decode: invalid first byte %d/%d at %d: %s" high low offset msg
 
 let[@inline] get_char_ (self : t) (offset : offset) : int =
-  Char.code (Slice.get self.sl offset)
+  Char.code @@ read_char self offset
 
 let[@inline] get_high (c : int) : int = (c land 0b1111_0000) lsr 4
 let[@inline] get_low (c : int) : int = c land 0b0000_1111
@@ -87,7 +189,7 @@ let[@inline] get_int64_ self offset ~low : int64 * num_bytes_consumed =
   if low < 15 then
     Int64.of_int low, 0
   else (
-    let i, n = LEB128.u64 self.sl (offset + 1) in
+    let i, n = read_leb128 self (offset + 1) in
     Int64.add i 15L, n
   )
 
@@ -106,13 +208,9 @@ let get_special_ offset ~high ~low : Value.t =
 let[@inline] get_float_ (self : t) offset ~low : float * num_bytes_consumed =
   let isf32 = low = 0 in
   if isf32 then
-    ( Bytes.get_int32_le self.sl.bs (self.sl.off + offset + 1)
-      |> Int32.float_of_bits,
-      4 )
+    read_int32 self (offset + 1) |> Int32.float_of_bits, 4
   else
-    ( Bytes.get_int64_le self.sl.bs (self.sl.off + offset + 1)
-      |> Int64.float_of_bits,
-      8 )
+    read_int64 self (offset + 1) |> Int64.float_of_bits, 8
 
 (** Number of bytes to skip *)
 let skip_float_ ~low : int =
@@ -149,6 +247,8 @@ let[@inline] deref_rec self off : offset =
   else
     off
 
+exception Foo of string
+
 let read ?(auto_deref = true) (self : t) (offset : offset) : Value.t =
   let offset =
     if auto_deref then
@@ -173,11 +273,11 @@ let read ?(auto_deref = true) (self : t) (offset : offset) : Value.t =
     Value.Float f
   | 4 ->
     let len, size_len = get_int_truncate_ self offset ~low in
-    let s = Slice.sub self.sl (offset + 1 + size_len) len in
+    let s = read_blob self (offset + 1 + size_len) len in
     Value.String s
   | 5 ->
     let len, size_len = get_int_truncate_ self offset ~low in
-    let s = Slice.sub self.sl (offset + 1 + size_len) len in
+    let s = read_blob self (offset + 1 + size_len) len in
     Value.Blob s
   | 6 ->
     let len, size_len = get_int_truncate_ self offset ~low in
@@ -208,7 +308,8 @@ let read ?(auto_deref = true) (self : t) (offset : offset) : Value.t =
     let idx_cstor, size_idx_cstor = get_int_truncate_ self offset ~low in
     let offset_after_n = offset + 1 + size_idx_cstor in
     let num_items, size_num_items =
-      LEB128.uint_truncate self.sl offset_after_n
+      let sl = read_blob self offset_after_n 16 in
+      LEB128.uint_truncate sl 0
     in
     let c : cursor =
       {
@@ -314,7 +415,7 @@ let string_slice self offset =
   let low = get_low c in
   if high <> 4 then fail_decode_type_ ~what:"string" offset;
   let len, size_len = get_int_truncate_ self offset ~low in
-  Slice.sub self.sl (offset + 1 + size_len) len
+  read_blob self (offset + 1 + size_len) len
 
 let string self offset = Slice.contents @@ string_slice self offset
 
@@ -325,7 +426,7 @@ let blob_slice self offset =
   let low = get_low c in
   if high <> 5 then fail_decode_type_ ~what:"blob" offset;
   let len, size_len = get_int_truncate_ self offset ~low in
-  Slice.sub self.sl (offset + 1 + size_len) len
+  read_blob self (offset + 1 + size_len) len
 
 let blob self offset = Slice.contents @@ blob_slice self offset
 
@@ -380,7 +481,8 @@ let cstor self offset =
     let idx_cstor, size_idx_cstor = get_int_truncate_ self offset ~low in
     let offset_after_n = offset + 1 + size_idx_cstor in
     let num_items, size_num_items =
-      LEB128.uint_truncate self.sl offset_after_n
+      let sl = read_blob self offset_after_n 16 in
+      LEB128.uint_truncate sl 0
     in
     let c : cursor =
       {
@@ -405,15 +507,16 @@ let[@inline] ref_for (self : t) offset : _ offset_for =
   Offset_for (ref_ self offset)
 
 let get_entrypoint (self : t) : offset =
-  assert (Slice.len self.sl > 0);
-  let last = Slice.len self.sl - 1 in
-  let offset = Char.code @@ Slice.get self.sl last in
+  let len = st_len self in
+  assert (len > 0);
+  let last = len - 1 in
+  let offset = Char.code @@ read_char self last in
   last - offset - 1
 
 let read_entrypoint (self : t) : Value.t =
   read self @@ deref_rec self @@ get_entrypoint self
 
-let decode_string ?(init = ignore) (d : _ decoder) (s : string) =
+let decode_string ?(init = ignore) (d : 'a decoder) (s : string) : 'a =
   let self = of_string s in
   init self;
   let off = deref_rec self @@ get_entrypoint self in
@@ -544,13 +647,17 @@ let with_cache (type a) (key : a cache_key) (dec : a decoder) : a decoder =
     dec st off
   else (
     (* go through the cache *)
-    match st.cache.(off) with
-    | K.C v -> v
-    | Miss ->
-      let v = dec st off in
-      st.cache.(off) <- K.C v;
-      v
-    | _ -> (* weird collision, just don't cache… *) dec st off
+    let (Decode { cache; _ }) = st in
+    if off < Array.length cache then (
+      match cache.(off) with
+      | K.C v -> v
+      | Miss ->
+        let v = dec st off in
+        cache.(off) <- K.C v;
+        v
+      | _ -> (* weird collision, just don't cache… *) dec st off
+    ) else
+      dec st off
   )
 
 let add_cache (dec_ref : _ decoder ref) : unit =
