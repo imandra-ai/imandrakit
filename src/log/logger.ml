@@ -292,6 +292,20 @@ let to_event_if_ (p : level -> bool) ~emit_ev : Logs.reporter =
 
 let bg_thread_loop_ (self : t) : unit =
   Trace_core.set_thread_name "logger.bg";
+  ignore
+    (Unix.sigprocmask Unix.SIG_BLOCK
+       [
+         Sys.sigterm;
+         Sys.sigpipe;
+         Sys.sigint;
+         Sys.sigchld;
+         Sys.sigalrm;
+         Sys.sigusr1;
+         Sys.sigusr2;
+         Sys.sigvtalrm;
+       ]
+    : _ list);
+
   let local_q = Queue.create () in
   try
     let process_task = function
