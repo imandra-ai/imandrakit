@@ -8,6 +8,9 @@ module Log_event = Log_event
 
     We can have multiple log outputs, they each get a {!Log_event.t}.
     See {!Reporter.to_outputs} to see how to use these.
+
+    A log output must be thread-safe, as it will be called from
+    multiple threads.
 *)
 module Output : sig
   type t
@@ -16,15 +19,20 @@ module Output : sig
 
   val stdout : unit -> t
   val stderr : unit -> t
-  val to_event : emit_ev:(Log_event.t -> unit) -> unit -> t
+
+  val to_event :
+    emit_ev:(Log_event.t -> unit) -> flush:(unit -> unit) -> unit -> t
+
   val filter_level : (level -> bool) -> t -> t
-  val to_str : emit_str:(string -> unit) -> unit -> t
+  val to_str : emit_str:(string -> unit) -> flush:(unit -> unit) -> unit -> t
 
-  val to_chan : out_channel -> t
-  (** Write into the channel, as text. *)
+  val to_chan : ?autoflush:bool -> out_channel -> t
+  (** Write into the channel, as text.
+      @param autoflush if true (default) channel is flushed after each event *)
 
-  val to_chan_jsonl : out_channel -> t
-  (** Write into the channel as jsonl. *)
+  val to_chan_jsonl : ?autoflush:bool -> out_channel -> t
+  (** Write into the channel as jsonl.
+      @param autoflush if true (default) channel is flushed after each event *)
 
   val buf_pool : Buffer.t Apool.t
   (** Buffer pool for loggers. Please hold onto buffers for only

@@ -1,5 +1,4 @@
 open Log_level
-module Sync_queue = Moonpool.Blocking_queue
 
 type level = Log_level.t [@@deriving show, eq]
 
@@ -51,9 +50,12 @@ open struct
 end
 
 module Output = struct
-  type t = { emit: Log_event.t -> unit } [@@unboxed]
+  type t = {
+    emit: Log_event.t -> unit;
+    flush: unit -> unit;
+  }
 
-  let to_event ~emit_ev () : t = { emit = emit_ev }
+  let to_event ~emit_ev ~flush () : t = { emit = emit_ev; flush }
   let () = Fmt.set_color_default true
 
   let to_str_ (ev : Log_event.t) : string =
@@ -92,21 +94,25 @@ module Output = struct
 
     Buf_fmt.get_contents buf_fmt
 
-  let to_str ~(emit_str : string -> unit) () : t =
+  let to_str ~(emit_str : string -> unit) ~flush () : t =
     {
       emit =
         (fun ev ->
           let s = to_str_ ev in
           emit_str s);
+      flush;
     }
 
-  let to_chan (oc : out_channel) : t =
+  let to_chan ?(autoflush = true) (oc : out_channel) : t =
+    let oc = Lock_.create oc in
     to_str
+      ~flush:(fun () -> Lock_.with_ oc Stdlib.flush)
       ~emit_str:(fun s ->
         try
+          let@ oc = Lock_.with_ oc in
           output_string oc s;
           output_char oc '\n';
-          flush oc
+          if autoflush then Stdlib.flush oc
         with _ -> Printf.eprintf "logger: failed to log to chan\n%!")
       ()
 
@@ -114,7 +120,7 @@ module Output = struct
   let stderr () = to_chan stderr
 
   let filter_level pred (self : t) : t =
-    { emit = (fun ev -> if pred ev.lvl then self.emit ev) }
+    { emit = (fun ev -> if pred ev.lvl then self.emit ev); flush = self.flush }
 
   let buf_pool : Buffer.t Apool.t =
     Apool.create ~clear:Buffer.reset
@@ -122,11 +128,15 @@ module Output = struct
       ~max_size:8 ()
 
   (** Logger that writes events, one per line, on the given channel. *)
-  let to_chan_jsonl (oc : out_channel) : t =
-    to_event () ~emit_ev:(fun ev ->
+  let to_chan_jsonl ?(autoflush = true) (oc : out_channel) : t =
+    let oc = Lock_.create oc in
+    to_event ()
+      ~flush:(fun () -> Lock_.with_ oc flush)
+      ~emit_ev:(fun ev ->
         let json = Log_event.to_yojson ev in
 
         try
+          let@ oc = Lock_.with_ oc in
           ((* use a local buffer *)
            let@ buf = Apool.with_resource buf_pool in
            Buffer.clear buf;
@@ -135,15 +145,11 @@ module Output = struct
            Buffer.output_buffer oc buf);
 
           output_char oc '\n';
-          flush oc
+          if autoflush then flush oc
         with exn ->
           Printf.eprintf "log to json chan: failed with %s\n%!"
             (Printexc.to_string exn))
 end
-
-type task =
-  | T_fence of { wakeup: unit Moonpool.Fut.promise }
-  | T_emit of Log_event.t
 
 type capture_meta_hook = unit -> (string * Log_meta.t) list
 
@@ -183,19 +189,17 @@ end
 let add_rich_tag = add_rich_tag
 
 type t = {
-  q: task Sync_queue.t;
-  events: Log_event.t Observer.t;
+  active: bool Atomic.t;
+  events: Log_event.t Observer.t;  (** Additional subscriptions on events *)
   outputs: Output.t list Atomic.t;
-  reporter: Logs.reporter;
-  mutable bg_thread: Thread.t option;
+  emit_ev: Log_event.t -> unit;
+  emit_fence: unit -> unit;
+  reporter: Logs.reporter;  (** As reporter *)
 }
 
 let[@inline] as_reporter self = self.reporter
 let[@inline] events self = self.events
-
-let shutdown self =
-  Sync_queue.close self.q;
-  Option.iter Thread.join self.bg_thread
+let shutdown self = Atomic.set self.active false
 
 let add_output self out : unit =
   while
@@ -290,6 +294,7 @@ let to_event_if_ (p : level -> bool) ~emit_ev : Logs.reporter =
   in
   { Logs.report }
 
+(*
 let bg_thread_loop_ (self : t) : unit =
   Trace_core.set_thread_name "logger.bg";
   ignore
@@ -304,7 +309,7 @@ let bg_thread_loop_ (self : t) : unit =
          Sys.sigusr2;
          Sys.sigvtalrm;
        ]
-    : _ list);
+      : _ list);
 
   let local_q = Queue.create () in
   try
@@ -323,40 +328,56 @@ let bg_thread_loop_ (self : t) : unit =
       Queue.clear local_q
     done
   with Sync_queue.Closed -> ()
+  *)
 
-let fence_ : (unit -> unit Moonpool.Fut.t) ref =
-  ref (fun () -> Moonpool.Fut.return ())
-
-let[@inline] emit_ev (self : t) ev : unit =
-  try Sync_queue.push self.q (T_emit ev) with Sync_queue.Closed -> ()
+let fence_ : (unit -> unit) ref = ref ignore
+let set_as_fence_ (self : t) : unit = fence_ := self.emit_fence
 
 let to_outputs (outs : Output.t list) : t =
+  let active = Atomic.make true in
   let outputs = Atomic.make outs in
   let events = Observer.create () in
-  let q = Sync_queue.create () in
+  let emit_ev ev =
+    (try Observer.emit events ev
+     with exn ->
+       Printf.eprintf "logger observer failed with %s\n%!"
+         (Printexc.to_string exn));
+    match Atomic.get outputs with
+    | [] -> ()
+    | outs ->
+      List.iter
+        (fun (out : Output.t) ->
+          try out.emit ev
+          with exn ->
+            Printf.eprintf "logger output failed with %s\n%!"
+              (Printexc.to_string exn))
+        outs
+  in
   let reporter =
     to_event_if_
       (fun _ ->
         (* emit event only if we have some outputs or event subscribers *)
-        Observer.has_subscribers events
-        || not (CCList.is_empty (Atomic.get outputs)))
-      ~emit_ev:(fun ev ->
-        try Sync_queue.push q (T_emit ev) with Sync_queue.Closed -> ())
+        Atomic.get active
+        && (Observer.has_subscribers events
+           || not (CCList.is_empty (Atomic.get outputs))))
+      ~emit_ev
   in
 
-  let fence () =
-    let fut, prom = Moonpool.Fut.make () in
-    (try Sync_queue.push q (T_fence { wakeup = prom })
-     with Sync_queue.Closed -> Moonpool.Fut.fulfill prom @@ Ok ());
-    fut
+  let emit_fence () =
+    let outs = Atomic.get outputs in
+    List.iter (fun (out : Output.t) -> out.flush ()) outs
   in
 
-  fence_ := fence;
-  let self = { q; outputs; reporter; events; bg_thread = None } in
-  self.bg_thread <- Some (Thread.create bg_thread_loop_ self);
+  let self = { active; emit_ev; emit_fence; outputs; reporter; events } in
   self
 
+let[@inline] emit_ev (self : t) ev : unit = self.emit_ev ev
 let null () : t = to_outputs []
+
+let setup_ (self : t) : unit =
+  Logs.set_reporter self.reporter;
+  set_as_fence_ self;
+  ()
 
 let with_no_logger () f =
   let old = Logs.reporter () in
@@ -365,13 +386,13 @@ let with_no_logger () f =
 
 let setup_logger_to_stdout () =
   let outs = [ Output.stdout () ] in
-  let reporter = to_outputs outs in
-  Logs.set_reporter (as_reporter reporter)
+  let logger = to_outputs outs in
+  setup_ logger
 
 let setup_logger_to_stderr () =
   let outs = [ Output.stderr () ] in
-  let reporter = to_outputs outs in
-  Logs.set_reporter (as_reporter reporter)
+  let logger = to_outputs outs in
+  setup_ logger
 
 (** Setup a logger that emits into the file specified in ["LOG_FILE"] env,
     or no logger otherwise. *)
@@ -380,7 +401,8 @@ let setup_logger_to_LOG_FILE ?filename () k =
   | Some file, _ | None, Some file ->
     let@ oc = CCIO.with_out file in
     let outs = [ Output.to_chan oc ] in
-    Logs.set_reporter (to_outputs outs |> as_reporter);
+    let logger = to_outputs outs in
+    setup_ logger;
     k ()
   | _ -> k ()
 
@@ -390,9 +412,7 @@ module type LOG = sig
   val src : Logs.src
 end
 
-let fence () =
-  let fut = !fence_ () in
-  Moonpool.Fut.wait_block_exn fut
+let[@inline] fence () = !fence_ ()
 
 let mk_log_str s : (module LOG) =
   let src = Logs.Src.create s in

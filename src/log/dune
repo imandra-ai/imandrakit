@@ -3,6 +3,7 @@
  (name imandrakit_log)
  (preprocess
   (pps ppx_deriving.std imandrakit.ser-pack.ppx imandrakit.twine.ppx))
+ (private_modules lock_)
  (flags :standard -open Imandrakit)
  (libraries
   imandrakit
