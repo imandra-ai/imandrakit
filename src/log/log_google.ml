@@ -22,19 +22,23 @@ let event_to_json ?(other_fields = []) (ev : Log_event.t) : json =
   `Assoc (List.rev_append other_fields fields)
 
 let logger ?other_fields oc : Logger.Output.t =
-  Logger.Output.to_event () ~emit_ev:(fun ev ->
+  let oc = Lock_.create oc in
+  Logger.Output.to_event ()
+    ~flush:(fun () -> Lock_.with_ oc Stdlib.flush)
+    ~emit_ev:(fun ev ->
       let json = event_to_json ?other_fields ev in
 
       try
-        ((* use a local buffer *)
-         let@ buf = Apool.with_resource Logger.Output.buf_pool in
-         assert (Buffer.length buf = 0);
-         Yojson.Safe.to_buffer buf json;
-         (* write buffer's content immediately *)
-         Buffer.output_buffer oc buf);
+        (* use a local buffer *)
+        let@ buf = Apool.with_resource Logger.Output.buf_pool in
+        assert (Buffer.length buf = 0);
+        Yojson.Safe.to_buffer buf json;
 
+        (* write buffer's content immediately *)
+        let@ oc = Lock_.with_ oc in
+        Buffer.output_buffer oc buf;
         output_char oc '\n';
         flush oc
       with exn ->
-        Printf.eprintf "log to json chan: failed with %s\n%!"
+        Printf.eprintf "log to json in google format: failed with\n%s\n%!"
           (Printexc.to_string exn))
