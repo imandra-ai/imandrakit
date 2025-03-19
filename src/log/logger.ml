@@ -1,4 +1,4 @@
-open Log_level
+open! Log_level
 
 type level = Log_level.t [@@deriving show, eq]
 
@@ -199,7 +199,13 @@ type t = {
 
 let[@inline] as_reporter self = self.reporter
 let[@inline] events self = self.events
-let shutdown self = Atomic.set self.active false
+let[@inline] shutdown self = Atomic.set self.active false
+
+let trace_level_of_level : level -> Trace.Level.t = function
+  | Info | App -> Trace.Level.Info
+  | Error -> Trace.Level.Error
+  | Warning -> Trace.Level.Warning
+  | Debug -> Trace.Level.Debug3
 
 let add_output self out : unit =
   while
@@ -271,7 +277,8 @@ let to_event_if_ (p : level -> bool) ~emit_ev : Logs.reporter =
            at least the TEF collector needs to know on which thread we are running. *)
         if Trace_core.enabled () then (
           let msg = Ansi_clean.remove_escape_codes msg in
-          Trace_core.message msg ~data:(fun () ->
+          Trace_core.message ~level:(trace_level_of_level level) msg
+            ~data:(fun () ->
               let meta =
                 List.map (fun (k, v) -> k, Log_meta.to_trace_data v) meta
               in
