@@ -1,19 +1,6 @@
 include Moonpool_fib
 module FLS = Moonpool_fib.Fls
 
-(** Access the context (inheritable hmap) *)
-let k_rcontext : Hmap.t FLS.t = FLS.k_local_hmap
-
-(** Access the current rcontext *)
-let[@inline] get_rcontext () : Hmap.t = FLS.get ~default:Hmap.empty k_rcontext
-
-let[@inline] get_from_rcontext (k : 'a Hmap.key) : 'a option =
-  FLS.get_in_local_hmap_opt k
-
-(** Add some k/v to the context *)
-let[@inline] add_to_rcontext (k : 'a Hmap.key) (x : 'a) : unit =
-  FLS.set_in_local_hmap k x
-
 let add_on_cancel' fib k : unit = ignore (add_on_cancel fib k : cancel_handle)
 let add_on_cancel_any' (Any fib) k : unit = add_on_cancel' fib k
 
