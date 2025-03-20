@@ -70,3 +70,67 @@ let with_span ?(level = Trace.get_default_level ()) ?parent ?data ?__FUNCTION__
       f
   else
     f Trace.Collector.dummy_explicit_span
+
+open struct
+  let cons_assoc_opt_ name x l =
+    match x with
+    | None -> l
+    | Some v -> (name, v) :: l
+end
+
+let enrich_span_process (span : Trace.explicit_span) : unit =
+  Trace.add_data_to_manual_span span
+    [
+      "process.runtime.name", `String "ocaml";
+      "process.runtime.version", `String Sys.ocaml_version;
+    ]
+
+let enrich_span_service ~name ~namespace ~instance_id ~version
+    (span : Trace.explicit_span) : unit =
+  Trace.add_data_to_manual_span span
+    [
+      "service.name", `String name;
+      "service.namespace", `String namespace;
+      "service.instance.id", `String instance_id;
+      "service.version", `String version;
+    ]
+
+let enrich_span_deployment ?id ?name ~deployment (span : Trace.explicit_span) :
+    unit =
+  let data =
+    [ "deployment.environment.name", `String deployment ]
+    |> cons_assoc_opt_ "deployment.id" id
+    |> cons_assoc_opt_ "deployment.name" name
+  in
+  Trace.add_data_to_manual_span span data
+
+module Attributes = struct
+  module HTTP = struct
+    let error_type = "error.type"
+    let request_method = "http.request.method"
+    let route = "http.route"
+    let url_full = "url.full"
+
+    (** HTTP status code, int *)
+    let response_status_code = "http.response.status_code"
+
+    let server_address = "server.address"
+    let server_port = "server.port"
+
+    (** http or https *)
+    let url_scheme = "url.scheme"
+  end
+
+  (** https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/host.md *)
+  module Host = struct
+    let id = "host.id"
+    let name = "host.name"
+    let type_ = "host.type"
+    let arch = "host.arch"
+    let ip = "host.ip"
+    let mac = "host.mac"
+    let image_id = "host.image.id"
+    let image_name = "host.image.name"
+    let image_version = "host.image.version"
+  end
+end
