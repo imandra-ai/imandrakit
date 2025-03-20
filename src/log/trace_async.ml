@@ -75,7 +75,7 @@ open struct
   let cons_assoc_opt_ name x l =
     match x with
     | None -> l
-    | Some v -> (name, v) :: l
+    | Some v -> (name, `String v) :: l
 end
 
 let enrich_span_process (span : Trace.explicit_span) : unit =
