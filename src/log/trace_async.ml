@@ -23,6 +23,9 @@ let add_exn_to_span (sp : Trace.explicit_span) (exn : exn)
     ]
 
 open struct
+  let auto_enrich_span_l_ : (Trace.explicit_span -> unit) list Atomic.t =
+    Atomic.make []
+
   let with_span_real_ ~level ?parent ?data ?__FUNCTION__ ~__FILE__ ~__LINE__
       name f =
     let span =
@@ -42,6 +45,10 @@ open struct
 
     (* set current span as parent, for children *)
     LS.set_in_local_hmap k_parent_scope span;
+
+    (* apply automatic enrichment *)
+    if span.span != Trace.Collector.dummy_span then
+      List.iter (fun f -> f span) (Atomic.get auto_enrich_span_l_);
 
     (* cleanup *)
     let finally () =
@@ -104,33 +111,11 @@ let enrich_span_deployment ?id ?name ~deployment (span : Trace.explicit_span) :
   in
   Trace.add_data_to_manual_span span data
 
-module Attributes = struct
-  module HTTP = struct
-    let error_type = "error.type"
-    let request_method = "http.request.method"
-    let route = "http.route"
-    let url_full = "url.full"
-
-    (** HTTP status code, int *)
-    let response_status_code = "http.response.status_code"
-
-    let server_address = "server.address"
-    let server_port = "server.port"
-
-    (** http or https *)
-    let url_scheme = "url.scheme"
-  end
-
-  (** https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/host.md *)
-  module Host = struct
-    let id = "host.id"
-    let name = "host.name"
-    let type_ = "host.type"
-    let arch = "host.arch"
-    let ip = "host.ip"
-    let mac = "host.mac"
-    let image_id = "host.image.id"
-    let image_name = "host.image.name"
-    let image_version = "host.image.version"
-  end
-end
+(** Add a hook that will be called on every explicit span *)
+let add_auto_enrich_span (f : Trace.explicit_span -> unit) : unit =
+  while
+    let l = Atomic.get auto_enrich_span_l_ in
+    not (Atomic.compare_and_set auto_enrich_span_l_ l (f :: l))
+  do
+    ()
+  done
