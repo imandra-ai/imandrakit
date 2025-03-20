@@ -85,15 +85,15 @@ let enrich_span_process (span : Trace.explicit_span) : unit =
       "process.runtime.version", `String Sys.ocaml_version;
     ]
 
-let enrich_span_service ~name ~namespace ~instance_id ~version
+let enrich_span_service ~name ?namespace ?instance_id ?version
     (span : Trace.explicit_span) : unit =
-  Trace.add_data_to_manual_span span
-    [
-      "service.name", `String name;
-      "service.namespace", `String namespace;
-      "service.instance.id", `String instance_id;
-      "service.version", `String version;
-    ]
+  let data =
+    [ "service.name", `String name ]
+    |> cons_assoc_opt_ "service.namespace" namespace
+    |> cons_assoc_opt_ "service.instance.id" instance_id
+    |> cons_assoc_opt_ "service.version" version
+  in
+  Trace.add_data_to_manual_span span data
 
 let enrich_span_deployment ?id ?name ~deployment (span : Trace.explicit_span) :
     unit =
