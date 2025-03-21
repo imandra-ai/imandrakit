@@ -99,7 +99,7 @@ module Histogram = struct
     while !continue do
       if !i = Float.Array.length self.bucket_boundaries then
         continue := false
-      else if v < Float.Array.get self.bucket_boundaries !i then
+      else if v <= Float.Array.get self.bucket_boundaries !i then
         continue := false
       else
         incr i
