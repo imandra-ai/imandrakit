@@ -2,9 +2,20 @@ open Types
 
 type t
 
+type 'st ops = {
+  length: 'st -> int;
+  read_char: 'st -> int -> char;
+  read_int32: 'st -> int -> int32;
+  read_int64: 'st -> int -> int64;
+  read_blob: 'st -> int -> int -> slice;
+  read_leb128: 'st -> int -> int64 * offset;
+}
+(** Operations on an input type *)
+
 val of_slice : slice -> t
 val of_string : string -> t
 val of_in_channel : in_channel -> t
+val of_custom_ops : 'st -> 'st ops -> t
 val hmap_set : t -> 'a Hmap.key -> 'a -> unit
 val hmap_get : t -> 'a Hmap.key -> 'a option
 

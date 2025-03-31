@@ -28,27 +28,27 @@ and 'st ops = {
   read_leb128: 'st -> int -> int64 * offset;
 }
 
-let st_len t =
+let[@inline] st_len t =
   let (Decode { st; ops; _ }) = t in
   ops.length st
 
-let read_char t offset =
+let[@inline] read_char t offset =
   let (Decode { st; ops; _ }) = t in
   ops.read_char st offset
 
-let read_int32 t offset =
+let[@inline] read_int32 t offset =
   let (Decode { st; ops; _ }) = t in
   ops.read_int32 st offset
 
-let read_int64 t offset =
+let[@inline] read_int64 t offset =
   let (Decode { st; ops; _ }) = t in
   ops.read_int64 st offset
 
-let read_blob t offset length =
+let[@inline] read_blob t offset length =
   let (Decode { st; ops; _ }) = t in
   ops.read_blob st offset length
 
-let read_leb128 t offset =
+let[@inline] read_leb128 t offset =
   let (Decode { st; ops; _ }) = t in
   ops.read_leb128 st offset
 
@@ -124,6 +124,7 @@ let[@inline] create (st : 'st) (ops : 'st ops) : t =
 let[@inline] of_slice s : t = create s slice_ops
 let[@inline] of_string s : t = create (Slice.of_string s) slice_ops
 let[@inline] of_in_channel c : t = create c in_channel_ops
+let of_custom_ops = create
 
 let[@inline] hmap_set self k v =
   match self with

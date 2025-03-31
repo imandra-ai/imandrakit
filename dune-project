@@ -60,7 +60,7 @@
     :with-test
     (>= 1.5)))
   (odoc :with-doc))
- (depopts camlzip)
+ (depopts camlzip bigstringaf)
  (tags
   (moonpool multicore thread logs logging)))
 
