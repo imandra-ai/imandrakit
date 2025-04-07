@@ -42,7 +42,7 @@
   ppx_deriving
   ppx_deriving_yojson
   (ppxlib
-   (>= 0.25.0))
+   (and (>= 0.25.0) (< 0.36)))
   (trace
    (>= 0.7))
   (qcheck-core
