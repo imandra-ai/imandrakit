@@ -43,7 +43,7 @@ open struct
   let auto_enrich_span_l_ : (Trace.explicit_span -> unit) list Atomic.t =
     Atomic.make []
 
-  let with_span_real_ ~level ?parent ?data ?__FUNCTION__ ~__FILE__ ~__LINE__
+  let with_span_real_ ~level ~parent ?data ?__FUNCTION__ ~__FILE__ ~__LINE__
       name (f : Trace_core.explicit_span * Trace_core.explicit_span_ctx -> 'a) :
       'a =
     let span =
@@ -77,15 +77,17 @@ let with_span ?(level = Trace.get_default_level ()) ?parent ?data ?__FUNCTION__
     ~__FILE__ ~__LINE__ name
     (f : Trace.explicit_span * Trace.explicit_span_ctx -> 'a) : 'a =
   if Trace.enabled () && level <= Trace.get_current_level () then
-    with_span_real_ ~level ?parent ?data ?__FUNCTION__ ~__FILE__ ~__LINE__ name
+    with_span_real_ ~level ~parent ?data ?__FUNCTION__ ~__FILE__ ~__LINE__ name
       f
   else (
-    let span_ctx =
-      match parent with
-      | None -> Trace.Collector.dummy_explicit_span_ctx
-      | Some p -> p
-    in
-    f (Trace.Collector.dummy_explicit_span, span_ctx)
+    match parent with
+    | None ->
+      f
+        ( Trace.Collector.dummy_explicit_span,
+          Trace.Collector.dummy_explicit_span_ctx )
+    | Some p ->
+      let@ () = with_async_parent p in
+      f (Trace.Collector.dummy_explicit_span, p)
   )
 
 open struct
