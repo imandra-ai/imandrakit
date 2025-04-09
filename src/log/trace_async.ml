@@ -9,7 +9,7 @@ type Trace.extension_event +=
 (** Link the given span to the given context *)
 let[@inline] link_spans (sp1 : Trace.explicit_span)
     ~(src : Trace.explicit_span_ctx) : unit =
-  Trace.extension_event @@ Ev_link_span (sp1, src)
+  if Trace.enabled () then Trace.extension_event @@ Ev_link_span (sp1, src)
 
 (** Current parent scope for async spans *)
 let k_parent_scope : Trace.explicit_span_ctx Hmap.key = Hmap.Key.create ()
@@ -99,19 +99,9 @@ open struct
     | Some v -> (name, `String v) :: l
 end
 
-let enrich_span_process (span : Trace.explicit_span) : unit =
-  Trace.add_data_to_manual_span span
-    [
-      "process.runtime.name", `String "ocaml";
-      "process.runtime.version", `String Sys.ocaml_version;
-    ]
-
-let enrich_span_service ~name ?namespace ?instance_id ?version
-    (span : Trace.explicit_span) : unit =
+let enrich_span_service ?version (span : Trace.explicit_span) : unit =
   let data =
-    [ "service.name", `String name ]
-    |> cons_assoc_opt_ "service.namespace" namespace
-    |> cons_assoc_opt_ "service.instance.id" instance_id
+    []
     |> cons_assoc_opt_ "service.version" version
   in
   Trace.add_data_to_manual_span span data
