@@ -2,13 +2,13 @@ module Trace = Trace_core
 module LS = Moonpool.Task_local_storage
 
 (** Current parent scope for async spans *)
-let k_parent_scope : Trace.explicit_span Hmap.key = Hmap.Key.create ()
+let k_parent_scope : Trace.explicit_span_ctx Hmap.key = Hmap.Key.create ()
 
 (** Set the parent scope by hand *)
-let[@inline] set_parent_scope (sp : Trace.explicit_span) =
+let[@inline] set_parent_scope (sp : Trace.explicit_span_ctx) =
   try LS.set_in_local_hmap k_parent_scope sp with _ -> ()
 
-let[@inline] get_parent_scope () : Trace.explicit_span option =
+let[@inline] get_parent_scope () : Trace.explicit_span_ctx option =
   try LS.get_in_local_hmap_opt k_parent_scope with _ -> None
 
 let add_exn_to_span (sp : Trace.explicit_span) (exn : exn)
@@ -34,17 +34,12 @@ open struct
         | Some _ as p -> p
         | None -> LS.get_in_local_hmap_opt k_parent_scope
       in
-      match parent with
-      | None ->
-        Trace.enter_manual_toplevel_span ~flavor:`Async ?data ~level
-          ?__FUNCTION__ ~__FILE__ ~__LINE__ name
-      | Some parent ->
-        Trace.enter_manual_sub_span ~parent ~flavor:`Async ?data ~level
-          ?__FUNCTION__ ~__FILE__ ~__LINE__ name
+      Trace.enter_manual_span ~parent ~flavor:`Async ?data ~level ?__FUNCTION__
+        ~__FILE__ ~__LINE__ name
     in
 
     (* set current span as parent, for children *)
-    LS.set_in_local_hmap k_parent_scope span;
+    LS.set_in_local_hmap k_parent_scope (Trace.ctx_of_span span);
 
     (* apply automatic enrichment *)
     if span.span != Trace.Collector.dummy_span then
