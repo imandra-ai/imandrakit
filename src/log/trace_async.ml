@@ -1,5 +1,4 @@
 module Trace = Trace_core
-module LS = Moonpool.Task_local_storage
 
 type Trace.extension_event +=
   | Ev_link_span of Trace.explicit_span * Trace.explicit_span_ctx
@@ -12,14 +11,7 @@ let[@inline] link_spans (sp1 : Trace.explicit_span)
   if Trace.enabled () then Trace.extension_event @@ Ev_link_span (sp1, src)
 
 (** Current parent scope for async spans *)
-let k_parent_scope : Trace.explicit_span_ctx Hmap.key = Hmap.Key.create ()
-
-(** Set the parent scope by hand *)
-let[@inline] set_parent_scope (sp : Trace.explicit_span_ctx) =
-  try LS.set_in_local_hmap k_parent_scope sp with _ -> ()
-
-let[@inline] get_parent_scope () : Trace.explicit_span_ctx option =
-  try LS.get_in_local_hmap_opt k_parent_scope with _ -> None
+let k_span_ctx : Trace.explicit_span_ctx Hmap.key = Hmap.Key.create ()
 
 let add_exn_to_span (sp : Trace.explicit_span) (exn : exn)
     (bt : Printexc.raw_backtrace) =
@@ -39,40 +31,23 @@ open struct
   let with_span_real_ ~level ?parent ?data ?__FUNCTION__ ~__FILE__ ~__LINE__
       name (f : Trace_core.explicit_span * Trace_core.explicit_span_ctx -> 'a) :
       'a =
-    let parent =
-      match parent with
-      | Some _ as p -> p
-      | None -> LS.get_in_local_hmap_opt k_parent_scope
-    in
     let span =
       Trace.enter_manual_span ~parent ~flavor:`Async ?data ~level ?__FUNCTION__
         ~__FILE__ ~__LINE__ name
     in
 
-    (* set current span as parent, for children *)
-    LS.set_in_local_hmap k_parent_scope (Trace.ctx_of_span span);
-
     (* apply automatic enrichment *)
     if span.span != Trace.Collector.dummy_span then
       List.iter (fun f -> f span) (Atomic.get auto_enrich_span_l_);
 
-    (* cleanup *)
-    let finally () =
-      (* restore previous parent span *)
-      (match parent with
-      | None -> LS.remove_in_local_hmap k_parent_scope
-      | Some p -> LS.set_in_local_hmap k_parent_scope p);
-      Trace.exit_manual_span span
-    in
-
     try
       let x = f (span, Trace.ctx_of_span span) in
-      finally ();
+      Trace.exit_manual_span span;
       x
     with e ->
       let bt = Printexc.get_raw_backtrace () in
       add_exn_to_span span e bt;
-      finally ();
+      Trace.exit_manual_span span;
       Printexc.raise_with_backtrace e bt
 end
 
@@ -100,10 +75,7 @@ open struct
 end
 
 let enrich_span_service ?version (span : Trace.explicit_span) : unit =
-  let data =
-    []
-    |> cons_assoc_opt_ "service.version" version
-  in
+  let data = [] |> cons_assoc_opt_ "service.version" version in
   Trace.add_data_to_manual_span span data
 
 let enrich_span_deployment ?id ?name ~deployment (span : Trace.explicit_span) :
