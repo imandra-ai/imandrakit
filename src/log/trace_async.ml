@@ -1,6 +1,16 @@
 module Trace = Trace_core
 module LS = Moonpool.Task_local_storage
 
+type Trace.extension_event +=
+  | Ev_link_span of Trace.explicit_span * Trace.explicit_span_ctx
+        (** Link the given span to the given context. The context isn't the parent, but
+      the link can be used to correlate both spans. *)
+
+(** Link the given span to the given context *)
+let[@inline] link_spans (sp1 : Trace.explicit_span)
+    ~(src : Trace.explicit_span_ctx) : unit =
+  Trace.extension_event @@ Ev_link_span (sp1, src)
+
 (** Current parent scope for async spans *)
 let k_parent_scope : Trace.explicit_span_ctx Hmap.key = Hmap.Key.create ()
 
