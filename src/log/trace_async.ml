@@ -3,8 +3,8 @@ module LS = Moonpool.Task_local_storage
 
 type Trace.extension_event +=
   | Ev_link_span of Trace.explicit_span * Trace.explicit_span_ctx
-        (** Link the given span to the given context. The context isn't the parent, but
-      the link can be used to correlate both spans. *)
+        (** Link the given span to the given context. The context isn't the
+            parent, but the link can be used to correlate both spans. *)
 
 (** Link the given span to the given context *)
 let[@inline] link_spans (sp1 : Trace.explicit_span)
@@ -37,7 +37,8 @@ open struct
     Atomic.make []
 
   let with_span_real_ ~level ?parent ?data ?__FUNCTION__ ~__FILE__ ~__LINE__
-      name f =
+      name (f : Trace_core.explicit_span * Trace_core.explicit_span_ctx -> 'a) :
+      'a =
     let parent =
       match parent with
       | Some _ as p -> p
@@ -65,23 +66,31 @@ open struct
     in
 
     try
-      let x = f span in
+      let x = f (span, Trace.ctx_of_span span) in
       finally ();
       x
     with e ->
       let bt = Printexc.get_raw_backtrace () in
       add_exn_to_span span e bt;
+      finally ();
       Printexc.raise_with_backtrace e bt
 end
 
 (** Wrap [f()] in a async span. *)
 let with_span ?(level = Trace.get_default_level ()) ?parent ?data ?__FUNCTION__
-    ~__FILE__ ~__LINE__ name (f : Trace.explicit_span -> 'a) : 'a =
+    ~__FILE__ ~__LINE__ name
+    (f : Trace.explicit_span * Trace.explicit_span_ctx -> 'a) : 'a =
   if Trace.enabled () && level <= Trace.get_current_level () then
     with_span_real_ ~level ?parent ?data ?__FUNCTION__ ~__FILE__ ~__LINE__ name
       f
-  else
-    f Trace.Collector.dummy_explicit_span
+  else (
+    let span_ctx =
+      match parent with
+      | None -> Trace.Collector.dummy_explicit_span_ctx
+      | Some p -> p
+    in
+    f (Trace.Collector.dummy_explicit_span, span_ctx)
+  )
 
 open struct
   let cons_assoc_opt_ name x l =
