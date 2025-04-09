@@ -50,14 +50,14 @@ open struct
       Trace.enter_manual_span ~parent ~flavor:`Async ?data ~level ?__FUNCTION__
         ~__FILE__ ~__LINE__ name
     in
-    push_async_parent span;
+    push_async_parent (Trace_core.ctx_of_span span);
 
     (* apply automatic enrichment *)
     if span.span != Trace.Collector.dummy_span then
       List.iter (fun f -> f span) (Atomic.get auto_enrich_span_l_);
 
     let cleanup () =
-      pop_async_parent span;
+      pop_async_parent (Trace_core.ctx_of_span span);
       Trace.exit_manual_span span
     in
 
