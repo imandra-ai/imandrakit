@@ -4,6 +4,17 @@ type Trace.extension_event +=
   | Ev_link_span of Trace.explicit_span * Trace.explicit_span_ctx
         (** Link the given span to the given context. The context isn't the
             parent, but the link can be used to correlate both spans. *)
+  | Ev_record_exn of {
+      sp: Trace.span;
+      exn: exn;
+      bt: Printexc.raw_backtrace;
+      error: bool;  (** Is this an actual internal error? *)
+    }
+        (** Record exception and potentially turn span to an error *)
+  | Ev_push_async_parent of Trace.explicit_span_ctx
+        (** Set current async span *)
+  | Ev_pop_async_parent of Trace.explicit_span_ctx
+        (** Remove current async span *)
 
 (** Link the given span to the given context *)
 let[@inline] link_spans (sp1 : Trace.explicit_span)
@@ -13,16 +24,20 @@ let[@inline] link_spans (sp1 : Trace.explicit_span)
 (** Current parent scope for async spans *)
 let k_span_ctx : Trace.explicit_span_ctx Hmap.key = Hmap.Key.create ()
 
-let add_exn_to_span (sp : Trace.explicit_span) (exn : exn)
+(** Record exception in the span *)
+let add_exn_to_span ~is_error (sp : Trace.span) (exn : exn)
     (bt : Printexc.raw_backtrace) =
-  let msg = Printexc.to_string exn in
-  Trace.add_data_to_manual_span sp
-    [
-      (* mark the status as failed *)
-      "otrace.error", `String msg;
-      "exception.message", `String msg;
-      "exception.stacktrace", `String (Printexc.raw_backtrace_to_string bt);
-    ]
+  Trace.extension_event @@ Ev_record_exn { sp; exn; bt; error = is_error }
+
+let push_async_parent (sp : Trace.explicit_span_ctx) : unit =
+  Trace.extension_event @@ Ev_push_async_parent sp
+
+let pop_async_parent (sp : Trace.explicit_span_ctx) : unit =
+  Trace.extension_event @@ Ev_pop_async_parent sp
+
+let[@inline] with_async_parent (sp : Trace.explicit_span_ctx) f =
+  push_async_parent sp;
+  Fun.protect ~finally:(fun () -> pop_async_parent sp) f
 
 open struct
   let auto_enrich_span_l_ : (Trace.explicit_span -> unit) list Atomic.t =
@@ -46,7 +61,7 @@ open struct
       x
     with e ->
       let bt = Printexc.get_raw_backtrace () in
-      add_exn_to_span span e bt;
+      add_exn_to_span ~is_error:true span.span e bt;
       Trace.exit_manual_span span;
       Printexc.raise_with_backtrace e bt
 end
