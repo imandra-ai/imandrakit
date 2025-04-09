@@ -38,12 +38,12 @@ open struct
 
   let with_span_real_ ~level ?parent ?data ?__FUNCTION__ ~__FILE__ ~__LINE__
       name f =
+    let parent =
+      match parent with
+      | Some _ as p -> p
+      | None -> LS.get_in_local_hmap_opt k_parent_scope
+    in
     let span =
-      let parent =
-        match parent with
-        | Some _ as p -> p
-        | None -> LS.get_in_local_hmap_opt k_parent_scope
-      in
       Trace.enter_manual_span ~parent ~flavor:`Async ?data ~level ?__FUNCTION__
         ~__FILE__ ~__LINE__ name
     in
