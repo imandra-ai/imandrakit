@@ -7,8 +7,8 @@ let max_width = Sys.word_size - 2
 
 module type S = sig
   type t = private int
-  (** Generative type of bitfields. Each instantiation of the functor
-      should create a new, incompatible type *)
+  (** Generative type of bitfields. Each instantiation of the functor should
+      create a new, incompatible type *)
 
   val empty : t
   (** Empty bitfields (all bits 0) *)
@@ -28,8 +28,8 @@ module type S = sig
   (** Make a new field *)
 
   val freeze : unit -> unit
-  (** Prevent new fields from being added. From now on, creating
-      a field will raise Frozen *)
+  (** Prevent new fields from being added. From now on, creating a field will
+      raise Frozen *)
 
   val total_width : unit -> int
   (** Current width of the bitfield *)

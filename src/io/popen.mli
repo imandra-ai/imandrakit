@@ -1,6 +1,6 @@
 (** Run sub-processes.
 
- This gives more control than the equivalent {!Unix} APIs. *)
+    This gives more control than the equivalent {!Unix} APIs. *)
 
 type state
 

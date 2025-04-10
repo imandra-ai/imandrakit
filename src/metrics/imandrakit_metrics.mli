@@ -42,17 +42,18 @@ module Histogram : sig
   (** A histogram with explicit buckets *)
 
   val create : string -> buckets:float array -> t
-  (** [create_int name ~buckets] makes a histogram. Each item in [buckets] (which will be sorted)
-is used as the lower bound of a bucket. An additional bucket is created for values below the lowest
-    item in [buckets] *)
+  (** [create_int name ~buckets] makes a histogram. Each item in [buckets]
+      (which will be sorted) is used as the lower bound of a bucket. An
+      additional bucket is created for values below the lowest item in [buckets]
+  *)
 
   val add_sample : t -> float -> unit
   (** Add a value in the histogram. *)
 end
 
 val add_on_refresh : (unit -> unit) -> unit
-(** Register a function to be called every time metrics
-    are about to be emitted *)
+(** Register a function to be called every time metrics are about to be emitted
+*)
 
 val add_gc_metrics : unit -> unit
 (** Register some standard metrics for the GC *)
@@ -63,8 +64,8 @@ val iter_all :
   hist:(histogram_data -> unit) ->
   unit ->
   unit
-(** Iterate on all metrics. This first calls every callback
-   registered to {!add_on_refresh}. *)
+(** Iterate on all metrics. This first calls every callback registered to
+    {!add_on_refresh}. *)
 
 val emit_trace : unit -> unit
 (** Emit into [trace] as int and float counters *)

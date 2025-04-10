@@ -1,9 +1,7 @@
 (** Extensible data for errors.
 
-    Errors can contain arbitrary metadata in each level of its
-    context, ie each message (as long as the metadata
-    is serializable and printable).
-*)
+    Errors can contain arbitrary metadata in each level of its context, ie each
+    message (as long as the metadata is serializable and printable). *)
 
 module Twine = Imandrakit_twine
 

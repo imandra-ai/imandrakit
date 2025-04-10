@@ -4,13 +4,11 @@
 
     {[
       let open Dot in
-      with_out "/tmp/truc.dot"
-        (fun out ->
-           pp ~attrs_v:(fun i -> [`Label (string_of_int i)]) ~graph:divisors_graph out 42
-        )
-    ]}
-
-*)
+      with_out "/tmp/truc.dot" (fun out ->
+          pp
+            ~attrs_v:(fun i -> [ `Label (string_of_int i) ])
+            ~graph:divisors_graph out 42)
+    ]} *)
 
 type ('v, 'e) graph = 'v -> ('e * 'v) Iter.t
 (** Directed graph with vertices of type ['v] and edges labeled with [e'] *)
@@ -33,9 +31,9 @@ val pp :
   graph:('v, 'e) graph ->
   'v Fmt.printer
 (** Print the graph, starting from given vertex, on the formatter.
-      @param attrs_v attributes for vertices.
-      @param attrs_e attributes for edges.
-      @param name name of the graph. *)
+    @param attrs_v attributes for vertices.
+    @param attrs_e attributes for edges.
+    @param name name of the graph. *)
 
 val pp_all :
   tbl:(module Hashtbl.S with type key = 'v) ->

@@ -6,16 +6,15 @@ module Log_event = Log_event
 
 (** Log output.
 
-    We can have multiple log outputs, they each get a {!Log_event.t}.
-    See {!Reporter.to_outputs} to see how to use these.
+    We can have multiple log outputs, they each get a {!Log_event.t}. See
+    {!Reporter.to_outputs} to see how to use these.
 
-    A log output must be thread-safe, as it will be called from
-    multiple threads.
-*)
+    A log output must be thread-safe, as it will be called from multiple
+    threads. *)
 module Output : sig
   type t
-  (** A log output. It receives {!Log_event.t}s and
-      writes/sends them somewhere. *)
+  (** A log output. It receives {!Log_event.t}s and writes/sends them somewhere.
+  *)
 
   val stdout : unit -> t
   val stderr : unit -> t
@@ -35,24 +34,23 @@ module Output : sig
       @param autoflush if true (default) channel is flushed after each event *)
 
   val buf_pool : Buffer.t Apool.t
-  (** Buffer pool for loggers. Please hold onto buffers for only
-      a short period of time. *)
+  (** Buffer pool for loggers. Please hold onto buffers for only a short period
+      of time. *)
 end
 
 type capture_meta_hook = unit -> (string * Log_meta.t) list
 (** A metadata capture hook, returning a list of metadata *)
 
 val add_capture_meta_hook : capture_meta_hook -> unit
-(** Add a global hook, called at logging point to capture
-  metadata from the ambient context. *)
+(** Add a global hook, called at logging point to capture metadata from the
+    ambient context. *)
 
 val add_rich_tag : 'a Logs.Tag.def -> ('a -> Log_meta.t) -> unit
-(** Special tag that we convert to a {!Log_meta.t} instead of just
-   a string *)
+(** Special tag that we convert to a {!Log_meta.t} instead of just a string *)
 
 type t
-(** Main logger. This obtains events from {!Logs} and
-    writes them to the current set of {!Output.t}. *)
+(** Main logger. This obtains events from {!Logs} and writes them to the current
+    set of {!Output.t}. *)
 
 val shutdown : t -> unit
 val as_reporter : t -> Logs.reporter
@@ -67,15 +65,16 @@ val emit_ev : t -> Log_event.t -> unit
 (** [emit_ev logger ev] emits the log event through all of [logger]'s outputs *)
 
 val with_no_logger : unit -> (unit -> 'a) -> 'a
-(** [with_no_logger () f] calls [f()] in a context where there
-  is no logger. Useful to avoid logging loops. *)
+(** [with_no_logger () f] calls [f()] in a context where there is no logger.
+    Useful to avoid logging loops. *)
 
 val setup_level :
   ?default_level:level -> ?debug:bool -> ?log_level:level -> unit -> unit
-(** Setup log level. It will use [Info]  by default, unless
-    the env var ["DEBUG"] is set or [~debug] or [~log_level] is passed.
+(** Setup log level. It will use [Info] by default, unless the env var ["DEBUG"]
+    is set or [~debug] or [~log_level] is passed.
 
-    [debug] takes precedence over [log_level] which takes precedence over the env.
+    [debug] takes precedence over [log_level] which takes precedence over the
+    env.
     @param default_level the level used if nothing is specified *)
 
 val setup_logger_to_stdout : unit -> unit
@@ -85,9 +84,9 @@ val setup_logger_to_stderr : unit -> unit
 (** Setup a logger that emits on stderr *)
 
 val setup_logger_to_LOG_FILE : ?filename:string -> unit -> (unit -> 'a) -> 'a
-(** Setup a logger that emits into the file specified in [filename]
-    or in ["LOG_FILE"] env, or no logger otherwise.
-    This will cleanup at the end when the function returns. *)
+(** Setup a logger that emits into the file specified in [filename] or in
+    ["LOG_FILE"] env, or no logger otherwise. This will cleanup at the end when
+    the function returns. *)
 
 module type LOG = sig
   include Logs.LOG
@@ -96,8 +95,8 @@ module type LOG = sig
 end
 
 val fence : unit -> unit
-(** [fence ()] waits for the logger to have written all already
-    queued messages. *)
+(** [fence ()] waits for the logger to have written all already queued messages.
+*)
 
 val mk_log_str : string -> (module LOG)
 (** Create a new logger with the given source. *)

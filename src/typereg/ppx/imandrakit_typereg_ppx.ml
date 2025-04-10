@@ -173,7 +173,7 @@ let tyreg_of_tydecl (d : type_declaration) : expression =
         |> List.map (fun (f : label_declaration) ->
                [%expr
                  [%e A.Exp.constant @@ A.Const.string f.pld_name.txt],
-                   [%e tyexpr_of_ty f.pld_type]])
+                 [%e tyexpr_of_ty f.pld_type]])
       in
       [%expr Record { fields = [%e mk_list ~loc fields] }]
   in

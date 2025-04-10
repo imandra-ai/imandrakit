@@ -10,9 +10,9 @@ let unwrap = function
   | Ok x -> x
   | Error msg -> raise (Error msg)
 
-(** Tag for pointers.
-    [6] is not used, and fits in a single byte:
-    See {{: https://www.iana.org/assignments/cbor-tags/cbor-tags.xhtml} the registry}. *)
+(** Tag for pointers. [6] is not used, and fits in a single byte: See
+    {{:https://www.iana.org/assignments/cbor-tags/cbor-tags.xhtml} the registry}.
+*)
 let tag_ptr = 6
 
 module V_tbl = Hashtbl.Make (V)

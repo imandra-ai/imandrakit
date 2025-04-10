@@ -31,8 +31,8 @@ module Buf_fmt = struct
     Buffer.reset self.buf;
     m
 
-  (** New formatter that emits into a buffer, along with a function
-      to get the content of the buffer. *)
+  (** New formatter that emits into a buffer, along with a function to get the
+      content of the buffer. *)
   let create () : t =
     let buf = Buffer.create 128 in
     let fmt = Fmt.formatter_of_buffer buf in
@@ -401,8 +401,8 @@ let setup_logger_to_stderr () =
   let logger = to_outputs outs in
   setup_ logger
 
-(** Setup a logger that emits into the file specified in ["LOG_FILE"] env,
-    or no logger otherwise. *)
+(** Setup a logger that emits into the file specified in ["LOG_FILE"] env, or no
+    logger otherwise. *)
 let setup_logger_to_LOG_FILE ?filename () k =
   match filename, Sys.getenv_opt "LOG_FILE" with
   | Some file, _ | None, Some file ->

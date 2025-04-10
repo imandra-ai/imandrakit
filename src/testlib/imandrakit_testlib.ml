@@ -260,8 +260,8 @@ end
 
 (** Build a test interface for a given module.
 
-    Don't forget to obtain the test interface via [get()] to pass it
-    to the test runner. *)
+    Don't forget to obtain the test interface via [get()] to pass it to the test
+    runner. *)
 let make ~__FILE__ () : (module S) =
   let module M = Make_test (struct
     let file = __FILE__

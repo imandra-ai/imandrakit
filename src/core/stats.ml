@@ -1,9 +1,8 @@
 (** Statistics output.
 
-   This provides a set of statistics that can be created after a solver
-   is done, to print them all. Solvers can keep internal counters and
-   add them to {!Stats.t} when asked to.
- *)
+    This provides a set of statistics that can be created after a solver is
+    done, to print them all. Solvers can keep internal counters and add them to
+    {!Stats.t} when asked to. *)
 
 open struct
   module Ser_pack = Imandrakit_ser_pack

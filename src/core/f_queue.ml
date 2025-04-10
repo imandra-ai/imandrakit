@@ -4,7 +4,7 @@ type 'a t = {
 }
 (** Queue containing elements of type 'a.
 
-      invariant: if hd=[], then tl=[] *)
+    invariant: if hd=[], then tl=[] *)
 
 let[@inline] list_is_empty_ = function
   | [] -> true

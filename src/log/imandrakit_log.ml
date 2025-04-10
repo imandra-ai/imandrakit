@@ -1,7 +1,7 @@
 (** Logging utils for ImandraX.
 
-    We rely on [Logs] as a foundation.
-    We have a custom logger able to handle multiple outputs. *)
+    We rely on [Logs] as a foundation. We have a custom logger able to handle
+    multiple outputs. *)
 
 module Log_ctx = Log_ctx
 module Log_event = Log_event

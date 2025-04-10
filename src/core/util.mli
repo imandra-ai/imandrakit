@@ -17,13 +17,12 @@ module Stopwatch : sig
   (** New stopwatch. *)
 
   val time : t -> float
-  (** Time elapsed since creation. If the stopwatch was stopped
-      using {!stop} then this returns the span of time
-      between creation and call to {!stop}. *)
+  (** Time elapsed since creation. If the stopwatch was stopped using {!stop}
+      then this returns the span of time between creation and call to {!stop}.
+  *)
 
   val stop : t -> unit
-  (** Stop the watch. It will always return the same time from
-      now on. *)
+  (** Stop the watch. It will always return the same time from now on. *)
 
   val timeit : (unit -> 'a) -> float * 'a
   (** [timeit f] returns how long [f()] took to run *)

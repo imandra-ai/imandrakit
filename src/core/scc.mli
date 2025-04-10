@@ -18,8 +18,8 @@ module type S = sig
     graph:A.t ->
     nodes:A.node list ->
     A.node list A.Node_tbl.t * A.node list list
-  (** Same as [sccs] but also returns cliques in topological order
-  (if A points to B then B comes before A) *)
+  (** Same as [sccs] but also returns cliques in topological order (if A points
+      to B then B comes before A) *)
 end
 
 module Make (A : ARG) : S with module A = A

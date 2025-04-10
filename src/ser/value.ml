@@ -4,8 +4,8 @@ open Common_
 
 (** The data model for serialization, very similar to CBOR.
 
-    In other words, close to JSON but with safe binary strings
-    and a tag type. *)
+    In other words, close to JSON but with safe binary strings and a tag type.
+*)
 type t =
   | Null
   | Bool of bool

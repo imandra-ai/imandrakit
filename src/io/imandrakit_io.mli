@@ -32,8 +32,7 @@ val find_file :
     - [in_dir] or current directory if not provided,
     - load_path (left to right).
 
-    Finally, we return a resolved_file.
-*)
+    Finally, we return a resolved_file. *)
 
 val with_signal : ?signal:int -> on_sig:(int -> unit) -> (unit -> 'a) -> 'a
 (** Protection against signals when calling the given function *)
@@ -58,11 +57,12 @@ val with_capture_stdio_file :
   unit ->
   (unit -> 'a) ->
   'a
-(** [with_capture_stdio_file ~file ~append f] runs [f()] in a context
-    where stdout/stderr are redirected to [file].
-    This captures a lock because stdout/stderr are global resources.
-    @param append specifies whether [file] is appended to, or truncated,
-    if it exists already. *)
+(** [with_capture_stdio_file ~file ~append f] runs [f()] in a context where
+    stdout/stderr are redirected to [file]. This captures a lock because
+    stdout/stderr are global resources.
+    @param append
+      specifies whether [file] is appended to, or truncated, if it exists
+      already. *)
 
 val with_capture_stdio_string :
   ?on_stdout:(bytes -> int -> int -> unit) ->
@@ -71,24 +71,26 @@ val with_capture_stdio_string :
   (unit -> 'a) ->
   ('a, exn) result * string * string
 (** [with_capture_stdio_string () f] computes [f()] but captures stdout/stderr
-    into strings.
-    This captures a lock because stdout/stderr are global resources.
-    @param on_stdout callback called when stdout is read. {b NOTE} this callback is called
-    from a different thread.
-    @param on_stderr same as [on_stdout] but for stderr.
-    *)
+    into strings. This captures a lock because stdout/stderr are global
+    resources.
+    @param on_stdout
+      callback called when stdout is read. {b NOTE} this callback is called from
+      a different thread.
+    @param on_stderr same as [on_stdout] but for stderr. *)
 
 val dup_stdin_stdout :
   ?on_stdin:(bytes -> int -> int -> int) ->
   ?on_stdout:(bytes -> int -> int -> unit) ->
   unit ->
   in_channel * out_channel
-(** [dup_stdin_stdout ()] returns [cin, cout] where [cout] is a copy of
-    the old stdout, and [cin] is a copy of the old [stdin],
-    and [stdin] and [stdout] are redirected into the void (unless callbacks are provided).
-    @param on_stdout a callback invoked every time something is printed on the new stdout
-    @param on_stdin a callback invoked every time something needs to be read from the new stdin
-*)
+(** [dup_stdin_stdout ()] returns [cin, cout] where [cout] is a copy of the old
+    stdout, and [cin] is a copy of the old [stdin], and [stdin] and [stdout] are
+    redirected into the void (unless callbacks are provided).
+    @param on_stdout
+      a callback invoked every time something is printed on the new stdout
+    @param on_stdin
+      a callback invoked every time something needs to be read from the new
+      stdin *)
 
 val mkdir_rec : string -> unit
 (** Ensure directory exists, recursively *)

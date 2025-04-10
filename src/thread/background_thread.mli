@@ -1,7 +1,6 @@
 (** Background thread, for running tasks asynchronously in a sequential fashion.
 
-    This is a layer on top of {!Task_runner1} that adds futures.
-*)
+    This is a layer on top of {!Task_runner1} that adds futures. *)
 
 type t = Executor.t
 

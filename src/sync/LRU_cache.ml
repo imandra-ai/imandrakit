@@ -1,8 +1,7 @@
 (** LRU cache.
 
-    Fixed size cache that evicts the least-recently-used entry
-    when it's full. This structure is thread-safe.
-*)
+    Fixed size cache that evicts the least-recently-used entry when it's full.
+    This structure is thread-safe. *)
 
 module type S = sig
   type key
@@ -24,10 +23,9 @@ module Make (K : Hashtbl.HashedType) : S with type key = K.t = struct
     k: key;
     mutable v: 'v;
     mutable next: 'v node;
-        (**  Double linked list of nodes.
-         Invariant: the list formed of [.next] pointers is sorted so that
-         the earliest elements in the list are the ones that have been accessed
-         most recently. *)
+        (** Double linked list of nodes. Invariant: the list formed of [.next]
+            pointers is sorted so that the earliest elements in the list are the
+            ones that have been accessed most recently. *)
     mutable prev: 'v node;
   }
 
@@ -88,7 +86,7 @@ module Make (K : Hashtbl.HashedType) : S with type key = K.t = struct
     | exception Not_found ->
       if Tbl.length self.tbl = self.max_size then (
         (* full, need to evict a node *)
-        match self.first with
+          match self.first with
         | None -> assert false
         | Some n ->
           (* drop n.prev, hasn't been used for the longest time *)
