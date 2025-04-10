@@ -1,7 +1,6 @@
 (** Core utils for Imandra.
 
-    This provides common functionalities and foundations for
-    our projects. *)
+    This provides common functionalities and foundations for our projects. *)
 
 include Imandrakit_common
 include Imandrakit_bytes

@@ -8,8 +8,8 @@ type message = {
 [@@deriving twine]
 (** A message.
 
-    An error message is emitted at a particular place in the code.
-    An error can contain several error messages. *)
+    An error message is emitted at a particular place in the code. An error can
+    contain several error messages. *)
 
 type stack = message list
 
@@ -41,11 +41,10 @@ val add_ctx : message -> t -> t
 val add_data : 'a Data.key -> 'a -> t -> t
 
 val guard : ?let_pass:(exn -> bool) -> (unit -> message) -> (unit -> 'a) -> 'a
-(** [guard g f] behaves like [f()], excepts that if [f()]
-    raises [Error e], [guard g f] raises [Error e']
-    where [e'] wraps [e] with context error [g()].
-    @param let_pass if it returns [true] for an exception, the exception is
-      re-raised. *)
+(** [guard g f] behaves like [f()], excepts that if [f()] raises [Error e],
+    [guard g f] raises [Error e'] where [e'] wraps [e] with context error [g()].
+    @param let_pass
+      if it returns [true] for an exception, the exception is re-raised. *)
 
 type !'a result = ('a, t) Stdlib.result [@@deriving show, map, iter, twine]
 

@@ -15,9 +15,8 @@ val start :
 (** Start a new pool with [j] job runners.
     @param on_exn called when a task fails.
     @param j number of thread workers. Must be positive.
-    @param kind the underlying pool implementation. See Moonpool
-    for more details.
-*)
+    @param kind
+      the underlying pool implementation. See Moonpool for more details. *)
 
 val with_ :
   ?active:Switch.t ->

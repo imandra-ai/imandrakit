@@ -164,8 +164,8 @@ let with_capture_stdio_file ~file ?(redirect_stdout = true)
 
 let delay_poll_ = 0.005
 
-(** Read from the FD (a pipe's read end) and call [cb] on each chunk.
-      Stops when [stop] is true. *)
+(** Read from the FD (a pipe's read end) and call [cb] on each chunk. Stops when
+    [stop] is true. *)
 let read_fd_ ~cb (stop : bool Atomic.t) (fd : Unix.file_descr) : unit =
   block_sigpipe_sigint ();
   let buf = Bytes.create 1024 in

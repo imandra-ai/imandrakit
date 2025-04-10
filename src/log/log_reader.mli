@@ -1,8 +1,7 @@
 (** Log reader.
 
-    This abstraction allows one to read events back from
-    some storage (typically, to display them in the web UI).
-*)
+    This abstraction allows one to read events back from some storage
+    (typically, to display them in the web UI). *)
 
 class type t = object
   inherit Core_classes.named
@@ -13,9 +12,10 @@ class type t = object
     unit ->
     Logger.Log_event.t Iter.t
   (** Read events, in order, from the underlying log source.
-          @param only_above_level if [Some lvl], only events more important
-          than this level (inclusive) are returned
-          @param filter_meta a list of key/value pairs that must match *)
+      @param only_above_level
+        if [Some lvl], only events more important than this level (inclusive)
+        are returned
+      @param filter_meta a list of key/value pairs that must match *)
 end
 
 val pp : t Fmt.printer

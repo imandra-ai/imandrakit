@@ -11,8 +11,8 @@ module type ARG = sig
   (** Structural hash *)
 
   val set_id : t -> int -> unit
-  (** Change the ID of this hashconsed object. The ID must be
-      uninitialized; this will only be called on uninitialized (new) objects. *)
+  (** Change the ID of this hashconsed object. The ID must be uninitialized;
+      this will only be called on uninitialized (new) objects. *)
 end
 
 (** Create a new hashconsed type. *)

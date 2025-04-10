@@ -17,6 +17,7 @@ val push_level : _ t -> unit
 (** Push a backtracking point *)
 
 val pop_levels : 'a t -> int -> f:('a -> unit) -> unit
-(** [pop_levels st n ~f] removes [n] levels, calling [f] on every removed item *)
+(** [pop_levels st n ~f] removes [n] levels, calling [f] on every removed item
+*)
 
 val iter : f:('a -> unit) -> 'a t -> unit

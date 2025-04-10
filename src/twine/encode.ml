@@ -80,9 +80,9 @@ end = struct
 
   let[@inline] to_offset (self : t) o : offset = self.global_offset + o
 
-  (** [reserve_space_ self n] reserves [n] bytes at the end of the
-    buffer, bumps the buffer by [n] bytes, and returns the offset
-    to the beginning of the newly reserved area. *)
+  (** [reserve_space_ self n] reserves [n] bytes at the end of the buffer, bumps
+      the buffer by [n] bytes, and returns the offset to the beginning of the
+      newly reserved area. *)
   let[@inline] reserve_space_ (self : t) (n : int) =
     let off = self.buf.len in
     Buf.ensure_free self.buf n;
@@ -105,7 +105,8 @@ end = struct
       off
     )
 
-  (** Write the first byte, followed by an integer (possibly fitting in [low]) *)
+  (** Write the first byte, followed by an integer (possibly fitting in [low])
+  *)
   let write_first_byte_and_int64 (self : t) ~high ~(n : int64) : offset =
     if Int64.(equal (of_int (to_int n)) n) then
       write_first_byte_and_int self ~high ~n:(Int64.to_int n)

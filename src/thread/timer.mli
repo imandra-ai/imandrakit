@@ -1,9 +1,7 @@
 (** Timer.
 
-    Keep track of multiple timers, using a background thread.
-    The timer is thread-safe. It runs callbacks from within
-    its own background thread.
-*)
+    Keep track of multiple timers, using a background thread. The timer is
+    thread-safe. It runs callbacks from within its own background thread. *)
 
 module Handle : sig
   type t
@@ -30,9 +28,8 @@ val after_s : t -> float -> unit Fut.t
 (** [after_s timer t] returns a future that resolves in [t] seconds. *)
 
 val run_every_s : t -> ?initial:float -> float -> (unit -> unit) -> unit
-(** [run_every ~initial t f] waits [initial] seconds and
-    then runs [f()] every [t] seconds.
-    [f ()] can raise [Stop_timer] to stop the loop. *)
+(** [run_every ~initial t f] waits [initial] seconds and then runs [f()] every
+    [t] seconds. [f ()] can raise [Stop_timer] to stop the loop. *)
 
 val run_every_s' : t -> ?initial:float -> float -> (unit -> unit) -> Handle.t
 

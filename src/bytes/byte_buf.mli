@@ -20,9 +20,8 @@ val clear : t -> unit
 (** Clear the buffer, setting length to 0 *)
 
 val reset : t -> unit
-(** Clear buffer and reset it to its initial size.
-    This ensures the buffer doesn't monotonically grow to
-    its biggest size so far. *)
+(** Clear buffer and reset it to its initial size. This ensures the buffer
+    doesn't monotonically grow to its biggest size so far. *)
 
 val ensure_cap : t -> int -> unit
 (** [ensure_cap buf n] ensures that [capacity buf >= n]. *)
@@ -31,8 +30,8 @@ val ensure_free : t -> int -> unit
 (** [ensure_free buf n] ensures that at least [n] bytes are free at the end *)
 
 val shrink_to : t -> int -> unit
-(** [shrink_to buf n] reduces [length buf] to at most [n].
-    Does nothing if the length is already <= n. *)
+(** [shrink_to buf n] reduces [length buf] to at most [n]. Does nothing if the
+    length is already <= n. *)
 
 val add_char : t -> char -> unit
 (** Push a character at the end. *)

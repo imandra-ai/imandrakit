@@ -1,7 +1,7 @@
 (** Events.
 
-    The log reporter emits events, which can then be written to
-    various outputs. *)
+    The log reporter emits events, which can then be written to various outputs.
+*)
 
 module Err = Imandrakit_error.Error
 

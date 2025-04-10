@@ -1,7 +1,7 @@
 (** Threading and concurrency library.
 
-    This builds on top of {{: https://github.com/c-cube/moonpool/} Moonpool}
-    but adds helpers. *)
+    This builds on top of {{:https://github.com/c-cube/moonpool/} Moonpool} but
+    adds helpers. *)
 
 (** {2 Re-exports} *)
 

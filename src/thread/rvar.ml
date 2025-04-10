@@ -9,7 +9,8 @@ type 'a on_change =
 type 'a st = {
   v: 'a;
   on_change: 'a on_change;
-      (** [on_change] is either [None] (no more changes) or [Some fs] (subscribers) *)
+      (** [on_change] is either [None] (no more changes) or [Some fs]
+          (subscribers) *)
   _keepalive: Obj.t list;  (** Objects to prevent from being collected. *)
 }
 

@@ -19,7 +19,6 @@ jobs:
               #- windows-latest
         ocaml-compiler:
             - '4.14'
-            - '5.2'
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -31,6 +30,7 @@ jobs:
           dune-cache: true
           allow-prerelease-opam: true
 
+      - run: opam pin trace --dev -y -n; opam pin trace-tef --dev -y -n
       - run: opam install -t imandrakit imandrakit-log imandrakit-io --deps-only
       - run: opam exec -- dune build @install -p imandrakit,imandrakit-log,imandrakit-io
       - run: opam exec -- dune build @runtest -p imandrakit,imandrakit-log,imandrakit-io
@@ -63,6 +63,7 @@ jobs:
           dune-cache: true
           allow-prerelease-opam: true
 
+      - run: opam pin trace --dev -y -n; opam pin trace-tef --dev -y -n
       - run: opam install -t imandrakit imandrakit-log imandrakit-io imandrakit-thread --deps-only
       - run: opam exec -- dune build @install -p imandrakit,imandrakit-io,imandrakit-log,imandrakit-thread
       - run: opam exec -- dune build @runtest -p imandrakit,imandrakit-io,imandrakit-log,imandrakit-thread
@@ -83,7 +84,7 @@ jobs:
           dune-cache: true
           allow-prerelease-opam: true
 
-      - run: opam install ocamlformat.0.26.2
+      - run: opam install ocamlformat.0.27.0
       - run: opam exec -- make format-check
 
 # vim:foldmethod=indent

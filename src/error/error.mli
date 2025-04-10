@@ -12,8 +12,7 @@ val fail :
   kind:Kind.t ->
   string ->
   'a
-(** [fail "some error message"]
-    raises an error with the given message *)
+(** [fail "some error message"] raises an error with the given message *)
 
 val failf :
   ?stack:message list ->
@@ -22,8 +21,8 @@ val failf :
   kind:Kind.t ->
   ('a, Format.formatter, unit, 'b) format4 ->
   'a
-(** [errorf "some error message %s (number %d)" "with formatting" 42]
-    raises an error with the given formatted message *)
+(** [errorf "some error message %s (number %d)" "with formatting" 42] raises an
+    error with the given formatted message *)
 
 val mk_error :
   ?stack:message list ->

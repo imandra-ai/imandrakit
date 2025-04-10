@@ -5,11 +5,13 @@ type resource =
   | RLIMIT_FSIZE
       (** maximum size of a file, in bytes, that may be created by a process *)
   | RLIMIT_NOFILE
-      (** a number one greater than the maximum value that the system may assign to a newly-created descriptor *)
+      (** a number one greater than the maximum value that the system may assign
+          to a newly-created descriptor *)
   | RLIMIT_STACK
-      (** maximum  size of the initial thread's stack, in bytes. This might clash with OCaml's stack management. *)
+      (** maximum size of the initial thread's stack, in bytes. This might clash
+          with OCaml's stack management. *)
   | RLIMIT_AS
-      (**  maximum size of total available memory of the process, in bytes *)
+      (** maximum size of total available memory of the process, in bytes *)
 
 module Raw = struct
   let resource_to_int = function
@@ -29,5 +31,5 @@ let[@inline] set (r : resource) (v : int) : bool =
   Raw.set (Raw.resource_to_int r) v
 
 (** Like {!set}, but propagates failures
-  @raise Failure if it fails *)
+    @raise Failure if it fails *)
 let set_exn r v : unit = if not (set r v) then failwith "setrlimit failed"

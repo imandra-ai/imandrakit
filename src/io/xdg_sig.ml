@@ -7,7 +7,8 @@ module type S = sig
   (** Default storage dir for the given project *)
 
   val default_runtime_dir : unit -> string
-  (** Default (runtime) storage for the given project. State might not survive reboot. *)
+  (** Default (runtime) storage for the given project. State might not survive
+      reboot. *)
 
   val default_config_dir : unit -> string
 end

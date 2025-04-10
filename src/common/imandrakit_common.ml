@@ -1,4 +1,4 @@
-(** Common aliases and  basic functions *)
+(** Common aliases and basic functions *)
 
 module Fmt = CCFormat
 module Atomic = Atomic

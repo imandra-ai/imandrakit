@@ -1,6 +1,6 @@
 (** Emit structured logs in the google format
 
-  https://cloud.google.com/logging/docs/structured-logging *)
+    https://cloud.google.com/logging/docs/structured-logging *)
 
 type json = Yojson.Safe.t
 

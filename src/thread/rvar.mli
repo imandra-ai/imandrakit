@@ -1,7 +1,7 @@
 (** Reactive variable.
 
-    A reactive variable holds state, and can change state over time.
-    One can subscribe to changes or just get the current value. *)
+    A reactive variable holds state, and can change state over time. One can
+    subscribe to changes or just get the current value. *)
 
 type 'a t
 
@@ -19,7 +19,8 @@ val mk_var : 'a -> 'a t
 (** Make a new variable with the given initial value *)
 
 val set : 'a t -> 'a -> unit
-(** Set the value. This will trigger all the callbacks registered via {!on_change}.
+(** Set the value. This will trigger all the callbacks registered via
+    {!on_change}.
     @raise Frozen if the variable is frozen. *)
 
 val update : 'a t -> f:('a -> 'a * 'b) -> 'b
@@ -34,13 +35,11 @@ val freeze : _ t -> unit
 type 'a cb = 'a option -> unit
 
 val on_change : 'a t -> 'a cb -> unit
-(** [on_change rv f] subscribes [f] to be called whenever [rv] changes.
-    When [rv] is set to a new value [x], [f (Some x)] is called.
-    When [rv] is frozen, [f None] is called (and then [f] will never
-    be called again).
+(** [on_change rv f] subscribes [f] to be called whenever [rv] changes. When
+    [rv] is set to a new value [x], [f (Some x)] is called. When [rv] is frozen,
+    [f None] is called (and then [f] will never be called again).
 
-    If [rv] is already frozen then [f None] will be called immediately.
-*)
+    If [rv] is already frozen then [f None] will be called immediately. *)
 
 (** {2 Combinators} *)
 
@@ -52,14 +51,14 @@ val of_fut : 'a Fut.t -> 'a option t
 val of_fut_or_error : 'a Fut.t -> 'a Fut.or_error option t
 
 val pick : 'a t list -> 'a t
-(** Pick a value from a list of variables. The result is a variable that is always as
-    up-to-date as any of the inputs.
+(** Pick a value from a list of variables. The result is a variable that is
+    always as up-to-date as any of the inputs.
     @raise Invalid_argument if the list is empty. *)
 
 val cutoff : ?eq:('a -> 'a -> bool) -> 'a t -> 'a t
-(** [cutoff v] produces a new variable that always has the same
-    value as [v], but only emits "on change" events when the new
-    value differs from the old one.
+(** [cutoff v] produces a new variable that always has the same value as [v],
+    but only emits "on change" events when the new value differs from the old
+    one.
     @param eq equality function (default is polymorphic equality) *)
 
 module Monoid : sig
@@ -70,12 +69,12 @@ module Monoid : sig
 end
 
 val monoid_merge : 'm Monoid.t -> f:('a -> 'm) -> 'a t -> 'a t -> 'm t
-(** [monoid_merge m ~f v1 v2] maps each variable using [f]
-    and then merges the results using the given monoid. *)
+(** [monoid_merge m ~f v1 v2] maps each variable using [f] and then merges the
+    results using the given monoid. *)
 
 val monoid_merge_l : 'm Monoid.t -> f:('a -> 'm) -> 'a t list -> 'm t
-(** [monoid_merge m ~f rvs ] maps each variable using [f]
-    and then merges the results using the given monoid. *)
+(** [monoid_merge m ~f rvs ] maps each variable using [f] and then merges the
+    results using the given monoid. *)
 
 module Infix : sig
   val ( let+ ) : 'a t -> ('a -> 'b) -> 'b t

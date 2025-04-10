@@ -1,8 +1,7 @@
 (** Logging context.
 
-    This module provides ambient-context tags that will be
-    automatically accounted for in {!Logger}.
-*)
+    This module provides ambient-context tags that will be automatically
+    accounted for in {!Logger}. *)
 
 type 'a tag = 'a Logs.Tag.def
 
