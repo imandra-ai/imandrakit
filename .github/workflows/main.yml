@@ -63,6 +63,7 @@ jobs:
           dune-cache: true
           allow-prerelease-opam: true
 
+      - run: opam pin trace --dev -y -n
       - run: opam install -t imandrakit imandrakit-log imandrakit-io imandrakit-thread --deps-only
       - run: opam exec -- dune build @install -p imandrakit,imandrakit-io,imandrakit-log,imandrakit-thread
       - run: opam exec -- dune build @runtest -p imandrakit,imandrakit-io,imandrakit-log,imandrakit-thread
