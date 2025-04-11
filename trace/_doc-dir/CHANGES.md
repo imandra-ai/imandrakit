@@ -1,3 +1,17 @@
+# 0.10 (wip)
+
+- breaking: manual spans now take a `explicit_span_ctx` as parent, that
+    can potentially be transmitted across processes/machines. It also
+    is intended to be more compatible with OTEL.
+- depopt on unix for TEF timestamps
+
+# 0.9.1
+
+
+- fix: upper bound on ppxlib
+- feat trace-tef: print names of non-closed spans upon exit
+- fix: block signals in background threads
+
 # 0.9
 
 - add an extensible sum type, so users can implement custom events. For example
