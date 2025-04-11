@@ -19,6 +19,7 @@ jobs:
           dune-cache: true
           allow-prerelease-opam: true
 
+      - run: opam pin trace --dev -y -n; opam pin trace-tef --dev -y -n
       - run: opam pin . -y -n
       - run: opam install odig imandrakit imandrakit-thread imandrakit-io imandrakit-log
       - run: opam exec -- odig odoc --cache-dir=_doc/ imandrakit imandrakit-thread imandrakit-io imandrakit-log
