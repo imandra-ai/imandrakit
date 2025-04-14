@@ -20,6 +20,11 @@ format:
 format-check:
 	@dune build $(DUNE_OPTS) @fmt --display=quiet
 
+opam-install-deps:
+	# Until there's a new release of `trace`, we need to pin it.
+	opam pin https://github.com/c-cube/ocaml-trace.git -y -n
+	opam install . --deps-only
+
 WATCH?= @check @runtest
 watch:
 	dune build $(DUNE_OPTS) -w $(WATCH)
