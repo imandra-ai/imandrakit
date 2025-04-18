@@ -114,26 +114,26 @@ let wait_ (self : state) delay =
   with _ -> ()
 
 let run_task_ (self : state) (task : task) : unit =
-  let run () =
-    try task.run ()
-    with e ->
+  let run () : bool =
+    try
+      task.run ();
+      true
+    with
+    | Stop_timer -> false
+    | e ->
       let bt = Printexc.get_raw_backtrace () in
       if not (Atomic.get self.closed) then (
         let err = Error.of_exn ~bt ~kind:timer_error e in
         Log.err (fun k -> k "Error in timer task:@ %a" Error.pp err)
-      )
+      );
+      false
   in
 
   match Atomic.get task.state with
   | St_cancelled -> ()
-  | St_once -> run ()
+  | St_once -> ignore (run () : bool)
   | St_repeat { period } ->
-    let continue =
-      try
-        run ();
-        true
-      with Stop_timer -> false
-    in
+    let continue = run () in
 
     if continue then (
       task.deadline <- now_ () +. period;
@@ -174,7 +174,7 @@ let run_after_s' (self : state) t f : Handle.t =
     add_task_ self task;
     task
   ) else (
-    f ();
+    (try f () with Stop_timer -> ());
     Handle.dummy
   )
 
@@ -193,12 +193,18 @@ let run_every_s' (self : state) ?initial period f : Handle.t =
     { run = f; state = Atomic.make (St_repeat { period }); deadline }
   in
 
-  if initial = 0. then (
-    f ();
-    task.deadline <- now_ () +. period
-  );
+  let do_schedule =
+    if initial = 0. then (
+      match f () with
+      | () ->
+        task.deadline <- now_ () +. period;
+        true
+      | exception Stop_timer -> false
+    ) else
+      true
+  in
 
-  add_task_ self task;
+  if do_schedule then add_task_ self task;
   task
 
 let create () : t =

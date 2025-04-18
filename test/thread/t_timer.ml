@@ -1,4 +1,5 @@
 include (val Imandrakit_testlib.make ~__FILE__ ())
+module Fut = Imandrakit_thread.Fut
 module T = Imandrakit_thread.Timer
 
 let ( ! ) = Atomic.get
@@ -48,4 +49,25 @@ let () =
     assert (!i = 3)
   done;
 
+  true
+
+let () =
+  t @@ fun () ->
+  let r = Atomic.make 0 in
+  let sum = Atomic.make 0 in
+  let timer = T.create () in
+  let fut, prom = Fut.make () in
+
+  T.run_every_s timer 0.0001 (fun () ->
+      if !r = 10 then (
+        Fut.fulfill prom @@ Ok ();
+        raise T.Stop_timer
+      );
+
+      Atomic.incr r;
+      ignore (Atomic.fetch_and_add sum !r : int));
+
+  Fut.wait_block_exn fut;
+  Thread.yield ();
+  assert (!sum = 55);
   true
