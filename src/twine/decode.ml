@@ -32,7 +32,7 @@ let st_len t =
   let (Decode { st; ops; _ }) = t in
   ops.length st
 
-let read_char t offset =
+let[@inline] read_char t offset =
   let (Decode { st; ops; _ }) = t in
   ops.read_char st offset
 
@@ -142,6 +142,24 @@ let hmap_transfer d1 ~into:d2 : unit =
 type 'a decoder = t -> offset -> 'a
 type num_bytes_consumed = int
 
+module Value_kind = struct
+  type t =
+    | Special
+    | Int
+    | Float
+    | String
+    | Blob
+    | Ref
+    | Pointer
+    | Array
+    | Dict
+    | Tag
+    | Cstor0
+    | Cstor
+    | Invalid
+  [@@deriving eq, show { with_path = false }]
+end
+
 module Value = struct
   type array_cursor = cursor
   type dict_cursor = cursor
@@ -242,6 +260,32 @@ let[@inline] deref_rec self off : offset =
     deref_rec_ self off
   else
     off
+
+let get_value_kind ?(auto_deref = true) (self : t) (offset : offset) :
+    Value_kind.t =
+  let offset =
+    if auto_deref then
+      deref_rec self offset
+    else
+      offset
+  in
+  let c = get_char_ self offset in
+  let high = get_high c in
+  match high with
+  | 0 -> Special
+  | 1 | 2 -> Int
+  | 3 -> Float
+  | 4 -> String
+  | 5 -> Blob
+  | 6 -> Array
+  | 7 -> Dict
+  | 8 -> Tag
+  | 10 -> Cstor0
+  | 11 | 12 -> Cstor
+  | 9 | 13 -> Invalid
+  | 14 -> Ref
+  | 15 -> Pointer
+  | _ -> assert false
 
 let read ?(auto_deref = true) (self : t) (offset : offset) : Value.t =
   let offset =

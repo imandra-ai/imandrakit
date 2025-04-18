@@ -17,6 +17,24 @@ type cstor_index = int
 val fail : string -> 'a
 val failf : ('a, unit, string, 'b) format4 -> 'a
 
+module Value_kind : sig
+  type t =
+    | Special
+    | Int
+    | Float
+    | String
+    | Blob
+    | Ref
+    | Pointer
+    | Array
+    | Dict
+    | Tag
+    | Cstor0
+    | Cstor
+    | Invalid
+  [@@deriving eq, show { with_path = false }]
+end
+
 module Value : sig
   type array_cursor
   type dict_cursor
@@ -81,6 +99,9 @@ val deref_rec : offset decoder
 val read : ?auto_deref:bool -> Value.t decoder
 (** Read a value of any kind.
     @param auto_deref if true (default), follow pointers implicitly *)
+
+val get_value_kind : ?auto_deref:bool -> Value_kind.t decoder
+(** Read the kind of the value at given offset *)
 
 val null : unit decoder
 val bool : bool decoder
