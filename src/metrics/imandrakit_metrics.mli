@@ -20,6 +20,7 @@ module Counter : sig
 
   val create_int : string -> int t
   val create_float : string -> float t
+  val get : 'a t -> 'a
   val set : 'a t -> 'a -> unit
   val incr : int t -> unit
 
@@ -35,6 +36,7 @@ module Gauge : sig
   val create_int : string -> int t
   val create_float : string -> float t
   val set : 'a t -> 'a -> unit
+  val get : 'a t -> 'a
 end
 
 module Histogram : sig

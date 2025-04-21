@@ -60,6 +60,7 @@ module M_ = struct
     c
 
   let[@inline] set self v = A.set self.v v
+  let[@inline] get self = A.get self.v
 end
 
 module Counter = struct
