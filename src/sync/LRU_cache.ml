@@ -10,6 +10,7 @@ module type S = sig
   val create : max_size:int -> unit -> _ t
   val size : _ t -> int
   val clear : _ t -> unit
+  val mem : _ t -> key -> bool
   val get : 'v t -> key -> 'v option
   val set : 'v t -> key -> 'v -> unit
 end
@@ -75,6 +76,14 @@ module Make (K : Hashtbl.HashedType) : S with type key = K.t = struct
       move_first_ self n;
       Some n.v
     | exception Not_found -> None
+
+  let mem self k =
+    let@ self = Lock.with_lock self.st in
+    match Tbl.find self.tbl k with
+    | n ->
+      move_first_ self n;
+      true
+    | exception Not_found -> false
 
   let set (self : _ t) k v : unit =
     let@ self = Lock.with_lock self.st in
