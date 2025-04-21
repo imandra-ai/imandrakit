@@ -9,6 +9,7 @@ module type S = sig
 
   val create : max_size:int -> unit -> _ t
   val size : _ t -> int
+  val max_size : _ t -> int
   val clear : _ t -> unit
   val mem : _ t -> key -> bool
   val get : 'v t -> key -> 'v option
@@ -42,6 +43,7 @@ module Make (K : Hashtbl.HashedType) : S with type key = K.t = struct
     assert (max_size > 0);
     { st = Lock.create { max_size; tbl = Tbl.create 32; first = None } }
 
+  let[@inline] max_size self = (Lock.get self.st).max_size
   let[@inline] size (self : _ t) = Tbl.length (Lock.get self.st).tbl
 
   let clear self =
