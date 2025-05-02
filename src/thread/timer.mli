@@ -7,11 +7,20 @@ module Handle : sig
   type t
 
   val dummy : t
+
+  module For_implementors : sig
+    val cancel : t -> unit
+    val cancelled : t -> bool
+
+    val make :
+      repeat:float option -> deadline:float -> task:(unit -> unit) -> unit -> t
+  end
 end
 
 type t = {
   run_after_s: float -> (unit -> unit) -> Handle.t;
   run_every_s: ?initial:float -> float -> (unit -> unit) -> Handle.t;
+  cancel: Handle.t -> unit;
   terminate: unit -> unit;
 }
 
@@ -37,7 +46,7 @@ val cancel : t -> Handle.t -> unit
 (** Cancel timer *)
 
 val create : unit -> t
-(** New timer *)
+(** New timer that uses a background thread *)
 
 val terminate : t -> unit
 (** Stop the timer *)

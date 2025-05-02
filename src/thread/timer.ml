@@ -22,11 +22,39 @@ module Handle = struct
 
   let dummy : t =
     { deadline = 0.; state = Atomic.make St_cancelled; run = ignore }
+
+  module For_implementors = struct
+    type state = task_state =
+      | St_once
+      | St_repeat of { period: float }
+      | St_cancelled
+
+    let cancelled self = Atomic.get self.state == St_cancelled
+
+    let cancel (self : t) : unit =
+      match Atomic.exchange self.state St_cancelled with
+      | St_cancelled -> ()
+      | St_once | St_repeat _ ->
+        (* release memory *)
+        self.run <- ignore
+
+    let make ~repeat ~deadline ~task () : t =
+      {
+        deadline;
+        run = task;
+        state =
+          Atomic.make
+            (match repeat with
+            | None -> St_once
+            | Some period -> St_repeat { period });
+      }
+  end
 end
 
 type t = {
   run_after_s: float -> (unit -> unit) -> Handle.t;
   run_every_s: ?initial:float -> float -> (unit -> unit) -> Handle.t;
+  cancel: Handle.t -> unit;
   terminate: unit -> unit;
 }
 
@@ -216,6 +244,7 @@ let create () : t =
   {
     run_after_s = run_after_s' st;
     run_every_s = run_every_s' st;
+    cancel = Handle.For_implementors.cancel;
     terminate = (fun () -> terminate_ st);
   }
 
