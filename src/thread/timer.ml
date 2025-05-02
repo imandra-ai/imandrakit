@@ -7,47 +7,29 @@ exception Stop_timer
 let now_ = Util.mtime_now_s
 
 type task_state =
-  | St_once
-  | St_repeat of { period: float }
+  | St_once of { run: unit -> unit }
+  | St_repeat of {
+      period: float;
+      run: unit -> unit;
+    }
   | St_cancelled
 
 type task = {
   mutable deadline: float;
   state: task_state Atomic.t;
-  mutable run: unit -> unit;
 }
 
 module Handle = struct
-  type t = task
+  type t = { st: task_state Atomic.t } [@@unboxed]
 
-  let dummy : t =
-    { deadline = 0.; state = Atomic.make St_cancelled; run = ignore }
+  let dummy : t = { st = Atomic.make St_cancelled }
+  let[@inline] of_task_ (t : task) : t = { st = t.state }
 
   module For_implementors = struct
-    type state = task_state =
-      | St_once
-      | St_repeat of { period: float }
-      | St_cancelled
-
-    let cancelled self = Atomic.get self.state == St_cancelled
-
-    let cancel (self : t) : unit =
-      match Atomic.exchange self.state St_cancelled with
-      | St_cancelled -> ()
-      | St_once | St_repeat _ ->
-        (* release memory *)
-        self.run <- ignore
-
-    let make ~repeat ~deadline ~task () : t =
-      {
-        deadline;
-        run = task;
-        state =
-          Atomic.make
-            (match repeat with
-            | None -> St_once
-            | Some period -> St_repeat { period });
-      }
+    let cancelled self = Atomic.get self.st == St_cancelled
+    let cancel (self : t) : unit = Atomic.set self.st St_cancelled
+    let st_once = St_once { run = ignore }
+    let create () : t = { st = Atomic.make st_once }
   end
 end
 
@@ -142,9 +124,9 @@ let wait_ (self : state) delay =
   with _ -> ()
 
 let run_task_ (self : state) (task : task) : unit =
-  let run () : bool =
+  let run_once ~run () : bool =
     try
-      task.run ();
+      run ();
       true
     with
     | Stop_timer -> false
@@ -159,9 +141,9 @@ let run_task_ (self : state) (task : task) : unit =
 
   match Atomic.get task.state with
   | St_cancelled -> ()
-  | St_once -> ignore (run () : bool)
-  | St_repeat { period } ->
-    let continue = run () in
+  | St_once { run } -> ignore (run_once ~run () : bool)
+  | St_repeat { period; run } ->
+    let continue = run_once ~run () in
 
     if continue then (
       task.deadline <- now_ () +. period;
@@ -188,19 +170,12 @@ let background_thread_loop_ (self : state) : unit =
     | Run t -> run_task_ self t
   done
 
-let cancel (_self : t) (h : Handle.t) : unit =
-  match Atomic.exchange h.state St_cancelled with
-  | St_cancelled -> ()
-  | St_once | St_repeat _ ->
-    (* release memory *)
-    h.run <- ignore
-
-let run_after_s' (self : state) t f : Handle.t =
+let run_after_s'_impl (self : state) t f : Handle.t =
   if t > 0. then (
     let deadline = now_ () +. t in
-    let task = { deadline; state = Atomic.make St_once; run = f } in
+    let task = { deadline; state = Atomic.make @@ St_once { run = f } } in
     add_task_ self task;
-    task
+    Handle.of_task_ task
   ) else (
     (try f () with Stop_timer -> ());
     Handle.dummy
@@ -213,12 +188,12 @@ let terminate_ (self : state) : unit =
     Option.iter Thread.join self.t_loop
   )
 
-let run_every_s' (self : state) ?initial period f : Handle.t =
+let run_every_s'_impl (self : state) ?initial period f : Handle.t =
   if period <= 0. then invalid_arg "Timer.run_every_s: delay must be > 0.";
   let initial = Option.value ~default:period initial in
   let deadline = now_ () +. initial in
   let task =
-    { run = f; state = Atomic.make (St_repeat { period }); deadline }
+    { state = Atomic.make (St_repeat { period; run = f }); deadline }
   in
 
   let do_schedule =
@@ -233,7 +208,7 @@ let run_every_s' (self : state) ?initial period f : Handle.t =
   in
 
   if do_schedule then add_task_ self task;
-  task
+  Handle.of_task_ task
 
 let create () : t =
   let st = create_state () in
@@ -242,8 +217,8 @@ let create () : t =
   in
   st.t_loop <- Some t_loop;
   {
-    run_after_s = run_after_s' st;
-    run_every_s = run_every_s' st;
+    run_after_s = run_after_s'_impl st;
+    run_every_s = run_every_s'_impl st;
     cancel = Handle.For_implementors.cancel;
     terminate = (fun () -> terminate_ st);
   }
@@ -259,6 +234,7 @@ let[@inline] run_every_s' (self : t) ?initial s f =
 let[@inline] run_every_s self ?initial t f : unit =
   ignore (run_every_s' self ?initial t f : Handle.t)
 
+let[@inline] cancel self h = self.cancel h
 let[@inline] terminate self = self.terminate ()
 
 let after_s (self : t) t : unit Fut.t =

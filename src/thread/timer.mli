@@ -11,9 +11,7 @@ module Handle : sig
   module For_implementors : sig
     val cancel : t -> unit
     val cancelled : t -> bool
-
-    val make :
-      repeat:float option -> deadline:float -> task:(unit -> unit) -> unit -> t
+    val create : unit -> t
   end
 end
 
