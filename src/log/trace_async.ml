@@ -31,6 +31,9 @@ let[@inline] link_spans (sp1 : Trace.explicit_span)
     ~(src : Trace.explicit_span_ctx) : unit =
   if Trace.enabled () then Trace.extension_event @@ Ev_link_span (sp1, src)
 
+let[@inline] set_span_kind sp k : unit =
+  if Trace.enabled () then Trace.extension_event @@ Ev_set_span_kind (sp, k)
+
 (** Current parent scope for async spans *)
 let k_span_ctx : Trace.explicit_span_ctx Hmap.key = Hmap.Key.create ()
 
