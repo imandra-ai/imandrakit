@@ -1,5 +1,14 @@
 module Trace = Trace_core
 
+(** Inspired from OTEL *)
+type span_kind =
+  | SK_client
+  | SK_server
+  | SK_internal
+  | SK_producer
+  | SK_consumer
+[@@deriving eq, twine, show { with_path = false }]
+
 type Trace.extension_event +=
   | Ev_link_span of Trace.explicit_span * Trace.explicit_span_ctx
         (** Link the given span to the given context. The context isn't the
@@ -15,6 +24,7 @@ type Trace.extension_event +=
         (** Set current async span *)
   | Ev_pop_async_parent of Trace.explicit_span_ctx
         (** Remove current async span *)
+  | Ev_set_span_kind of Trace.span * span_kind
 
 (** Link the given span to the given context *)
 let[@inline] link_spans (sp1 : Trace.explicit_span)
