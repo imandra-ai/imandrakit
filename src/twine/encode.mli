@@ -53,6 +53,7 @@ val array_init : t -> int -> (int -> immediate) -> immediate
 val array : t -> immediate array -> immediate
 val array_iter : t -> immediate Iter.t -> immediate
 val list : t -> immediate list -> immediate
+val list_of : 'a encoder -> 'a list encoder
 
 (** {2 Dictionaries} *)
 

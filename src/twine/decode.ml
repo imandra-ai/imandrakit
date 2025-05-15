@@ -665,6 +665,10 @@ module Dict_cursor = struct
         f k v)
 end
 
+let list_of decv dec off =
+  let c = array dec off in
+  Array_cursor.to_list_of (decv dec) c
+
 type 'a cache_key = (module CACHE_KEY with type elt = 'a)
 
 let create_cache_key (type a) () : a cache_key =

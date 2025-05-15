@@ -113,6 +113,7 @@ val string : string decoder
 val blob_slice : slice decoder
 val blob : string decoder
 val array : Array_cursor.t decoder
+val list_of : 'a decoder -> 'a list decoder
 val dict : Dict_cursor.t decoder
 val tag : (int * offset) decoder
 val cstor : (cstor_index * Array_cursor.t) decoder

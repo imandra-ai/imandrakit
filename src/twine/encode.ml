@@ -242,6 +242,7 @@ let list (self : t) vs : immediate =
   List.iter (fun v -> ignore_offset @@ write_immediate self v) vs;
   Immediate.pointer off
 
+let list_of encv enc l = list enc @@ List.map (encv enc) l
 let array_iter (self : t) iter : immediate = list self @@ Iter.to_list iter
 
 let dict (self : t) n f : immediate =
