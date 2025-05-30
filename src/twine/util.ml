@@ -3,7 +3,7 @@ module Result = struct
     | Ok x -> fok x
     | Error e -> ferr e
 
-  type ('a, 'err) t = ('a, 'err) result [@@deriving show, map, iter]
+  type ('a, 'err) t = ('a, 'err) result [@@deriving show, map, iter, eq]
 
   let to_twine p1 p2 enc = function
     | Ok x -> Encode.(cstor enc ~index:0 [| p1 enc x |])
