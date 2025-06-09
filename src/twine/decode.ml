@@ -11,6 +11,11 @@ module type CACHE_KEY = sig
 end
 
 type t =
+  | Decode_sl of {
+      data: Slice.t;
+      cache: cached Int_tbl.t;
+      mutable hmap: Hmap.t;
+    }
   | Decode : {
       st: 'st;
       ops: 'st ops;
@@ -28,45 +33,37 @@ and 'st ops = {
   read_leb128: 'st -> int -> int64 * offset;
 }
 
-let st_len t =
-  let (Decode { st; ops; _ }) = t in
-  ops.length st
+let[@inline] st_len t =
+  match t with
+  | Decode_sl sl -> Slice.len sl.data
+  | Decode { st; ops; _ } -> ops.length st
 
 let[@inline] read_char t offset =
-  let (Decode { st; ops; _ }) = t in
-  ops.read_char st offset
+  match t with
+  | Decode_sl sl -> Slice.get sl.data offset
+  | Decode { st; ops; _ } -> ops.read_char st offset
 
-let read_int32 t offset =
-  let (Decode { st; ops; _ }) = t in
-  ops.read_int32 st offset
+let[@inline] read_int32 t offset =
+  match t with
+  | Decode_sl sl -> Bytes.get_int32_le sl.data.bs (sl.data.off + offset)
+  | Decode { st; ops; _ } -> ops.read_int32 st offset
 
-let read_int64 t offset =
-  let (Decode { st; ops; _ }) = t in
-  ops.read_int64 st offset
+let[@inline] read_int64 t offset =
+  match t with
+  | Decode_sl sl -> Bytes.get_int64_le sl.data.bs (sl.data.off + offset)
+  | Decode { st; ops; _ } -> ops.read_int64 st offset
 
-let read_blob t offset length =
-  let (Decode { st; ops; _ }) = t in
-  ops.read_blob st offset length
+let[@inline] read_blob t offset length =
+  match t with
+  | Decode_sl sl ->
+    Slice.sub sl.data offset
+      (min length (Slice.len sl.data - sl.data.off - offset))
+  | Decode { st; ops; _ } -> ops.read_blob st offset length
 
-let read_leb128 t offset =
-  let (Decode { st; ops; _ }) = t in
-  ops.read_leb128 st offset
-
-let slice_ops : slice ops =
-  {
-    length = (fun (st : slice) -> Slice.len st);
-    read_char = (fun (st : slice) (offset : int) -> Slice.get st offset);
-    read_int32 =
-      (fun (st : slice) (offset : int) ->
-        Bytes.get_int32_le st.bs (st.off + offset));
-    read_int64 =
-      (fun (st : slice) (offset : int) ->
-        Bytes.get_int64_le st.bs (st.off + offset));
-    read_blob =
-      (fun (st : slice) (offset : int) (length : int) ->
-        Slice.sub st offset (min length (Slice.len st - st.off - offset)));
-    read_leb128 = (fun (st : slice) (offset : int) -> LEB128.u64 st offset);
-  }
+let[@inline] read_leb128 t offset =
+  match t with
+  | Decode_sl sl -> LEB128.u64 sl.data offset
+  | Decode { st; ops; _ } -> ops.read_leb128 st offset
 
 let in_channel_ops : in_channel ops =
   {
@@ -121,23 +118,36 @@ let pp_cursor = Fmt.of_to_string show_cursor
 let[@inline] create (st : 'st) (ops : 'st ops) : t =
   Decode { st; ops; cache = Int_tbl.create 32; hmap = Hmap.empty }
 
-let[@inline] of_slice s : t = create s slice_ops
-let[@inline] of_string s : t = create (Slice.of_string s) slice_ops
+let[@inline] of_slice s : t =
+  Decode_sl { data = s; cache = Int_tbl.create 32; hmap = Hmap.empty }
+
+let[@inline] of_string s : t = of_slice (Slice.of_string s)
 let[@inline] of_in_channel c : t = create c in_channel_ops
+
+let[@inline] cache_ self =
+  match self with
+  | Decode { cache; _ } | Decode_sl { cache; _ } -> cache
 
 let[@inline] hmap_set self k v =
   match self with
   | Decode d -> d.hmap <- Hmap.add k v d.hmap
+  | Decode_sl d -> d.hmap <- Hmap.add k v d.hmap
+
+let[@inline] hmap_ self =
+  match self with
+  | Decode { hmap; _ } | Decode_sl { hmap; _ } -> hmap
 
 let[@inline] hmap_get self k =
   match self with
-  | Decode d -> Hmap.find k d.hmap
+  | Decode { hmap; _ } | Decode_sl { hmap; _ } -> Hmap.find k hmap
 
 let hmap_transfer d1 ~into:d2 : unit =
-  match d1, d2 with
-  | Decode d1, Decode d2 ->
-    d2.hmap <-
-      Hmap.fold (fun (Hmap.B (k, v)) h2 -> Hmap.add k v h2) d1.hmap d2.hmap
+  let transfer h1 h2 =
+    Hmap.fold (fun (Hmap.B (k, v)) h2 -> Hmap.add k v h2) h1 h2
+  in
+  match d2 with
+  | Decode d2 -> d2.hmap <- transfer (hmap_ d1) d2.hmap
+  | Decode_sl d2 -> d2.hmap <- transfer (hmap_ d1) d2.hmap
 
 type 'a decoder = t -> offset -> 'a
 type num_bytes_consumed = int
@@ -689,7 +699,7 @@ let with_cache (type a) (key : a cache_key) (dec : a decoder) : a decoder =
     dec st off
   else (
     (* go through the cache *)
-    let (Decode { cache; _ }) = st in
+    let cache = cache_ st in
     match Int_tbl.find cache off with
     | exception Not_found ->
       let v = dec st off in
