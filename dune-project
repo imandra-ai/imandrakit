@@ -59,6 +59,7 @@
    (and
     :with-test
     (>= 1.5)))
+  logs
   (odoc :with-doc))
  (depopts camlzip)
  (tags

@@ -30,6 +30,7 @@ depends: [
   "ocaml-lsp-server" {with-dev-setup}
   "ocamlformat" {= "0.24.1" & with-dev-setup}
   "hex" {with-test & >= "1.5"}
+  "logs"
   "odoc" {with-doc}
 ]
 depopts: ["camlzip"]
