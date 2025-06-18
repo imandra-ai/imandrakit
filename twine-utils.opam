@@ -11,7 +11,7 @@ depends: [
   "dune" {>= "3.0"}
   "imandrakit"
   "imandrakit-log"
-  "yojson"
+  "yojson" {>= "1.6" & < "3.0"}
   "hex"
   "ppx_deriving"
   "logs"

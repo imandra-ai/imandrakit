@@ -36,7 +36,7 @@
   (moonpool
    (>= 0.7))
   (yojson
-   (>= 1.6))
+   (and (>= 1.6) (< 3.0)))
   (mtime
    (>= 2.0))
   ppx_deriving
@@ -120,7 +120,7 @@
  (depends
   imandrakit
   imandrakit-log
-  yojson
+  (yojson (and (>= 1.6) (< 3.0)))
   hex
   ppx_deriving
   logs

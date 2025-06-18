@@ -19,7 +19,7 @@ depends: [
   "atomic"
   "hmap"
   "moonpool" {>= "0.7"}
-  "yojson" {>= "1.6"}
+  "yojson" {>= "1.6" & < "3.0"}
   "mtime" {>= "2.0"}
   "ppx_deriving"
   "ppx_deriving_yojson"
