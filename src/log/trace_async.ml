@@ -99,6 +99,7 @@ let with_span ?(level = Trace.get_default_level ()) ?parent ?data ?__FUNCTION__
         ( Trace.Collector.dummy_explicit_span,
           Trace.Collector.dummy_explicit_span_ctx )
     | Some p ->
+      (* make sure we still link spans in [f()] to [p] *)
       let@ () = with_async_parent p in
       f (Trace.Collector.dummy_explicit_span, p)
   )
