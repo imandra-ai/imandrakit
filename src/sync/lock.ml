@@ -11,10 +11,15 @@ let with_lock l f =
     let x = f l.content in
     Mutex.unlock l.mutex;
     x
-  with e ->
+  with exn ->
     let bt = Printexc.get_raw_backtrace () in
-    Mutex.unlock l.mutex;
-    Printexc.raise_with_backtrace e bt
+    (try
+       Mutex.unlock l.mutex;
+       Printexc.raise_with_backtrace exn bt
+     with _ ->
+       (* this should only happen if [f …] switched thread *)
+       Printf.eprintf "mutex.unlock failed during `with_lock` cleanup\n%!";
+       Printexc.raise_with_backtrace (Fun.Finally_raised exn) bt)
 
 let mutex l = l.mutex
 let update l f = with_lock l (fun x -> l.content <- f x)
