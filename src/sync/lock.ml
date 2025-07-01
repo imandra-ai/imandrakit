@@ -13,13 +13,12 @@ let with_lock l f =
     x
   with exn ->
     let bt = Printexc.get_raw_backtrace () in
-    (try
-       Mutex.unlock l.mutex;
-       Printexc.raise_with_backtrace exn bt
-     with _ ->
-       (* this should only happen if [f …] switched thread *)
-       Printf.eprintf "mutex.unlock failed during `with_lock` cleanup\n%!";
-       Printexc.raise_with_backtrace (Fun.Finally_raised exn) bt)
+    (match Mutex.unlock l.mutex with
+    | () -> Printexc.raise_with_backtrace exn bt
+    | exception _ ->
+      (* this should only happen if [f …] switched thread *)
+      Printf.eprintf "mutex.unlock failed during `with_lock` cleanup\n%!";
+      Printexc.raise_with_backtrace (Fun.Finally_raised exn) bt)
 
 let mutex l = l.mutex
 let update l f = with_lock l (fun x -> l.content <- f x)
