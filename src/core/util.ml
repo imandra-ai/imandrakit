@@ -77,6 +77,16 @@ let uuid_v4 () : string =
   let uuid = Uuidm.v4_gen (Random.State.make_self_init ()) () in
   Uuidm.to_string uuid
 
+let uuid_v7_ptime () : string =
+  let now_ms () =
+    let now = Ptime_clock.now () in
+    Int64.of_float (Ptime.to_float_s now *. 1e3)
+  in
+  let uuid =
+    Uuidm.v7_non_monotonic_gen ~now_ms (Random.State.make_self_init ()) ()
+  in
+  Uuidm.to_string uuid
+
 let this_process_uuid = uuid_v4 ()
 
 let true_in_env s =

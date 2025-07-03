@@ -52,8 +52,11 @@ val parse_tcp_addr : string -> (Unix.inet_addr * int, string) result
 val uuid_v4 : unit -> string
 (** Generate a UUID v4 using a random state *)
 
+val uuid_v7_ptime : unit -> string
+(** Generate a UUID v7 using a random state and [Ptime_clock.now()] *)
+
 val this_process_uuid : string
-(** Unique UUID for this process. Computed once at startup. *)
+(** UUID for this process. Computed once at startup. *)
 
 val true_in_env : string -> bool
 (** [true_in_env s] is [true] if ["s"] is set to "1" or "true" in the env *)
