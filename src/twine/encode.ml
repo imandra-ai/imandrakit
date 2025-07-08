@@ -39,8 +39,13 @@ let create ?(cap = 256) () : t =
   let cap = min Sys.max_string_length (max cap 32) in
   { buf = Buf.create ~cap (); global_offset = 0; cache = Cache_tbl.create 8 }
 
-let clear self = Buf.clear self.buf
-let reset self = Buf.reset self.buf
+let clear self =
+  Buf.clear self.buf;
+  Cache_tbl.clear self.cache
+
+let reset self =
+  Buf.reset self.buf;
+  Cache_tbl.clear self.cache
 
 type 'a encoder = t -> 'a -> immediate
 
