@@ -45,10 +45,11 @@ let get_content (i : Commands.input) : string =
   in
 
   if i.i_hex then (
+    let s = String.trim s in
     match CCString.of_hex s with
     | Some s -> s
     | None ->
-      Log.err (fun k -> k "Invalid hex content");
+      Log.err (fun k -> k "Invalid hex content: %S" s);
       exit_with 1
   ) else
     s
