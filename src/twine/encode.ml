@@ -41,11 +41,13 @@ let create ?(cap = 256) () : t =
 
 let clear self =
   Buf.clear self.buf;
-  Cache_tbl.clear self.cache
+  Cache_tbl.clear self.cache;
+  self.global_offset <- 0
 
 let reset self =
   Buf.reset self.buf;
-  Cache_tbl.clear self.cache
+  Cache_tbl.clear self.cache;
+  self.global_offset <- 0
 
 type 'a encoder = t -> 'a -> immediate
 
