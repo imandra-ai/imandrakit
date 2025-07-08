@@ -192,6 +192,16 @@ let failf = failf
 let invalid_first_byte_ msg ~offset ~high ~low =
   failf "Decode: invalid first byte %d/%d at %d: %s" high low offset msg
 
+let fail_check_comes_before ~offset ~new_offset () : 'a =
+  failf
+    "invalid twine: reading value at 0x%x: refer to address 0x%x which doesn't \
+     come before"
+    offset new_offset
+
+(** sanity check: can only read values before [off] *)
+let[@inline] check_comes_before ~offset ~new_offset () : unit =
+  if new_offset >= offset then fail_check_comes_before ~offset ~new_offset ()
+
 let[@inline] get_char_ (self : t) (offset : offset) : int =
   Char.code @@ read_char self offset
 
@@ -242,7 +252,9 @@ let[@inline never] deref_rec_ self off : offset =
     if high = 15 then (
       let low = get_low c in
       let p, _ = get_int_truncate_ self !off ~low in
-      off := !off - p - 1;
+      let p = !off - p - 1 in
+      check_comes_before ~offset:!off ~new_offset:p ();
+      off := p;
       true
     ) else
       false
@@ -360,10 +372,14 @@ let read ?(auto_deref = true) (self : t) (offset : offset) : Value.t =
   | 13 -> invalid_first_byte_ ~offset ~high ~low "type is reserved"
   | 14 ->
     let n, _ = get_int_truncate_ self offset ~low in
-    Value.Ref (offset - n - 1)
+    let p = offset - n - 1 in
+    check_comes_before ~offset ~new_offset:p ();
+    Value.Ref p
   | 15 ->
     let n, _ = get_int_truncate_ self offset ~low in
-    Value.Pointer (offset - n - 1)
+    let p = offset - n - 1 in
+    check_comes_before ~offset ~new_offset:p ();
+    Value.Pointer p
   | _ -> assert false
 
 (** Skip the current (immediate) value *)
@@ -539,7 +555,9 @@ let ref_ (self : t) offset : offset =
   if high <> 14 then fail_decode_type_ ~what:"ref" offset;
   let low = get_low c in
   let p, _ = get_int_truncate_ self offset ~low in
-  offset - p - 1
+  let p = offset - p - 1 in
+  check_comes_before ~offset ~new_offset:p ();
+  p
 
 let[@inline] ref_for (self : t) offset : _ offset_for =
   Offset_for (ref_ self offset)

@@ -75,10 +75,12 @@ let add_offset (self : state) i s = self.offset <- Int_map.add i s self.offset
 
 let rec dump_rec (self : state) (off : offset) : unit =
   (* let off = Decode.deref_rec self.dec off in *)
-  let decode_sub off =
-    let v = Decode.read ~auto_deref:false self.dec off in
+  let[@inline] decode_sub sub_off =
+    let v = Decode.read ~auto_deref:false self.dec sub_off in
     match v with
     | Pointer p | Ref p ->
+      (* sanity check: can only read values before [off] *)
+      assert (p < off);
       dump_rec self p;
       v
     | _ -> v
