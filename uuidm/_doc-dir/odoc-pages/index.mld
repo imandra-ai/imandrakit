@@ -1,0 +1,101 @@
+{0 Uuidm {%html: <span class="version">v0.9.10</span>%}}
+
+{!Uuidm} implements 128 bits universally unique identifiers version 3,
+5 (named based with MD5, SHA-1 hashing), 4 (random based), 7 (time and
+random based) and 8 (custom) according according to
+{{:https://www.rfc-editor.org/rfc/rfc9562} RFC 9562}.
+
+See the {{!quick}quick start}.
+
+{1:uuidm_lib Library [uuidm]}
+
+{!modules: Uuidm}
+
+{1:quick Quick start}
+
+{2:random_based Random V4 UUIDs}
+
+The following [uuid] function generates V4 random UUIDs.
+
+{[
+let uuid = Uuidm.v4_gen (Random.State.make_self_init ())
+let () = print_endline (Uuidm.to_string (uuid ()))
+let () = print_endline (Uuidm.to_string (uuid ()))
+]}
+
+Make sure to read the {{!Uuidm.gen}warnings} about random generators.
+
+{2:name_based Name based V5 UUIDs}
+
+Name based V5 UUIDs can be used to generate [urn:uuid] URIs for atom
+feed {{:https://www.rfc-editor.org/rfc/rfc4287#section-4.2.6}entry
+IDs} to minimize the chances of feed replays.
+
+First generate a random V4 UUID for the feed. For example with
+the code of the previous section or with:
+{@shell[
+> uuidtrip
+6228c5f9-7069-4519-9bf4-0b6e865f4c42
+]}
+
+Store this UUID preciously and use it as your feed ID:
+
+{[
+let feed_id ~feed_id = "urn:uuid:" ^ (Uuid.to_string feed_id)
+]}
+
+For feed entry IDs, use the feed UUID as a V5 namespace and the immutable
+{{:https://www.rfc-editor.org/rfc/rfc4287#section-4.2.9}[atom:published]}
+value of the entry as the data to hash:
+
+{[
+let entry_id ~feed_id ~rfc3339_stamp =
+    "urn:uuid:" ^ (Uuidm.to_string @@ Uuidm.v5 feed_id rfc3339_stamp)
+]}
+
+This assumes that
+
+{ol
+{- You do not publish two entries at exactly the same time.
+   {{:https://www.rfc-editor.org/rfc/rfc3339}RFC 3339} has
+   enough time granularity to ensure that.}
+{- You do not change your publication dates. In atom they must in fact
+   not change, updates to entries must be specified
+   in {{:https://www.rfc-editor.org/rfc/rfc4287#section-4.2.15}[atom:updated]}.}
+{- If you store publication dates as a raw POSIX timestamp be careful
+   to render them to RFC 3339 with a fixed time zone. Alternatively
+   you can directly use the decimal representation of the timestamp
+   as the data to hash.}}
+
+{2:time_based Monotonic time based V7 UUIDs}
+
+In order to generate monotonic time based V7 UUIDs we need to:
+
+{ul
+{- Provide a millisecond precision monotonic POSIX clock. {!Unix.gettimeofday}
+   can provide a reasonable one but if your monotonicity requirements are
+   paramount, remember that it can go back in time.}
+{- Do something if the clock doesn't move between two UUID
+   generations. The {!Uuidm.v7_monotonic_gen} generator uses a counter which
+   allows to generate up to 4096 UUID per millisecond and returns [None] in case
+   of rollover during the millisecond. In the code below we {!Unix.sleepf}
+   for a millisecond if we reach the limit.}}
+
+{[
+let uuid_monotonic =
+  let now_ms () = Int64.of_float (Unix.gettimeofday () *. 1000.) in
+  Uuidm.v7_monotonic_gen ~now_ms (Random.State.make_self_init ())
+
+let rec uuid () = match uuid_monotonic () with
+| None -> (* Too many UUIDs generated in a ms *) Unix.sleepf 1e-3; uuid ()
+| Some uuid -> uuid
+
+let () = print_endline (Uuidm.to_string (uuid ()))
+let () = print_endline (Uuidm.to_string (uuid ()))
+]}
+
+Depending on your application {!Uuidm.v7_monotonic_gen} may be a bit
+too simplistic, you can easily implement all sorts of other
+{{:https://www.rfc-editor.org/rfc/rfc9562#name-monotonicity-and-counters}
+generation schemes} by using {!Uuidm.v7} or {!Uuidm.v7_ns} directly. Also, make
+sure to read the {{!Uuidm.gen}warnings} about generators.
