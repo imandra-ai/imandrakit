@@ -1,4 +1,7 @@
+let ( let@ ) = ( @@ )
+
 let compress ?(buf = Buffer.create 32) (s : bytes) : bytes =
+  let@ _sp = Trace_core.with_span ~__FILE__ ~__LINE__ "zlib.compress" in
   Buffer.clear buf;
   let addbuf, terminate =
     Zlib.compress_direct ~header:false (fun bytes len ->
@@ -12,6 +15,7 @@ let compress_str ?buf s : string =
   compress ?buf (Bytes.unsafe_of_string s) |> Bytes.unsafe_to_string
 
 let decompress_slice ?(buf = Buffer.create 32) (s : bytes) offset len : bytes =
+  let@ _sp = Trace_core.with_span ~__FILE__ ~__LINE__ "zlib.decompress" in
   if offset + len > Bytes.length s then invalid_arg "Util_zlib.decompress";
   Buffer.clear buf;
   let i = ref offset in

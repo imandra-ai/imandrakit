@@ -6,4 +6,4 @@
  (preprocess
   (pps ppx_deriving.std imandrakit.ser-pack.ppx imandrakit.twine.ppx))
  (flags :standard)
- (libraries camlzip))
+ (libraries camlzip trace.core))
