@@ -89,19 +89,20 @@ end
 let with_span ?(level = Trace.get_default_level ()) ?parent ?data ?__FUNCTION__
     ~__FILE__ ~__LINE__ name
     (f : Trace.explicit_span * Trace.explicit_span_ctx -> 'a) : 'a =
-  if Trace.enabled () && level <= Trace.get_current_level () then
+  let trace_enabled = Trace.enabled () in
+  if trace_enabled && level <= Trace.get_current_level () then
     with_span_real_ ~level ~parent ?data ?__FUNCTION__ ~__FILE__ ~__LINE__ name
       f
   else (
     match parent with
-    | None ->
-      f
-        ( Trace.Collector.dummy_explicit_span,
-          Trace.Collector.dummy_explicit_span_ctx )
-    | Some p ->
+    | Some p when trace_enabled ->
       (* make sure we still link spans in [f()] to [p] *)
       let@ () = with_async_parent p in
       f (Trace.Collector.dummy_explicit_span, p)
+    | _ ->
+      f
+        ( Trace.Collector.dummy_explicit_span,
+          Trace.Collector.dummy_explicit_span_ctx )
   )
 
 open struct
