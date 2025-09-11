@@ -379,6 +379,7 @@ let to_outputs (outs : Output.t list) : t =
   self
 
 let[@inline] emit_ev (self : t) ev : unit = self.emit_ev ev
+let emit_ev_l self evs : unit = List.iter self.emit_ev evs
 let null () : t = to_outputs []
 
 let setup_ (self : t) : unit =
