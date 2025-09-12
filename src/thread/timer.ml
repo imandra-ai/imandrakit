@@ -1,36 +1,32 @@
 module Log = (val Logs.src_log (Logs.Src.create "x.timer"))
 
+module Handle = struct
+  module For_implementors = struct
+    type 'a tc = {
+      cancelled: 'a -> bool;
+      cancel: 'a -> unit;
+    }
+
+    type t = H : 'a * 'a tc -> t
+
+    let[@inline] create st tc = H (st, tc)
+  end
+
+  include For_implementors
+
+  type t = For_implementors.t
+
+  let cancel (H (st, tc)) = tc.cancel st
+  let cancelled (H (st, tc)) = tc.cancelled st
+  let dummy = create () { cancel = ignore; cancelled = (fun _ -> true) }
+end
+
 let timer_error = Error_kind.make ~name:"TimerError" ()
 
 exception Stop_timer
 
-let now_ = Util.mtime_now_s
-
-type task_state =
-  | St_once of { run: unit -> unit }
-  | St_repeat of {
-      period: float;
-      run: unit -> unit;
-    }
-  | St_cancelled
-
-type task = {
-  mutable deadline: float;
-  state: task_state Atomic.t;
-}
-
-module Handle = struct
-  type t = { st: task_state Atomic.t } [@@unboxed]
-
-  let dummy : t = { st = Atomic.make St_cancelled }
-  let[@inline] of_task_ (t : task) : t = { st = t.state }
-
-  module For_implementors = struct
-    let cancelled self = Atomic.get self.st == St_cancelled
-    let cancel (self : t) : unit = Atomic.set self.st St_cancelled
-    let st_once = St_once { run = ignore }
-    let create () : t = { st = Atomic.make st_once }
-  end
+open struct
+  let now_ = Util.mtime_now_s
 end
 
 type t = {
@@ -39,189 +35,6 @@ type t = {
   cancel: Handle.t -> unit;
   terminate: unit -> unit;
 }
-
-module T_heap = CCHeap.Make (struct
-  type t = task
-
-  let leq a b = a.deadline <= b.deadline
-end)
-
-type state = {
-  mutex: unit Lock.t;
-  closed: bool Atomic.t;
-  mutable events: T_heap.t;
-  p_read: Unix.file_descr;  (** use a fifo to be able to notify the thread *)
-  p_write: Unix.file_descr;  (** Notify by writing into fifo *)
-  buf4: bytes;  (** Tiny writing buffer, len=4 *)
-  mutable t_loop: Thread.t option;  (** Background thread *)
-}
-
-let create_state () : state =
-  let p_read, p_write = Unix.pipe ~cloexec:true () in
-  (* we'll use [select] to wait for the pipe read end to be ready *)
-  Unix.set_nonblock p_read;
-  {
-    mutex = Lock.create ();
-    closed = Atomic.make false;
-    events = T_heap.empty;
-    p_read;
-    p_write;
-    buf4 = Bytes.create 4;
-    t_loop = None;
-  }
-
-let wakeup_thread_ (self : state) : unit =
-  let n = Unix.write_substring self.p_write "!" 0 1 in
-  if n = 0 then
-    Error.fail ~kind:timer_error "Timer: cannot wake up timer thread"
-
-let add_task_ (self : state) (task : task) : unit =
-  (* is the new task [f()] scheduled earlier than whatever the
-     thread is waiting for? In this case the thread needs awakening
-     so it can adjust its sleeping delay. *)
-  let is_earlier_than_all_current_tasks =
-    let@ () = Lock.with_lock self.mutex in
-    let is_first =
-      match T_heap.find_min self.events with
-      | Some task2 -> task2.deadline > task.deadline
-      | None -> true
-    in
-    self.events <- T_heap.add self.events task;
-    is_first
-  in
-
-  if is_earlier_than_all_current_tasks then
-    (* need to wake up the thead, if it's asleep in [Unix.select] *)
-    wakeup_thread_ self
-
-type next_step =
-  | Wait of float
-  | Run of task
-
-let next_step_ (self : state) : next_step =
-  let@ () = Lock.with_lock self.mutex in
-  match T_heap.find_min self.events with
-  | None -> Wait 10.
-  | Some task ->
-    let now = now_ () in
-    let delay = task.deadline -. now in
-    if delay <= 1e-6 then (
-      (* run task now *)
-      let events', _ = T_heap.take_exn self.events in
-      self.events <- events';
-      Run task
-    ) else
-      Wait delay
-
-let wait_ (self : state) delay =
-  assert (delay > 0.);
-  try
-    let _ = Unix.select [ self.p_read ] [] [ self.p_read ] delay in
-    (* drain pipe *)
-    while Unix.read self.p_read self.buf4 0 4 > 0 do
-      ()
-    done
-  with _ -> ()
-
-let run_task_ (self : state) (task : task) : unit =
-  let run_once ~run () : bool =
-    try
-      run ();
-      true
-    with
-    | Stop_timer -> false
-    | e ->
-      let bt = Printexc.get_raw_backtrace () in
-      if not (Atomic.get self.closed) then (
-        let err = Error.of_exn ~bt ~kind:timer_error e in
-        Log.err (fun k -> k "Error in timer task:@ %a" Error.pp err)
-      );
-      false
-  in
-
-  match Atomic.get task.state with
-  | St_cancelled -> ()
-  | St_once { run } -> ignore (run_once ~run () : bool)
-  | St_repeat { period; run } ->
-    let continue = run_once ~run () in
-
-    if continue then (
-      task.deadline <- now_ () +. period;
-      add_task_ self task
-    )
-
-(** The loop running in the background thread *)
-let background_thread_loop_ (self : state) : unit =
-  let named = ref false in
-
-  while not (Atomic.get self.closed) do
-    (* next thing to do *)
-    let next_step = next_step_ self in
-
-    if not !named then (
-      (* we run this that late, to make sure the trace collector (if any)
-         is setup *)
-      named := true;
-      Trace.set_thread_name "x.timer"
-    );
-
-    match next_step with
-    | Wait delay -> wait_ self delay
-    | Run t -> run_task_ self t
-  done
-
-let run_after_s'_impl (self : state) t f : Handle.t =
-  if t > 0. then (
-    let deadline = now_ () +. t in
-    let task = { deadline; state = Atomic.make @@ St_once { run = f } } in
-    add_task_ self task;
-    Handle.of_task_ task
-  ) else (
-    (try f () with Stop_timer -> ());
-    Handle.dummy
-  )
-
-let terminate_ (self : state) : unit =
-  if not (Atomic.exchange self.closed true) then (
-    wakeup_thread_ self;
-    (* wait for timer thread to terminate *)
-    Option.iter Thread.join self.t_loop
-  )
-
-let run_every_s'_impl (self : state) ?initial period f : Handle.t =
-  if period <= 0. then invalid_arg "Timer.run_every_s: delay must be > 0.";
-  let initial = Option.value ~default:period initial in
-  let deadline = now_ () +. initial in
-  let task =
-    { state = Atomic.make (St_repeat { period; run = f }); deadline }
-  in
-
-  let do_schedule =
-    if initial = 0. then (
-      match f () with
-      | () ->
-        task.deadline <- now_ () +. period;
-        true
-      | exception Stop_timer -> false
-    ) else
-      true
-  in
-
-  if do_schedule then add_task_ self task;
-  Handle.of_task_ task
-
-let create () : t =
-  let st = create_state () in
-  let t_loop =
-    Moonpool.start_thread_on_some_domain background_thread_loop_ st
-  in
-  st.t_loop <- Some t_loop;
-  {
-    run_after_s = run_after_s'_impl st;
-    run_every_s = run_every_s'_impl st;
-    cancel = Handle.For_implementors.cancel;
-    terminate = (fun () -> terminate_ st);
-  }
 
 let[@inline] run_after_s' (self : t) s f = self.run_after_s s f
 
@@ -244,3 +57,211 @@ let after_s (self : t) t : unit Fut.t =
   in
   Fut.on_result fut (fun r -> if Result.is_error r then cancel self h);
   fut
+
+module With_bg_thread = struct
+  type task_state =
+    | St_once of { run: unit -> unit }
+    | St_repeat of {
+        period: float;
+        run: unit -> unit;
+      }
+    | St_cancelled
+
+  type task = {
+    mutable deadline: float;
+    state: task_state Atomic.t;
+  }
+
+  module T_heap = CCHeap.Make (struct
+    type t = task
+
+    let leq a b = a.deadline <= b.deadline
+  end)
+
+  type state = {
+    mutex: unit Lock.t;
+    closed: bool Atomic.t;
+    mutable events: T_heap.t;
+    p_read: Unix.file_descr;  (** use a fifo to be able to notify the thread *)
+    p_write: Unix.file_descr;  (** Notify by writing into fifo *)
+    buf4: bytes;  (** Tiny writing buffer, len=4 *)
+    mutable t_loop: Thread.t option;  (** Background thread *)
+  }
+
+  let create_state () : state =
+    let p_read, p_write = Unix.pipe ~cloexec:true () in
+    (* we'll use [select] to wait for the pipe read end to be ready *)
+    Unix.set_nonblock p_read;
+    {
+      mutex = Lock.create ();
+      closed = Atomic.make false;
+      events = T_heap.empty;
+      p_read;
+      p_write;
+      buf4 = Bytes.create 4;
+      t_loop = None;
+    }
+
+  let wakeup_thread_ (self : state) : unit =
+    let n = Unix.write_substring self.p_write "!" 0 1 in
+    if n = 0 then
+      Error.fail ~kind:timer_error "Timer: cannot wake up timer thread"
+
+  let add_task_ (self : state) (task : task) : unit =
+    (* is the new task [f()] scheduled earlier than whatever the
+     thread is waiting for? In this case the thread needs awakening
+     so it can adjust its sleeping delay. *)
+    let is_earlier_than_all_current_tasks =
+      let@ () = Lock.with_lock self.mutex in
+      let is_first =
+        match T_heap.find_min self.events with
+        | Some task2 -> task2.deadline > task.deadline
+        | None -> true
+      in
+      self.events <- T_heap.add self.events task;
+      is_first
+    in
+
+    if is_earlier_than_all_current_tasks then
+      (* need to wake up the thead, if it's asleep in [Unix.select] *)
+      wakeup_thread_ self
+
+  type next_step =
+    | Wait of float
+    | Run of task
+
+  let next_step_ (self : state) : next_step =
+    let@ () = Lock.with_lock self.mutex in
+    match T_heap.find_min self.events with
+    | None -> Wait 10.
+    | Some task ->
+      let now = now_ () in
+      let delay = task.deadline -. now in
+      if delay <= 1e-6 then (
+        (* run task now *)
+        let events', _ = T_heap.take_exn self.events in
+        self.events <- events';
+        Run task
+      ) else
+        Wait delay
+
+  let wait_ (self : state) delay =
+    assert (delay > 0.);
+    try
+      let _ = Unix.select [ self.p_read ] [] [ self.p_read ] delay in
+      (* drain pipe *)
+      while Unix.read self.p_read self.buf4 0 4 > 0 do
+        ()
+      done
+    with _ -> ()
+
+  let run_task_ (self : state) (task : task) : unit =
+    let run_once ~run () : bool =
+      try
+        run ();
+        true
+      with
+      | Stop_timer -> false
+      | e ->
+        let bt = Printexc.get_raw_backtrace () in
+        if not (Atomic.get self.closed) then (
+          let err = Error.of_exn ~bt ~kind:timer_error e in
+          Log.err (fun k -> k "Error in timer task:@ %a" Error.pp err)
+        );
+        false
+    in
+
+    match Atomic.get task.state with
+    | St_cancelled -> ()
+    | St_once { run } -> ignore (run_once ~run () : bool)
+    | St_repeat { period; run } ->
+      let continue = run_once ~run () in
+
+      if continue then (
+        task.deadline <- now_ () +. period;
+        add_task_ self task
+      )
+
+  (** The loop running in the background thread *)
+  let background_thread_loop_ (self : state) : unit =
+    let named = ref false in
+
+    while not (Atomic.get self.closed) do
+      (* next thing to do *)
+      let next_step = next_step_ self in
+
+      if not !named then (
+        (* we run this that late, to make sure the trace collector (if any)
+         is setup *)
+        named := true;
+        Trace.set_thread_name "x.timer"
+      );
+
+      match next_step with
+      | Wait delay -> wait_ self delay
+      | Run t -> run_task_ self t
+    done
+
+  open struct
+    let handle_cancel (self : task) = Atomic.set self.state St_cancelled
+    let handle_cancelled self = Atomic.get self.state == St_cancelled
+
+    let handle_tc : task Handle.tc =
+      { cancel = handle_cancel; cancelled = handle_cancelled }
+  end
+
+  let[@inline] handle_of_task (t : task) : Handle.t = Handle.create t handle_tc
+
+  let run_after_s'_impl (self : state) t f : Handle.t =
+    if t > 0. then (
+      let deadline = now_ () +. t in
+      let task = { deadline; state = Atomic.make @@ St_once { run = f } } in
+      add_task_ self task;
+      handle_of_task task
+    ) else (
+      (try f () with Stop_timer -> ());
+      Handle.dummy
+    )
+
+  let terminate_ (self : state) : unit =
+    if not (Atomic.exchange self.closed true) then (
+      wakeup_thread_ self;
+      (* wait for timer thread to terminate *)
+      Option.iter Thread.join self.t_loop
+    )
+
+  let run_every_s'_impl (self : state) ?initial period f : Handle.t =
+    if period <= 0. then invalid_arg "Timer.run_every_s: delay must be > 0.";
+    let initial = Option.value ~default:period initial in
+    let deadline = now_ () +. initial in
+    let task =
+      { state = Atomic.make (St_repeat { period; run = f }); deadline }
+    in
+
+    let do_schedule =
+      if initial = 0. then (
+        match f () with
+        | () ->
+          task.deadline <- now_ () +. period;
+          true
+        | exception Stop_timer -> false
+      ) else
+        true
+    in
+
+    if do_schedule then add_task_ self task;
+    handle_of_task task
+
+  let create () : t =
+    let st = create_state () in
+    let t_loop =
+      Moonpool.start_thread_on_some_domain background_thread_loop_ st
+    in
+    st.t_loop <- Some t_loop;
+    {
+      run_after_s = run_after_s'_impl st;
+      run_every_s = run_every_s'_impl st;
+      cancel = (fun (h : Handle.t) -> Handle.cancel h);
+      terminate = (fun () -> terminate_ st);
+    }
+end
