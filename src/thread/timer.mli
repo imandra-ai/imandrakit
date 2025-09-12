@@ -6,12 +6,17 @@
 module Handle : sig
   type t
 
+  val cancel : t -> unit
+  val cancelled : t -> bool
   val dummy : t
 
   module For_implementors : sig
-    val cancel : t -> unit
-    val cancelled : t -> bool
-    val create : unit -> t
+    type 'a tc = {
+      cancelled: 'a -> bool;
+      cancel: 'a -> unit;
+    }
+
+    val create : 'a -> 'a tc -> t
   end
 end
 
@@ -43,8 +48,10 @@ val run_every_s' : t -> ?initial:float -> float -> (unit -> unit) -> Handle.t
 val cancel : t -> Handle.t -> unit
 (** Cancel timer *)
 
-val create : unit -> t
-(** New timer that uses a background thread *)
-
 val terminate : t -> unit
 (** Stop the timer *)
+
+module With_bg_thread : sig
+  val create : unit -> t
+  (** New timer that uses a background thread *)
+end
