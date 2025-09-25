@@ -13,6 +13,10 @@ val create : ?parent:t -> unit -> t
       the parent. In other words, this switch's lifetime is a subset of the
       parent's lifetime *)
 
+val with_scoped : ?parent:t -> unit -> (t -> 'a) -> 'a
+(** [with_scoped ?parent () f] creates a switch using [create ?parent()], run
+    [f new_switch], and turns off the switch once [f] returns or raises. *)
+
 val with_on_turn_off : t -> (unit -> unit) -> (unit -> 'a) -> 'a
 (** [with_on_turn_off sw cb f] calls [f()]. Within the context where [f()] is
     running, [sw] turning off will trigger [cb()]. Once [f()] has terminated,

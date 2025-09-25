@@ -72,6 +72,18 @@ let create ?parent () : t =
   Option.iter (fun p -> on_turn_off p (fun () -> turn_off self)) parent;
   self
 
+let with_scoped ?parent () f =
+  let switch = create ?parent () in
+  try
+    let res = f switch in
+    turn_off switch;
+    res
+  with exn ->
+    let bt = Printexc.get_raw_backtrace () in
+    (match turn_off switch with
+    | () -> Printexc.raise_with_backtrace exn bt
+    | exception _exn2 -> raise (Fun.Finally_raised exn))
+
 let[@inline] is_on self : bool =
   match Atomic.get self.st with
   | On _ -> true
