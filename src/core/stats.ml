@@ -16,9 +16,10 @@ end
 
 type t = {
   mutable stats:
-    (int Str_map.t[@ser int_str_map_to_serpack] [@deser int_str_map_of_serpack]);
+    (int Util_twine.Str_map.t
+    [@ser int_str_map_to_serpack] [@deser int_str_map_of_serpack]);
 }
-[@@deriving serpack]
+[@@deriving serpack, twine]
 
 let pp out (self : t) : unit =
   Fmt.fprintf out "{ @[";

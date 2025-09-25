@@ -13,13 +13,15 @@ module Lazy = struct
 end
 
 module Str_map = struct
-  let to_twine (ser_x : _ Twine.Encode.encoder) enc (m : _ Str_map.t) =
+  type 'a t = 'a Str_map.t
+
+  let to_twine (ser_x : _ Twine.Encode.encoder) enc (m : _ t) =
     Twine.Encode.(
       dict_iter enc
         (Str_map.to_iter m
         |> Iter.map (fun (k, v) -> Immediate.string k, ser_x enc v)))
 
-  let of_twine (deser_x : _ Twine.Decode.decoder) dec c : _ Str_map.t =
+  let of_twine (deser_x : _ Twine.Decode.decoder) dec c : _ t =
     Twine.Decode.(
       let c = dict dec c in
       Dict_cursor.to_iter_of c (fun k v ->
