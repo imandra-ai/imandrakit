@@ -17,3 +17,15 @@ let add (self : t) name i : unit = self.stats <- Str_map.add name i self.stats
 (** Iterate on all stats *)
 let iter (self : t) : (string * int) Iter.t =
  fun k -> Str_map.iter (fun s i -> k (s, i)) self.stats
+
+let to_list (self : t) : _ list = Str_map.to_list self.stats
+
+let to_yojson self : Yojson.Safe.t =
+  `Assoc (Str_map.to_list self.stats |> List.rev_map (fun (k, v) -> k, `Int v))
+
+let of_yojson j : t Ppx_deriving_yojson_runtime.error_or =
+  let module JU = Yojson.Safe.Util in
+  try
+    let l = JU.to_assoc j |> List.map (fun (k, v) -> k, JU.to_int v) in
+    Ok { stats = Str_map.of_list l }
+  with exn -> Error (spf "expected stats.t: %s" (Printexc.to_string exn))
