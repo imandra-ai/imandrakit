@@ -8,7 +8,7 @@ type t = Logs.level =
   | Warning
   | Info
   | Debug
-[@@deriving show { with_path = false }, enum, eq, ord, serpack, twine]
+[@@deriving show { with_path = false }, enum, eq, ord, twine]
 
 (** Print in a way that can be parsed back *)
 let to_string : t -> string = function

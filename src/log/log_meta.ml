@@ -9,7 +9,7 @@ type t =
   | Float of float
   | List of t list
   | Assoc of (string * t) list
-[@@deriving show { with_path = false }, serpack, twine, eq]
+[@@deriving show { with_path = false }, twine, eq]
 
 let k_meta : t Hmap.key = Hmap.Key.create ()
 

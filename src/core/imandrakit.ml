@@ -12,7 +12,6 @@ module Error_core = Imandrakit_error.Error_core
 module Error_kind = Imandrakit_error.Kind
 module Error_data = Imandrakit_error.Data
 module Ser_value = Imandrakit_ser.Value
-module Ser_pack = Imandrakit_ser_pack
 
 (** {2 Local modules} *)
 
@@ -41,6 +40,5 @@ module Timestamp_s = Timestamp_s
 module Trace = Trace_core
 module Util = Util
 module Util_b64 = Util_b64
-module Util_serpack = Util_serpack
 module Util_sockaddr = Util_sockaddr
 module Util_twine = Util_twine
