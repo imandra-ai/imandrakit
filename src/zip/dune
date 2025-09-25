@@ -4,6 +4,6 @@
  (synopsis "Utils for compression using zip/zlib")
  (optional) ; camlzip
  (preprocess
-  (pps ppx_deriving.std imandrakit.ser-pack.ppx imandrakit.twine.ppx))
+  (pps ppx_deriving.std imandrakit.twine.ppx))
  (flags :standard)
  (libraries camlzip trace.core))
