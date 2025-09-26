@@ -497,7 +497,7 @@ let decode_expr_of_tydecl (decl : type_declaration) : expression =
               [%pat? Imandrakit_twine.Decode.Value.CstorN ([%p p_index], args)]
             in
             let guard =
-              [%expr Imandrakit_twine.Decode.Array_cursor.length args = 1]
+              [%expr Imandrakit_twine.Decode.Array_cursor.length args >= 1]
             in
             let rhs =
               [%expr
@@ -516,7 +516,7 @@ let decode_expr_of_tydecl (decl : type_declaration) : expression =
             let guard =
               let arity = A.Exp.constant (A.Const.int @@ List.length l) in
               [%expr
-                Imandrakit_twine.Decode.Array_cursor.length args = [%e arity]]
+                Imandrakit_twine.Decode.Array_cursor.length args >= [%e arity]]
             in
             let vars, read_args = read_cstor_args l in
             let rhs =
@@ -533,7 +533,7 @@ let decode_expr_of_tydecl (decl : type_declaration) : expression =
             let guard =
               let arity = A.Exp.constant (A.Const.int @@ List.length r) in
               [%expr
-                Imandrakit_twine.Decode.Array_cursor.length args = [%e arity]]
+                Imandrakit_twine.Decode.Array_cursor.length args >= [%e arity]]
             in
             let rhs =
               let vars, read_args =
