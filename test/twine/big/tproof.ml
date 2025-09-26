@@ -9,7 +9,7 @@ and term_view =
   | Const of int
   | App of term * term
   | Plus of term * term
-[@@deriving show, twine, serpack] [@@hashcons]
+[@@deriving show, twine] [@@hashcons]
 
 type proof = {
   p_id: int;
@@ -20,7 +20,7 @@ and proof_view =
   | MP of proof * proof
   | Assume of term
   | Refl of term
-[@@deriving show, twine, serpack] [@@hashcons]
+[@@deriving show, twine] [@@hashcons]
 
 let () =
   Imandrakit_twine.Encode.add_cache_with
@@ -127,12 +127,6 @@ let () =
     Format.printf "dump:@.%s@." (Imandrakit_twine.Dump.dump_string p_twine)
 
 let () = Format.printf "twine(p): %d B@." (String.length p_twine)
-
-let p_serpack =
-  timeit "serpack" @@ fun () ->
-  Imandrakit_ser_pack.to_cbor_string proof_to_serpack p
-
-let () = Format.printf "serpack(p): %d B@." (String.length p_serpack)
 let p_marshal = timeit "marshal" @@ fun () -> Marshal.to_string p []
 let () = Format.printf "marshal(p): %d B@." (String.length p_marshal)
 
@@ -141,10 +135,6 @@ let () = Format.printf "marshal(p): %d B@." (String.length p_marshal)
 let p2 =
   timeit "decode_twine" @@ fun () ->
   Imandrakit_twine.Decode.decode_string proof_of_twine p_twine
-
-let (_ : proof) =
-  timeit "decode_serpack" @@ fun () ->
-  Imandrakit_ser_pack.of_cbor_string_exn proof_of_serpack p_serpack
 
 let (_ : proof) =
   timeit "decode_marshall" @@ fun () -> Marshal.from_string p_marshal 0

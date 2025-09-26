@@ -1,3 +1,0 @@
-serialized to "\162ah\128ak\162aa\001ab\251@\000\000\000\000\000\000\000"
-len: 21
-foo after roundtrip: { T1.a = 1; b = 2. }

@@ -1,3 +1,0 @@
-x: "\162ah\128ak\130aFlhello\0000world"
-len: 22
-deser: (T4.F "hello\0000world")
