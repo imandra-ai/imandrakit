@@ -15,6 +15,8 @@ end
 module Str_map = struct
   type 'a t = 'a Str_map.t
 
+  let[@inline] pp ppv out x = Str_map.pp Fmt.Dump.string ppv out x
+
   let to_twine (ser_x : _ Twine.Encode.encoder) enc (m : _ t) =
     Twine.Encode.(
       dict_iter enc
