@@ -58,3 +58,8 @@ let with_resource (self : _ t) f =
     let bt = Printexc.get_raw_backtrace () in
     release_ self x;
     Printexc.raise_with_backtrace e bt
+
+module Unsafe = struct
+  let acquire = acquire_
+  let release = release_
+end

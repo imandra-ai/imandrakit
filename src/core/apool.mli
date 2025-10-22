@@ -26,3 +26,8 @@ val create :
 val with_resource : 'a t -> ('a -> 'b) -> 'b
 (** [with_resource pool f] runs [f x] with [x] a resource; when [f] fails or
     returns, [x] is returned to the pool for future reuse. *)
+
+module Unsafe : sig
+  val acquire : 'a t -> 'a
+  val release : 'a t -> 'a -> unit
+end
