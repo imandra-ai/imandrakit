@@ -2,10 +2,7 @@
  (public_name imandrakit)
  (name imandrakit)
  (preprocess
-  (pps
-   ppx_deriving.std
-   imandrakit.twine.ppx
-   ppx_deriving_yojson))
+  (pps ppx_deriving.std imandrakit.twine.ppx ppx_deriving_yojson))
  (flags :standard -open Imandrakit_common)
  (libraries
   imandrakit.common
