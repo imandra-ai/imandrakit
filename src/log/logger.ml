@@ -2,6 +2,14 @@ open! Log_level
 
 type level = Log_level.t [@@deriving show, eq]
 
+(* config the formatting *)
+open struct
+  let margin_ = try Sys.getenv "LOG_MARGIN" |> int_of_string with _ -> 80
+
+  let max_indent_ =
+    try Sys.getenv "LOG_MAX_INDENT" |> int_of_string with _ -> 40
+end
+
 let setup_level ?(default_level = Info) ?debug ?log_level () =
   let lvl =
     match debug, log_level, Sys.getenv_opt "DEBUG" with
@@ -36,6 +44,7 @@ module Buf_fmt = struct
   let create () : t =
     let buf = Buffer.create 128 in
     let fmt = Fmt.formatter_of_buffer buf in
+    Fmt.pp_safe_set_geometry fmt ~max_indent:max_indent_ ~margin:margin_;
     Fmt.set_color_tag_handling fmt;
     { fmt; buf }
 
@@ -293,7 +302,16 @@ let to_event_if_ (p : level -> bool) ~emit_ev : Logs.reporter =
       in
 
       msgf (fun ?header:_ ?(tags = Logs.Tag.empty) fmt ->
-          Format.kasprintf (k tags) fmt)
+          (* reuse a buffer *)
+          let buf_fmt = Apool.Unsafe.acquire Buf_fmt.pool in
+          Format.kfprintf
+            (fun out ->
+              Fmt.fprintf out "@.";
+              let msg = Buffer.contents buf_fmt.buf in
+              (* release buffer now that we copied the [msg] from it *)
+              Apool.Unsafe.release Buf_fmt.pool buf_fmt;
+              k tags msg)
+            buf_fmt.fmt fmt)
     ) else (
       over ();
       k ()
