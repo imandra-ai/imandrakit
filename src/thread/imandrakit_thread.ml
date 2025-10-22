@@ -11,7 +11,6 @@ include Imandrakit_sync
 
 module Background_thread = Background_thread
 module Executor = Executor
-module Fiber = Fiber
 module Fut = Fut
 module Immlock = Immlock
 module LRU_cache = LRU_cache
