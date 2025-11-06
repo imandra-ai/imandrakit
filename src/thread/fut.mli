@@ -21,6 +21,9 @@ val protect : finally:(unit -> unit t) -> (unit -> 'a t) -> 'a t
 val reify_error : 'a t -> 'a or_error t
 val bind_reify_error : ?on:Executor.t -> f:('a or_error -> 'b t) -> 'a t -> 'b t
 
+val spawn_ignore : on:Executor.t -> (unit -> 'a) -> unit
+(** Like {!spawn} but ignores the returned future. *)
+
 val wait_vec : (_ t, _) Vec.t -> unit t
 (** Wait for all futures in the vector to be done *)
 

@@ -13,6 +13,9 @@ let pp ppx out (self : _ t) : unit =
     Fmt.fprintf out "<@[future err=%S@]>"
       (Printexc.to_string @@ Moonpool.Exn_bt.exn ebt)
 
+let[@inline] spawn_ignore ~on f : unit =
+  Moonpool.run_async on (fun () -> ignore (f ()))
+
 let[@inline] unwrap = function
   | Ok x -> x
   | Error (e, bt) -> raise_with_bt e bt
