@@ -76,7 +76,7 @@
   hmap
   dune
   (moonpool
-   (>= 0.10))
+   (>= 0.8))
   logs
   thread-local-storage
   (trace-tef :with-test)
@@ -93,7 +93,7 @@
   (imandrakit-log
    (= :version))
   (moonpool
-   (>= 0.10))
+   (>= 0.8))
   (trace-tef :with-test)
   (odoc :with-doc)))
 
