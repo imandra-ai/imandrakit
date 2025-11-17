@@ -34,7 +34,7 @@
   atomic
   hmap
   (moonpool
-   (>= 0.10))
+   (>= 0.8))
   (yojson
    (and (>= 1.6) (< 3.0)))
   (mtime
