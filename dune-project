@@ -34,7 +34,7 @@
   atomic
   hmap
   (moonpool
-   (>= 0.7))
+   (>= 0.10))
   (yojson
    (and (>= 1.6) (< 3.0)))
   (mtime
@@ -76,7 +76,7 @@
   hmap
   dune
   (moonpool
-   (>= 0.7))
+   (>= 0.10))
   logs
   thread-local-storage
   (trace-tef :with-test)
@@ -93,7 +93,7 @@
   (imandrakit-log
    (= :version))
   (moonpool
-   (>= 0.6))
+   (>= 0.10))
   (trace-tef :with-test)
   (odoc :with-doc)))
 
@@ -109,7 +109,7 @@
   hmap
   dune
   (moonpool
-   (>= 0.7))
+   (>= 0.10))
   thread-local-storage
   (trace-tef :with-test)
   (odoc :with-doc)))
