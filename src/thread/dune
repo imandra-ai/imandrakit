@@ -9,6 +9,7 @@
  (libraries
   imandrakit
   imandrakit.sync
+  imandrakit.metrics
   containers
   threads.posix
   moonpool
