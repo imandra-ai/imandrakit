@@ -1,33 +1,47 @@
 type message = {
   msg: string;
-  data: Data.t;
   bt: string option; [@key "bt"]
 }
 [@@deriving twine, typereg]
 
 type stack = message list [@@deriving twine, typereg]
 
-type t = {
+type +'a t = {
+  err: 'a; [@key "e"]
   process: string; [@key "p"]
-  kind: Kind.t; [@key "k"]
-  msg: message; [@key "msg"]
+  data: Data.t; [@key "dt"]
   stack: stack; [@key "st"]
 }
-[@@deriving twine, typereg]
+[@@deriving show { with_path = false }, twine, typereg]
 
-exception E of t
+type ('a, 'err) or_error = ('a, 'err t) Imandrakit_twine.Util.Result.t
+[@@deriving show, eq, twine, typereg]
 
-let raise_err ?bt (e : t) =
-  Logs.debug (fun k -> k "(@[util.error.raise %s@])" e.msg.msg);
-  match bt with
-  | None -> raise (E e)
-  | Some bt -> Printexc.raise_with_backtrace (E e) bt
+type 'err ectx = {
+  ectx_raise: 'b. Printexc.raw_backtrace option -> 'err t -> 'b;
+}
+[@@unboxed]
+
+let with_ectx (type err) (f : err ectx -> 'b) : ('b, err) or_error =
+  let exception E of err t in
+  let ectx =
+    {
+      ectx_raise =
+        (fun bt e ->
+          match bt with
+          | None -> raise_notrace (E e)
+          | Some bt -> Printexc.raise_with_backtrace (E e) bt);
+    }
+  in
+  try
+    let x = f ectx in
+    Ok x
+  with E e -> Error e
+
+let[@inline] raise_err ?bt ectx (e : _ t) = ectx.ectx_raise bt e
 
 module Message = struct
   type t = message
-
-  let data (self : t) = self.data
-  let get k (self : t) = Data.get k self.data
 
   let pp out (self : t) : unit =
     let pp_bt out () =
@@ -48,36 +62,29 @@ module Message = struct
   let show = Fmt.to_string pp
 end
 
-let data (self : t) = self.msg.data
-let get_data k (self : t) = Data.get k self.msg.data
+let data (self : _ t) = self.data
+let get k (self : _ t) = Data.get k self.data
 
-let add_bt bt (self : t) : t =
+let add_bt bt (self : 'err t) : 'err t =
   let bt =
-    match self.msg.bt with
+    match self.bt with
     | None -> Some bt
     | Some bt' -> Some (bt ^ "\nin:\n" ^ bt')
     (* merge *)
   in
-  { self with msg = { self.msg with bt } }
+  { self with bt }
 
-let add_ctx msg (self : t) : t = { self with stack = msg :: self.stack }
+let add_ctx msg (self : 'e t) : 'e t = { self with stack = msg :: self.stack }
 
-let add_data k v (self : t) : t =
-  let msg = { self.msg with data = Data.add k v self.msg.data } in
-  { self with msg }
-
-module Result_ = struct
-  include Imandrakit_twine.Util.Result
-end
-
-type !'a result = ('a, t) Result_.t [@@deriving twine]
+let add_data k v (self : 'e t) : 'e t =
+  { self with data = Data.add k v self.data }
 
 let map_result = CCResult.map
 let iter_result = CCResult.iter
 
-let unwrap = function
+let[@inline] unwrap ectx = function
   | Ok x -> x
-  | Error e -> raise_err e
+  | Error e -> raise_err ectx e
 
 let guard ?(let_pass = fun _ -> false) g f =
   try f () with

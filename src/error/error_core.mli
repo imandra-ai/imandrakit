@@ -2,7 +2,6 @@
 
 type message = {
   msg: string;
-  data: Data.t;
   bt: string option;  (** Backtrace *)
 }
 [@@deriving twine]
@@ -13,18 +12,25 @@ type message = {
 
 type stack = message list
 
-type t = {
+type +'a t = {
+  err: 'a;
   process: string;
-  kind: Kind.t;
-  msg: message;
+  data: Data.t;
   stack: stack;
 }
 [@@deriving show, twine]
 
-exception E of t
-(** Internal error *)
+type ('a, 'err) or_error = ('a, 'err t) Stdlib.Result.t
+[@@deriving show, eq, twine]
 
-val pp_with : show_process:bool -> t Fmt.printer
+type 'a ectx
+
+val with_ectx : ('err ectx -> 'a) -> ('a, 'err) or_error
+(** Local try/catch mechanism *)
+
+val raise_err : ?bt:Printexc.raw_backtrace -> 'err ectx -> 'err t -> 'a
+val unwrap : 'err ectx -> ('a, 'err) or_error -> 'a
+val pp_with : show_process:bool -> 'err Fmt.printer -> 'err t Fmt.printer
 
 module Message : sig
   type t = message [@@deriving show]
@@ -33,23 +39,26 @@ module Message : sig
   val get : 'a Data.key -> t -> 'a option
 end
 
-val data : t -> Data.t
-val get_data : 'a Data.key -> t -> 'a option
-val raise_err : ?bt:Printexc.raw_backtrace -> t -> 'a
-val add_bt : string -> t -> t
-val add_ctx : message -> t -> t
-val add_data : 'a Data.key -> 'a -> t -> t
+type msg_t = [ `Msg of string ] t [@@deriving show, twine]
+(** Error with a message *)
 
-val guard : ?let_pass:(exn -> bool) -> (unit -> message) -> (unit -> 'a) -> 'a
+exception E of msg_t
+
+val data : _ t -> Data.t
+val get_data : 'a Data.key -> _ t -> 'a option
+val add_bt : string -> 'err t -> 'err t
+val add_ctx : message -> 'err t -> 'err t
+val add_data : 'a Data.key -> 'a -> 'err t -> 'err t
+val raise_msg_err : ?bt:Printexc.raw_backtrace -> msg_t -> 'a
+
+(* TODO:
+val guard : ?let_pass:(exn -> bool) -> (unit -> 'err ) -> (unit -> 'a) -> 'a
 (** [guard g f] behaves like [f()], excepts that if [f()] raises [Error e],
     [guard g f] raises [Error e'] where [e'] wraps [e] with context error [g()].
     @param let_pass
       if it returns [true] for an exception, the exception is re-raised. *)
 
-type !'a result = ('a, t) Stdlib.result [@@deriving show, map, iter, twine]
-
-val unwrap : 'a result -> 'a
-(** [unwrap e] uses {!raise_err} to unpack the result *)
+*)
 
 module Infix : sig
   val ( let*! ) : (unit -> message) -> (unit -> 'a) -> 'a

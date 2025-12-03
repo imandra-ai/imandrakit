@@ -7,4 +7,3 @@
 module Data = Data
 module Error = Error
 module Error_core = Error_core
-module Kind = Kind
