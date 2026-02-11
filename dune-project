@@ -35,7 +35,7 @@
   atomic
   hmap
   (moonpool
-   (>= 0.8))
+   (>= 0.11))
   (yojson
    (and (>= 1.6) (< 3.0)))
   (mtime
@@ -45,7 +45,7 @@
   (ppxlib
    (and (>= 0.25.0) (< 0.36)))
   (trace
-   (>= 0.7))
+   (>= 0.11))
   (qcheck-core
    (and
     (>= 0.18)

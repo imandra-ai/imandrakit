@@ -18,13 +18,13 @@ depends: [
   "ptime"
   "atomic"
   "hmap"
-  "moonpool" {>= "0.8"}
+  "moonpool" {>= "0.11"}
   "yojson" {>= "1.6" & < "3.0"}
   "mtime" {>= "2.0"}
   "ppx_deriving"
   "ppx_deriving_yojson"
   "ppxlib" {>= "0.25.0" & < "0.36"}
-  "trace" {>= "0.7"}
+  "trace" {>= "0.11"}
   "qcheck-core" {>= "0.18" & with-test}
   "trace-tef" {with-test}
   "ocaml-lsp-server" {with-dev-setup}
