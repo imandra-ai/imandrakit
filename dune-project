@@ -1,5 +1,4 @@
-(lang dune 3.7)
-(map_workspace_root false)
+(lang dune 3.0)
 
 (name imandrakit)
 
@@ -45,7 +44,7 @@
   (ppxlib
    (and (>= 0.25.0) (< 0.36)))
   (trace
-   (>= 0.11))
+   (and (>= 0.10) (< 0.11)))
   (qcheck-core
    (and
     (>= 0.18)

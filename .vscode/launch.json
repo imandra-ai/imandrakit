@@ -1,0 +1,26 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "twine-utils BC",
+      "type": "ocaml.earlybird",
+      "request": "launch",
+      "program": "${workspaceFolder}/_build/default/src/twine-utils/main.bc",
+      "arguments": ["dump", "/home/cwinter/work/imandrax-api/src/py/task_art.bin"],
+      "env": {
+        "LD_LIBRARY_PATH":"${workspaceFolder}/_opam/lib/stublibs:${workspaceFolder}/_build/install/default/lib/stublibs"
+      }
+    },
+    {
+      "name": "twine-utils",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/_build/default/src/twine-utils/main.exe",
+      "args": ["dump", "/home/cwinter/work/imandrax-api/src/py/task_art.bin"],
+      "stopOnEntry": true
+    }
+  ]
+}

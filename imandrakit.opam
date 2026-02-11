@@ -10,7 +10,7 @@ homepage: "https://github.com/imandra-ai/imandrakit"
 bug-reports: "https://github.com/imandra-ai/imandrakit/issues"
 depends: [
   "ocaml" {>= "4.14"}
-  "dune" {>= "3.7"}
+  "dune" {>= "3.0"}
   "containers" {>= "3.4"}
   "iter" {>= "1.0"}
   "base64"
@@ -24,7 +24,7 @@ depends: [
   "ppx_deriving"
   "ppx_deriving_yojson"
   "ppxlib" {>= "0.25.0" & < "0.36"}
-  "trace" {>= "0.11"}
+  "trace" {>= "0.10" & < "0.11"}
   "qcheck-core" {>= "0.18" & with-test}
   "trace-tef" {with-test}
   "ocaml-lsp-server" {with-dev-setup}

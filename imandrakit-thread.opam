@@ -12,7 +12,7 @@ depends: [
   "imandrakit" {= version}
   "logs"
   "hmap"
-  "dune" {>= "3.7"}
+  "dune" {>= "3.0"}
   "moonpool" {>= "0.10"}
   "thread-local-storage"
   "trace-tef" {with-test}
