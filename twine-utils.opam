@@ -8,7 +8,7 @@ license: "MIT"
 homepage: "https://github.com/imandra-ai/imandrakit"
 bug-reports: "https://github.com/imandra-ai/imandrakit/issues"
 depends: [
-  "dune" {>= "3.0"}
+  "dune" {>= "3.7"}
   "imandrakit"
   "imandrakit-log"
   "yojson" {>= "1.6" & < "3.0"}
