@@ -60,7 +60,7 @@ open struct
       name (f : Trace_core.span * Trace_core.span -> 'a) :
       'a =
     let span =
-      Trace.enter_span ~parent ~flavor:`Async ?data ~level ?__FUNCTION__
+      Trace.enter_manual_span ~parent ~flavor:`Async ?data ~level ?__FUNCTION__
         ~__FILE__ ~__LINE__ name
     in
     push_async_parent span;
