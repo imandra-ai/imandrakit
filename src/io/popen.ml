@@ -40,7 +40,8 @@ let kill_and_close_ (self : t) =
     (* kill zombies *)
     let code =
       try
-        ignore (Unix.sigprocmask Unix.SIG_BLOCK [ Sys.sigchld ]);
+        if not (String.equal Sys.os_type "Win32") then
+          ignore (Unix.sigprocmask Unix.SIG_BLOCK [ Sys.sigchld ]);
         fst @@ Unix.waitpid [] self.pid
       with _ -> max_int
     in
@@ -49,7 +50,8 @@ let kill_and_close_ (self : t) =
 
 let run_ ?(env = Unix.environment ()) cmd args : t =
   (* block sigpipe *)
-  ignore (Unix.sigprocmask Unix.SIG_BLOCK [ Sys.sigpipe; Sys.sigchld ]);
+  if not (String.equal Sys.os_type "Win32") then
+    ignore (Unix.sigprocmask Unix.SIG_BLOCK [ Sys.sigpipe; Sys.sigchld ]);
   (* make pipes, to give the appropriate ends to the subprocess *)
   let stdout, p_stdout = Unix.pipe () in
   let stderr, p_stderr = Unix.pipe () in
@@ -64,7 +66,7 @@ let run_ ?(env = Unix.environment ()) cmd args : t =
   let pid = Unix.create_process_env cmd args env p_stdin p_stdout p_stderr in
   let res_code, promise_code = Fut.make () in
   Log.debug (fun k ->
-      k "opened subprocess pid=%d cmd=%S args=[…%d]" pid cmd (Array.length args));
+      k "Opened subprocess pid=%d cmd=%S args=[…%d]" pid cmd (Array.length args));
   (* close the subprocess ends in here *)
   Unix.close p_stdout;
   Unix.close p_stdin;
@@ -94,7 +96,8 @@ let wait (self : t) : int =
   Log.debug (fun k -> k "(popen.wait %a)" pp self);
   let res =
     try
-      ignore (Unix.sigprocmask Unix.SIG_BLOCK [ Sys.sigchld ]);
+      if not (String.equal Sys.os_type "Win32") then
+        ignore (Unix.sigprocmask Unix.SIG_BLOCK [ Sys.sigchld ]);
       snd @@ Unix.waitpid [] self.pid
     with _ -> Unix.WEXITED 0
   in

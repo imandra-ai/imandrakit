@@ -80,19 +80,20 @@ let block_sigpipe_sigint () =
   ignore (Thread.sigmask Unix.SIG_BLOCK [ Sys.sigint; Sys.sigpipe ] : _ list)
 
 let block_signals () =
-  ignore
-    (Unix.sigprocmask Unix.SIG_BLOCK
-       [
-         Sys.sigterm;
-         Sys.sigpipe;
-         Sys.sigint;
-         Sys.sigchld;
-         Sys.sigalrm;
-         Sys.sigusr1;
-         Sys.sigusr2;
-         Sys.sigvtalrm;
-       ]
-      : _ list)
+  if not (String.equal Sys.os_type "Win32") then
+    ignore
+      (Unix.sigprocmask Unix.SIG_BLOCK
+         [
+           Sys.sigterm;
+           Sys.sigpipe;
+           Sys.sigint;
+           Sys.sigchld;
+           Sys.sigalrm;
+           Sys.sigusr1;
+           Sys.sigusr2;
+           Sys.sigvtalrm;
+         ]
+        : _ list)
 
 let read_i32_framed ic : string =
   let buf_len = Bytes.create 4 in

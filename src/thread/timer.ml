@@ -57,7 +57,7 @@ type state = {
 }
 
 let create_state () : state =
-  let p_read, p_write = Unix.pipe ~cloexec:true () in
+  let p_read, p_write = Unix.socketpair ~cloexec:true PF_UNIX SOCK_STREAM 0 in
   (* we'll use [select] to wait for the pipe read end to be ready *)
   Unix.set_nonblock p_read;
   {
