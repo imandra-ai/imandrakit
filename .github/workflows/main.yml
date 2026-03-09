@@ -7,39 +7,8 @@ on:
   pull_request:
 
 jobs:
-  build-all-versions:
-    name: build
-    timeout-minutes: 15
-    strategy:
-      fail-fast: true
-      matrix:
-        os:
-            - ubuntu-latest
-              #- macos-latest
-              #- windows-latest
-        ocaml-compiler:
-            - '4.14'
-
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@main
-      - name: Use OCaml ${{ matrix.ocaml-compiler }}
-        uses: ocaml/setup-ocaml@v3
-        with:
-          ocaml-compiler: ${{ matrix.ocaml-compiler }}
-          dune-cache: true
-          allow-prerelease-opam: true
-
-      - run: opam install -t imandrakit imandrakit-log imandrakit-io --deps-only
-      - run: opam exec -- dune build @install -p imandrakit,imandrakit-log,imandrakit-io
-      - run: opam exec -- dune build @runtest -p imandrakit,imandrakit-log,imandrakit-io
-
-      # install some depopts and build+test again
-      - run: opam install camlzip
-      - run: opam exec -- dune build @install @runtest -p imandrakit,imandrakit-log,imandrakit-io
-
-  build-ocaml5:
-    name: build-ocaml5
+  build:
+    name: Build and Test
     timeout-minutes: 15
     strategy:
       fail-fast: true
