@@ -36,15 +36,19 @@
   (moonpool
    (>= 0.11))
   (yojson
-   (and (>= 1.6) (< 3.0)))
+   (and
+    (>= 1.6)
+    (< 3.0)))
   (mtime
    (>= 2.0))
   ppx_deriving
   ppx_deriving_yojson
   (ppxlib
-   (and (>= 0.25.0) (< 0.36)))
+   (and
+    (>= 0.25.0)
+    (< 0.36)))
   (trace
-   (and (>= 0.10) (< 0.11)))
+   (>= 0.12))
   (qcheck-core
    (and
     (>= 0.18)
@@ -120,7 +124,10 @@
  (depends
   imandrakit
   imandrakit-log
-  (yojson (and (>= 1.6) (< 3.0)))
+  (yojson
+   (and
+    (>= 1.6)
+    (< 3.0)))
   hex
   ppx_deriving
   logs
