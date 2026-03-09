@@ -20,15 +20,12 @@ type Trace.extension_event +=
       error: bool;  (** Is this an actual internal error? *)
     }
         (** Record exception and potentially turn span to an error *)
-  | Ev_push_async_parent of Trace.span
-        (** Set current async span *)
-  | Ev_pop_async_parent of Trace.span
-        (** Remove current async span *)
+  | Ev_push_async_parent of Trace.span  (** Set current async span *)
+  | Ev_pop_async_parent of Trace.span  (** Remove current async span *)
   | Ev_set_span_kind of Trace.span * span_kind
 
 (** Link the given span to the given context *)
-let[@inline] link_spans (sp1 : Trace.span)
-    ~(src : Trace.span) : unit =
+let[@inline] link_spans (sp1 : Trace.span) ~(src : Trace.span) : unit =
   if Trace.enabled () then Trace.extension_event @@ Ev_link_span (sp1, src)
 
 let[@inline] set_span_kind sp k : unit =
@@ -53,12 +50,10 @@ let[@inline] with_async_parent (sp : Trace.span) f =
   Fun.protect ~finally:(fun () -> pop_async_parent sp) f
 
 open struct
-  let auto_enrich_span_l_ : (Trace.span -> unit) list Atomic.t =
-    Atomic.make []
+  let auto_enrich_span_l_ : (Trace.span -> unit) list Atomic.t = Atomic.make []
 
   let with_span_real_ ~level ~parent ?data ?__FUNCTION__ ~__FILE__ ~__LINE__
-      name (f : Trace_core.span * Trace_core.span -> 'a) :
-      'a =
+      name (f : Trace_core.span * Trace_core.span -> 'a) : 'a =
     let span =
       Trace.enter_span ~parent ~flavor:`Async ?data ~level ?__FUNCTION__
         ~__FILE__ ~__LINE__ name
@@ -87,8 +82,7 @@ end
 
 (** Wrap [f()] in a async span. *)
 let with_span ?(level = Trace.get_default_level ()) ?parent ?data ?__FUNCTION__
-    ~__FILE__ ~__LINE__ name
-    (f : Trace.span * Trace.span -> 'a) : 'a =
+    ~__FILE__ ~__LINE__ name (f : Trace.span * Trace.span -> 'a) : 'a =
   let trace_enabled = Trace.enabled () in
   if trace_enabled && level <= Trace.get_current_level () then
     with_span_real_ ~level ~parent ?data ?__FUNCTION__ ~__FILE__ ~__LINE__ name
@@ -99,10 +93,7 @@ let with_span ?(level = Trace.get_default_level ()) ?parent ?data ?__FUNCTION__
       (* make sure we still link spans in [f()] to [p] *)
       let@ () = with_async_parent p in
       f (Trace.Collector.dummy_span, p)
-    | _ ->
-      f
-        ( Trace.Collector.dummy_span,
-          Trace.Collector.dummy_span )
+    | _ -> f (Trace.Collector.dummy_span, Trace.Collector.dummy_span)
   )
 
 open struct
@@ -116,8 +107,7 @@ let enrich_span_service ?version (span : Trace.span) : unit =
   let data = [] |> cons_assoc_opt_ "service.version" version in
   Trace.add_data_to_span span data
 
-let enrich_span_deployment ?id ?name ~deployment (span : Trace.span) :
-    unit =
+let enrich_span_deployment ?id ?name ~deployment (span : Trace.span) : unit =
   let data =
     [ "deployment.environment.name", `String deployment ]
     |> cons_assoc_opt_ "deployment.id" id
