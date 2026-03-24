@@ -1,6 +1,7 @@
 (executable
  (name main)
- (modes (byte exe))
+ (modes
+  (byte exe))
  (public_name twine_utils)
  (package twine-utils)
  (preprocess
