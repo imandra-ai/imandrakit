@@ -35,6 +35,14 @@ let get l =
   Mutex.unlock l.mutex;
   x
 
+let try_get l =
+  if Mutex.try_lock l.mutex then (
+    let x = l.content in
+    Mutex.unlock l.mutex;
+    Some x
+  ) else
+    None
+
 let set l x =
   Mutex.lock l.mutex;
   l.content <- x;

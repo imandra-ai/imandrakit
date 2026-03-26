@@ -25,6 +25,10 @@ val get : 'a t -> 'a
 (** Atomically get the value in the lock. The value that is returned isn't
     protected! *)
 
+val try_get : 'a t -> 'a option
+(** Atomically get the value in the lock, but only if we get the lock
+    immediately. *)
+
 val set : 'a t -> 'a -> unit
 (** Atomically set the value. *)
 
