@@ -42,9 +42,6 @@ CAMLprim value caml_imandrakit_setrlimit(value _resource, value _cur, value _max
 
   if (old_limits.rlim_cur != new_limits.rlim_cur ||
       old_limits.rlim_max != new_limits.rlim_max) {
-    // FILE *f = fopen("/tmp/myfile", "w");
-    // fprintf(f, "(%lu) CUR: %lu MAX: %lu\n", sizeof(rlim_t), new_limits.rlim_cur, new_limits.rlim_max);
-    // fclose(f);
     is_ok = setrlimit(resource, &new_limits) == 0;
   }
 #else
