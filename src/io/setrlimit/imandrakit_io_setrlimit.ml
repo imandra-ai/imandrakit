@@ -15,21 +15,55 @@ type resource =
 
 module Raw = struct
   let resource_to_int = function
-    | RLIMIT_CORE -> 0
-    | RLIMIT_CPU -> 1
-    | RLIMIT_DATA -> 2
-    | RLIMIT_FSIZE -> 3
-    | RLIMIT_NOFILE -> 4
-    | RLIMIT_STACK -> 5
-    | RLIMIT_AS -> 6
+    | RLIMIT_CORE -> 0n
+    | RLIMIT_CPU -> 1n
+    | RLIMIT_DATA -> 2n
+    | RLIMIT_FSIZE -> 3n
+    | RLIMIT_NOFILE -> 4n
+    | RLIMIT_STACK -> 5n
+    | RLIMIT_AS -> 6n
 
-  external set : int -> int -> bool = "caml_imandrakit_setrlimit"
+  external get : nativeint -> (nativeint * nativeint, nativeint) Result.t
+    = "caml_imandrakit_getrlimit"
+
+  external set : nativeint -> nativeint -> nativeint -> bool
+    = "caml_imandrakit_setrlimit"
 end
 
 (** [set resource limit] returns [true] if setting the limit succeeded *)
-let[@inline] set (r : resource) (v : int) : bool =
-  Raw.set (Raw.resource_to_int r) v
+let[@inline] set (r : resource) (cur : nativeint) (max : nativeint) : bool =
+  Raw.set (Raw.resource_to_int r) cur max
+
+type limits = {
+  cur: nativeint option; (* Soft limit *)
+  max: nativeint option; (* Hard limit *)
+}
+[@@deriving show { with_path = false }]
 
 (** Like {!set}, but propagates failures
     @raise Failure if it fails *)
-let set_exn r v : unit = if not (set r v) then failwith "setrlimit failed"
+let set_exn (r : resource) (l : limits) : unit =
+  let cur : nativeint = Option.value l.cur ~default:Nativeint.minus_one in
+  let max : nativeint = Option.value l.max ~default:Nativeint.minus_one in
+  if not (set r cur max) then failwith "setrlimit failed"
+
+let set_hard_exn (r : resource) (max : nativeint option) : unit =
+  set_exn r { cur = None; max }
+
+let get (r : resource) : (limits, nativeint) Result.t =
+  match Raw.get (Raw.resource_to_int r) with
+  | Ok (cur, max) ->
+    Ok
+      {
+        cur =
+          (if cur = Nativeint.minus_one then
+             None
+           else
+             Some cur);
+        max =
+          (if max = Nativeint.minus_one then
+             None
+           else
+             Some max);
+      }
+  | Error e -> Error e

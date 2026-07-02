@@ -3,6 +3,8 @@
  (public_name imandrakit-io.setrlimit)
  (synopsis "Basic resource control via setrlimit")
  (c_library_flags :standard)
+ (preprocess
+  (pps ppx_deriving.std ppx_deriving_yojson ppx_blob ppx_subliner))
  (foreign_stubs
   (language c)
   ;(include_dirs .)
