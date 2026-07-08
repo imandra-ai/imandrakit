@@ -6,14 +6,18 @@ type t
 exception Killed
 (** Exception indicating that a process did not run to completion. *)
 
-val run : ?env:string array -> string -> string list -> t
+val run :
+  ?is_group_leader:bool -> ?env:string array -> string -> string list -> t
 (** Runs subprocess with the given command and arguments. *)
 
 val await : t -> (int, exn) result
 (** Awaits the exit of a process. *)
 
-val kill : ?is_group:bool -> ?max_wait_s:float -> t -> unit
+val kill : ?max_wait_s:float -> t -> unit
 (** Kills a process. *)
+
+val kill_all : unit -> unit
+(** Kills all known processes. *)
 
 val signal : t -> int -> unit
 (** Sends a signal to the process. *)

@@ -11,6 +11,7 @@ type t = {
   start_time: Ptime.t;
   mutable stop_time: Ptime.t option;
   mutable on_exit: (t -> (int, exn) result -> unit) list;
+  is_group_leader: bool;
 }
 
 exception Killed
@@ -18,6 +19,7 @@ exception Killed
 (* Processes that we started. Global because all threads need access to it. *)
 let g_running_processes : t list ref = ref []
 let g_running_processes_mtx : Mutex.t = Mutex.create ()
+let g_more_to_reap : bool Atomic.t = Atomic.make false
 
 (* Initialization flag. *)
 let g_initialized : bool ref = ref false
@@ -27,7 +29,7 @@ let fulfill (p : t) (r : (int, exn) result) (pid : int) : unit =
   Mutex.lock p.exit_code_mutex;
   p.exit_code <- Some r;
   p.stop_time <- Some (Ptime_clock.now ());
-  Condition.signal p.exit_code_condition;
+  Condition.broadcast p.exit_code_condition;
   Mutex.unlock p.exit_code_mutex;
   List.iter (fun f -> ignore (Thread.create (fun _ -> f p r))) p.on_exit
 
@@ -53,19 +55,22 @@ let reap_one (p : t) : bool =
   with Unix.Unix_error (Unix.ECHILD, _, _) -> true
 
 let rec reap () =
+  Atomic.set g_more_to_reap true;
   if Mutex.try_lock g_running_processes_mtx then (
-    (try
-       let r = List.filter reap_one !g_running_processes in
-       g_running_processes := r;
-       if List.length r <= 2 then
-         Log.debug (fun k ->
-             k "(@[remaining %a@])" (Fmt.Dump.list Fmt.int)
-               (List.map (fun x -> x.pid) r))
-       else
-         Log.debug (fun k -> k "(@[remaining :n %d@])" (List.length r))
-     with exc ->
-       Log.debug (fun k ->
-           k "(@[reap :exception '%s'@])" (Printexc.to_string exc)));
+    while Atomic.exchange g_more_to_reap false do
+      try
+        let r = List.filter reap_one !g_running_processes in
+        g_running_processes := r;
+        if List.length r <= 2 then
+          Log.debug (fun k ->
+              k "(@[remaining %a@])" (Fmt.Dump.list Fmt.int)
+                (List.map (fun x -> x.pid) r))
+        else
+          Log.debug (fun k -> k "(@[remaining :n %d@])" (List.length r))
+      with exc ->
+        Log.debug (fun k ->
+            k "(@[reap :exception '%s'@])" (Printexc.to_string exc))
+    done;
     Mutex.unlock g_running_processes_mtx
   )
 
@@ -89,7 +94,8 @@ let init () =
         g_initialized := true
       ))
 
-let spawn (env : string array) (cmd : string) (args : string array) : t =
+let spawn (is_group_leader : bool) (env : string array) (cmd : string)
+    (args : string array) : t =
   init ();
 
   if not (String.equal Sys.os_type "Win32") then
@@ -123,6 +129,7 @@ let spawn (env : string array) (cmd : string) (args : string array) : t =
       on_exit = [];
       start_time = Ptime_clock.now ();
       stop_time = None;
+      is_group_leader;
     }
   in
   Log.debug (fun k -> k "(spawn :pid %d :cmd %S)" r.pid cmd);
@@ -130,8 +137,9 @@ let spawn (env : string array) (cmd : string) (args : string array) : t =
       g_running_processes := r :: !g_running_processes);
   r
 
-let run ?(env = Unix.environment ()) (cmd : string) (args : string list) : t =
-  spawn env cmd (Array.of_list (cmd :: args))
+let run ?(is_group_leader = false) ?(env = Unix.environment ()) (cmd : string)
+    (args : string list) : t =
+  spawn is_group_leader env cmd (Array.of_list (cmd :: args))
 
 let pid_alive (pid : int) =
   try
@@ -168,18 +176,30 @@ let await (self : t) : (int, exn) result =
   Mutex.unlock self.exit_code_mutex;
   r
 
-let kill ?(is_group = false) ?(max_wait_s = 0.5) self =
+let kill ?(max_wait_s = 0.5) self =
   Log.debug (fun k -> k "(kill %d)" self.pid);
   let max_wait_s = max 0.0 max_wait_s in
   try
     let pgid =
-      if is_group then
+      if self.is_group_leader then
         -self.pid
       else
         self.pid
     in
 
-    (try Unix.kill pgid Sys.sigterm with _ -> ());
+    (try Unix.kill pgid Sys.sigterm with
+    | Unix.Unix_error (Unix.ESRCH, _, _) ->
+      (* Perhaps it hasn't become a group leader yet. *)
+      (try Unix.kill self.pid Sys.sigterm with
+      | Unix.Unix_error (Unix.ESRCH, _, _) ->
+        (* Perhaps it just became a group leader. *)
+        (try Unix.kill pgid Sys.sigterm with _ -> ())
+      | exc ->
+        Log.debug (fun k ->
+            k "(@[kill :exception1@ '%s'@])" (Printexc.to_string exc)))
+    | exc ->
+      Log.debug (fun k ->
+          k "(@[kill :exception2@ '%s'@])" (Printexc.to_string exc)));
 
     if not (pid_is_gone ~pid:pgid ~max_wait_s:(max_wait_s *. 0.75)) then (
       Log.debug (fun k -> k "(hard-kill %d)" pgid);
@@ -205,6 +225,10 @@ let kill ?(is_group = false) ?(max_wait_s = 0.5) self =
           "Child processes may be leaked due to exception raised while \
            attempting to kill process %d: %s"
           self.pid (Printexc.to_string exc))
+
+let kill_all () =
+  Mutex.protect g_running_processes_mtx (fun x ->
+      List.iter kill !g_running_processes)
 
 let signal (self : t) (s : int) = Unix.kill self.pid s
 
