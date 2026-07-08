@@ -11,6 +11,9 @@ val return : 'a -> 'a t
 val get : 'a t -> 'a
 (** Get the current value. *)
 
+val try_get : 'a t -> 'a option
+(** Get the current value, but only if we get the lock immediately. *)
+
 val pp : 'a Fmt.printer -> 'a t Fmt.printer
 
 exception Frozen

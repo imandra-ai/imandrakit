@@ -17,6 +17,12 @@ type 'a st = {
 type 'a t = { st: 'a st Lock.t } [@@unboxed]
 
 let[@inline] get (self : 'a t) : 'a = (Lock.get self.st).v
+
+let[@inline] try_get (self : 'a t) : 'a option =
+  match Lock.try_get self.st with
+  | Some v -> Some v.v
+  | None -> None
+
 let[@inline] pp ppx out self : unit = ppx out (get self)
 
 let[@inline] return x =
