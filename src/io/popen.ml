@@ -41,7 +41,7 @@ let reap_one (p : t) : bool =
     else (
       match wstatus with
       | WEXITED c ->
-        Log.debug (fun k -> k "(resolve :ok %d)" p.pid);
+        Log.debug (fun k -> k "(resolve :ok %d :c %d)" p.pid c);
         fulfill p (Ok c) p.pid;
         false
       | WSIGNALED c ->
@@ -112,7 +112,11 @@ let spawn (is_group_leader : bool) (env : string array) (cmd : string)
   let stdout = Unix.in_channel_of_descr stdout in
   let stderr = Unix.in_channel_of_descr stderr in
   let stdin = Unix.out_channel_of_descr stdin in
-  let pid = Unix.create_process_env cmd args env p_stdin p_stdout p_stderr in
+  let pid =
+    Unix.create_process_env cmd
+      (Array.append [| cmd |] args)
+      env p_stdin p_stdout p_stderr
+  in
   (* Close the subprocess ends in here *)
   Unix.close p_stdout;
   Unix.close p_stdin;
@@ -132,14 +136,16 @@ let spawn (is_group_leader : bool) (env : string array) (cmd : string)
       is_group_leader;
     }
   in
-  Log.debug (fun k -> k "(spawn :pid %d :cmd %S)" r.pid cmd);
+  Log.debug (fun k ->
+      k "(spawn :pid %d :cmd '%s' :args '%s')" r.pid cmd
+        (String.concat " " (Array.to_list args)));
   Mutex.protect g_running_processes_mtx (fun x ->
       g_running_processes := r :: !g_running_processes);
   r
 
 let run ?(is_group_leader = false) ?(env = Unix.environment ()) (cmd : string)
     (args : string list) : t =
-  spawn is_group_leader env cmd (Array.of_list (cmd :: args))
+  spawn is_group_leader env cmd (Array.of_list args)
 
 let pid_alive (pid : int) =
   try

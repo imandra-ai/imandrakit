@@ -12,7 +12,6 @@ let of_twine st v =
   make ~name ()
 
 let generic_internal_error : t = make ~name:"GenericInternalError" ()
-let timeout : t = make ~name:"Timeout" ()
 let todo : t = make ~name:"Todo" ()
 
 module As_key = struct
