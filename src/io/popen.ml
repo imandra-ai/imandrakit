@@ -45,7 +45,7 @@ let reap_one (p : t) : bool =
         fulfill p (Ok c) p.pid;
         false
       | WSIGNALED c ->
-        Log.debug (fun k -> k "(resolve :error %d)" p.pid);
+        Log.debug (fun k -> k "(resolve :error %d :c %d)" p.pid c);
         fulfill p (Error Killed) p.pid;
         false
       | WSTOPPED _ ->
