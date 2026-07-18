@@ -25,6 +25,11 @@ let g_more_to_reap : bool Atomic.t = Atomic.make false
 let g_initialized : bool ref = ref false
 let g_initialized_mtx : Mutex.t = Mutex.create ()
 
+(* Reaper thread *)
+let g_reaper : Thread.t option ref = ref None
+let g_reaper_mtx : Mutex.t = Mutex.create ()
+let g_reaper_condition : Condition.t = Condition.create ()
+
 let fulfill (p : t) (r : (int, exn) result) (pid : int) : unit =
   Mutex.lock p.exit_code_mutex;
   p.exit_code <- Some r;
@@ -55,7 +60,6 @@ let reap_one (p : t) : bool =
   with Unix.Unix_error (Unix.ECHILD, _, _) -> true
 
 let rec reap () =
-  Atomic.set g_more_to_reap true;
   if Mutex.try_lock g_running_processes_mtx then (
     while Atomic.exchange g_more_to_reap false do
       try
@@ -68,11 +72,23 @@ let rec reap () =
         else
           Log.debug (fun k -> k "(@[remaining :n %d@])" (List.length r))
       with exc ->
-        Log.debug (fun k ->
+        Log.warn (fun k ->
             k "(@[reap :exception '%s'@])" (Printexc.to_string exc))
     done;
     Mutex.unlock g_running_processes_mtx
   )
+
+let reaper () =
+  (* This thread, once kicked off, will run forever. Once there are no more
+     processes to reap, it will remain blocked and therefore won't consume any
+     time or additional memory. *)
+  while true do
+    Mutex.lock g_reaper_mtx;
+    Condition.wait g_reaper_condition g_reaper_mtx;
+    Atomic.set g_more_to_reap true;
+    reap ();
+    Mutex.unlock g_reaper_mtx
+  done
 
 let init () =
   Mutex.protect g_initialized_mtx (fun _ ->
@@ -84,10 +100,22 @@ let init () =
              (Sys.Signal_handle
                 (fun _ ->
                   Log.debug (fun k -> k "(sigchld)");
-                  reap ();
+
+                  (* Note: when we get here, we could be running in the same
+                     thread that just locked an exit code mutex in [await] and
+                     if [reap] were to lock that same mutex, OCaml would hate
+                     us. *)
+                  Atomic.set g_more_to_reap true;
+                  if Mutex.try_lock g_reaper_mtx then (
+                    Condition.signal g_reaper_condition;
+                    Mutex.unlock g_reaper_mtx
+                  );
+
                   match old_handler with
                   | Sys.Signal_handle h -> h Sys.sigchld
                   | _ -> ())));
+
+        g_reaper := Some (Thread.create reaper ());
 
         ignore (Unix.sigprocmask Unix.SIG_UNBLOCK [ Sys.sigchld ]);
 
@@ -171,13 +199,12 @@ let await (self : t) : (int, exn) result =
   Log.debug (fun k -> k "(await %d)" self.pid);
   Mutex.lock self.exit_code_mutex;
   let r =
-    match self.exit_code with
-    | Some ec -> ec
-    | None ->
-      Condition.wait self.exit_code_condition self.exit_code_mutex;
-      Option.value self.exit_code
-        ~default:
-          (Error (Failure "Exit code of process unexpectedly not present."))
+    while Option.is_none self.exit_code do
+      Condition.wait self.exit_code_condition self.exit_code_mutex
+    done;
+    Option.value self.exit_code
+      ~default:
+        (Error (Failure "Exit code of process unexpectedly not present."))
   in
   Mutex.unlock self.exit_code_mutex;
   r
