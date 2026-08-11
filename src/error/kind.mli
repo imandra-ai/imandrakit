@@ -15,9 +15,6 @@ val name : t -> string
 val generic_internal_error : t
 (** Any internal error that's not more specific *)
 
-val timeout : t
-(** Timeout *)
-
 val todo : t
 (** Not implemented yet *)
 

@@ -69,10 +69,10 @@ let get_pid = Unix.getpid
 
 let with_signal ?(signal = Sys.sigint) ~on_sig f =
   Sys.catch_break false;
-  let handler = Sys.signal signal (Sys.Signal_handle on_sig) in
+  let previous = Sys.signal signal (Sys.Signal_handle on_sig) in
   let old_mask = Thread.sigmask Unix.SIG_UNBLOCK [ signal ] in
   Fun.protect f ~finally:(fun () ->
-      Sys.set_signal signal handler;
+      Sys.set_signal signal previous;
       ignore (Thread.sigmask Unix.SIG_BLOCK old_mask : _ list);
       Sys.catch_break true)
 
@@ -84,10 +84,8 @@ let block_signals () =
     ignore
       (Unix.sigprocmask Unix.SIG_BLOCK
          [
-           Sys.sigterm;
            Sys.sigpipe;
            Sys.sigint;
-           Sys.sigchld;
            Sys.sigalrm;
            Sys.sigusr1;
            Sys.sigusr2;

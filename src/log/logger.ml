@@ -122,7 +122,9 @@ module Output = struct
           output_string oc s;
           output_char oc '\n';
           if autoflush then Stdlib.flush oc
-        with _ -> Printf.eprintf "logger: failed to log to chan\n%!")
+        with exc ->
+          Printf.eprintf "logger: failed to log to chan:\n%s\n%!"
+            (Printexc.to_string exc))
       ()
 
   let stdout () = to_chan stdout
