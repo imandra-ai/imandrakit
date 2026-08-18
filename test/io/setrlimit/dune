@@ -1,3 +1,10 @@
 (tests
- (names t1 t2)
+ (names t1)
+ (libraries imandrakit-io.setrlimit))
+
+; macOS rejects lowering RLIMIT_AS with EINVAL, so this only runs elsewhere
+(tests
+ (names t2)
+ (enabled_if
+  (<> %{system} macosx))
  (libraries imandrakit-io.setrlimit))

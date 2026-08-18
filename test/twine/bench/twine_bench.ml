@@ -11,7 +11,7 @@ and term_view =
   | Const of int
   | App of term * term
   | Plus of term * term
-[@@deriving show, twine, serpack] [@@hashcons]
+[@@deriving show, twine] [@@hashcons]
 
 type proof = {
   p_id: int;
@@ -22,7 +22,7 @@ and proof_view =
   | MP of proof * proof
   | Assume of term
   | Refl of term
-[@@deriving show, twine, serpack] [@@hashcons]
+[@@deriving show, twine] [@@hashcons]
 
 let () =
   Imandrakit_twine.Encode.add_cache_with

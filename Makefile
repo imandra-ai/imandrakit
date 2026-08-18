@@ -20,8 +20,38 @@ format:
 format-check:
 	@dune build $(DUNE_OPTS) @fmt --display=quiet
 
+OPAM_PKGS=imandrakit imandrakit-io imandrakit-log imandrakit-thread twine-utils
+
+# `--deps-only` skips depopts, and won't add test deps once the
+# packages themselves are installed, so list both explicitly
+OPAM_DEPOPTS=camlzip
+OPAM_TEST_DEPS=qcheck-core trace-tef hex
+
+_opam:
+	opam switch create . --empty
+
 opam-install-deps:
 	opam install . --deps-only
+
+opam-install-dev-deps:
+	opam install . --deps-only --with-test --with-doc
+	opam install $(OPAM_DEPOPTS) $(OPAM_TEST_DEPS)
+
+opam-pin:
+	opam pin . -y -n
+
+# -w pins your working tree, not just the latest commit
+opam-pin-dev:
+	opam pin . -y -n -w
+
+opam-install: opam-pin
+	opam install $(OPAM_PKGS)
+
+opam-uninstall:
+	opam remove $(OPAM_PKGS)
+
+opam-unpin:
+	opam pin remove $(OPAM_PKGS)
 
 WATCH?= @check @runtest
 watch:
@@ -29,7 +59,9 @@ watch:
 watch-autopromote:
 	dune build $(DUNE_OPTS) -w $(WATCH) --auto-promote
 
-.PHONY: test clean build doc build-dev
+.PHONY: test clean build doc build-dev \
+	opam-install-deps opam-install-dev-deps opam-pin opam-install \
+	opam-uninstall opam-unpin
 
 VERSION=$(shell awk '/^version:/ {print $$2}' imandrakit.opam)
 update_next_tag:
