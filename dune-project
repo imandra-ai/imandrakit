@@ -53,7 +53,7 @@
   (ocaml-lsp-server :with-dev-setup)
   (ocamlformat
    (and
-    (= 0.24.1)
+    (= 0.27.0)
     :with-dev-setup))
   (hex
    (and
