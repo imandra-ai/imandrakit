@@ -24,7 +24,7 @@ depends: [
   "ppx_deriving"
   "ppx_deriving_yojson"
   "ppxlib" {>= "0.25.0" & < "0.36"}
-  "trace" {>= "0.10" & < "0.11"}
+  "trace" {>= "0.12"}
   "qcheck-core" {>= "0.18" & with-test}
   "trace-tef" {with-test}
   "ocaml-lsp-server" {with-dev-setup}

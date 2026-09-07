@@ -1,94 +1,64 @@
 module Trace = Trace_core
+module Log = (val Logger.mk_log_str "x.trace-async")
 
-(** Inspired from OTEL *)
-type span_kind =
-  | SK_client
-  | SK_server
-  | SK_internal
-  | SK_producer
-  | SK_consumer
-[@@deriving eq, twine, show { with_path = false }]
+type span_id = int64
+type trace_id = string
 
-type Trace.extension_event +=
-  | Ev_link_span of Trace.explicit_span * Trace.explicit_span_ctx
-        (** Link the given span to the given context. The context isn't the
-            parent, but the link can be used to correlate both spans. *)
-  | Ev_record_exn of {
-      sp: Trace.span;
-      exn: exn;
-      bt: Printexc.raw_backtrace;
-      error: bool;  (** Is this an actual internal error? *)
-    }
-        (** Record exception and potentially turn span to an error *)
-  | Ev_push_async_parent of Trace.explicit_span_ctx
-        (** Set current async span *)
-  | Ev_pop_async_parent of Trace.explicit_span_ctx
-        (** Remove current async span *)
-  | Ev_set_span_kind of Trace.span * span_kind
+let dummy_span = 0L
+let dummy_trace_id : trace_id = ""
 
-(** Link the given span to the given context *)
-let[@inline] link_spans (sp1 : Trace.explicit_span)
-    ~(src : Trace.explicit_span_ctx) : unit =
-  if Trace.enabled () then Trace.extension_event @@ Ev_link_span (sp1, src)
-
-let[@inline] set_span_kind sp k : unit =
-  if Trace.enabled () then Trace.extension_event @@ Ev_set_span_kind (sp, k)
+type explicit_span = {
+  span: span_id;
+      (** Identifier for this span. Several explicit spans might share the same
+          identifier since we can differentiate between them via [meta]. *)
+  trace_id: trace_id;  (** The trace this belongs to *)
+  mutable meta: unit;
+      (** Metadata for this span (and its context). This can be used by
+          collectors to carry collector-specific information from the beginning
+          of the span, to the end of the span. *)
+}
 
 (** Current parent scope for async spans *)
-let k_span_ctx : Trace.explicit_span_ctx Hmap.key = Hmap.Key.create ()
-
-(** Record exception in the span *)
-let add_exn_to_span ~is_error (sp : Trace.span) (exn : exn)
-    (bt : Printexc.raw_backtrace) =
-  Trace.extension_event @@ Ev_record_exn { sp; exn; bt; error = is_error }
-
-let push_async_parent (sp : Trace.explicit_span_ctx) : unit =
-  Trace.extension_event @@ Ev_push_async_parent sp
-
-let pop_async_parent (sp : Trace.explicit_span_ctx) : unit =
-  Trace.extension_event @@ Ev_pop_async_parent sp
-
-let[@inline] with_async_parent (sp : Trace.explicit_span_ctx) f =
-  push_async_parent sp;
-  Fun.protect ~finally:(fun () -> pop_async_parent sp) f
+let k_span_ctx : Trace.span Hmap.key = Hmap.Key.create ()
 
 open struct
-  let auto_enrich_span_l_ : (Trace.explicit_span -> unit) list Atomic.t =
-    Atomic.make []
+  let auto_enrich_span_l_ : (Trace.span -> unit) list Atomic.t = Atomic.make []
 
-  let with_span_real_ ~level ~parent ?data ?__FUNCTION__ ~__FILE__ ~__LINE__
-      name (f : Trace_core.explicit_span * Trace_core.explicit_span_ctx -> 'a) :
-      'a =
+  let with_span_real_ ~level ~(parent : Trace.span option) ?data ?__FUNCTION__
+      ~__FILE__ ~__LINE__ name (f : Trace.span -> 'a) : 'a =
+    let parent =
+      match parent with
+      | None -> Trace.current_span ()
+      | Some x when x = Trace.Collector.dummy_span -> Trace.current_span ()
+      | _ -> parent
+    in
+
     let span =
-      Trace.enter_manual_span ~parent ~flavor:`Async ?data ~level ?__FUNCTION__
+      Trace.enter_span ~parent ~flavor:`Async ?data ~level ?__FUNCTION__
         ~__FILE__ ~__LINE__ name
     in
-    push_async_parent (Trace_core.ctx_of_span span);
+
+    let@ _ = Trace.with_current_span_set_to span in
 
     (* apply automatic enrichment *)
-    if span.span != Trace.Collector.dummy_span then
+    if span != Trace.Collector.dummy_span then
       List.iter (fun f -> f span) (Atomic.get auto_enrich_span_l_);
 
-    let cleanup () =
-      pop_async_parent (Trace_core.ctx_of_span span);
-      Trace.exit_manual_span span
-    in
-
     try
-      let x = f (span, Trace.ctx_of_span span) in
-      cleanup ();
+      let x = f span in
+      Trace.exit_span span;
       x
     with e ->
       let bt = Printexc.get_raw_backtrace () in
-      add_exn_to_span ~is_error:true span.span e bt;
-      cleanup ();
+      Opentelemetry_trace.record_exception span e bt;
+      Trace.exit_span span;
       Printexc.raise_with_backtrace e bt
 end
 
 (** Wrap [f()] in a async span. *)
-let with_span ?(level = Trace.get_default_level ()) ?parent ?data ?__FUNCTION__
-    ~__FILE__ ~__LINE__ name
-    (f : Trace.explicit_span * Trace.explicit_span_ctx -> 'a) : 'a =
+let with_span ?(level = Trace.get_default_level ())
+    ?(parent : Trace.span option) ?data ?__FUNCTION__ ~__FILE__ ~__LINE__ name
+    (f : Trace.span -> 'a) : 'a =
   let trace_enabled = Trace.enabled () in
   if trace_enabled && level <= Trace.get_current_level () then
     with_span_real_ ~level ~parent ?data ?__FUNCTION__ ~__FILE__ ~__LINE__ name
@@ -97,13 +67,35 @@ let with_span ?(level = Trace.get_default_level ()) ?parent ?data ?__FUNCTION__
     match parent with
     | Some p when trace_enabled ->
       (* make sure we still link spans in [f()] to [p] *)
-      let@ () = with_async_parent p in
-      f (Trace.Collector.dummy_explicit_span, p)
-    | _ ->
-      f
-        ( Trace.Collector.dummy_explicit_span,
-          Trace.Collector.dummy_explicit_span_ctx )
+      let@ _ = Trace.with_current_span_set_to p in
+      f Trace.Collector.dummy_span
+    | _ -> f Trace.Collector.dummy_span
   )
+
+let with_fresh_trace ~level ?data ?__FUNCTION__ ~__FILE__ ~__LINE__ name
+    (f : Trace.span -> 'a) : 'a =
+  match Opentelemetry.Sdk.get () with
+  | Some exporter ->
+    let trace_id = Opentelemetry.Trace_id.create () in
+    let id = Opentelemetry.Span_id.create () in
+    let sctx = Opentelemetry.Span_ctx.make ~trace_id ~parent_id:id () in
+    let otel_parent =
+      let start_time =
+        Opentelemetry.Clock.now
+          (Opentelemetry.Exporter.get_tracer exporter).clock
+      in
+      Opentelemetry.Span.make ~trace_id ~id ~start_time ~end_time:start_time
+        name
+    in
+    let parent = Opentelemetry_trace.Extensions.Span_otel otel_parent in
+    Fun.protect
+      ~finally:(fun () ->
+        Trace.exit_span parent
+        (* Opentelemetry.Emitter.emit
+          (Opentelemetry.Exporter.get_tracer exporter).emit [ otel_parent ] *))
+      (fun () ->
+        with_span ~level ~parent ?data ?__FUNCTION__ ~__FILE__ ~__LINE__ name f)
+  | _ -> f Trace.Collector.dummy_span
 
 open struct
   let cons_assoc_opt_ name x l =
@@ -112,21 +104,24 @@ open struct
     | Some v -> (name, `String v) :: l
 end
 
-let enrich_span_service ?version (span : Trace.explicit_span) : unit =
-  let data = [] |> cons_assoc_opt_ "service.version" version in
-  Trace.add_data_to_manual_span span data
+let add_data_to_span (span : Trace.span) data : unit =
+  (* Trace.add_data_to_span (IK (span_to_explicit_span span)) data *)
+  Trace.add_data_to_span span data
 
-let enrich_span_deployment ?id ?name ~deployment (span : Trace.explicit_span) :
-    unit =
+let enrich_span_service ?version (span : Trace.span) : unit =
+  let data = [] |> cons_assoc_opt_ "service.version" version in
+  Trace.add_data_to_span span data
+
+let enrich_span_deployment ?id ?name ~deployment (span : Trace.span) : unit =
   let data =
     [ "deployment.environment.name", `String deployment ]
     |> cons_assoc_opt_ "deployment.id" id
     |> cons_assoc_opt_ "deployment.name" name
   in
-  Trace.add_data_to_manual_span span data
+  add_data_to_span span data
 
 (** Add a hook that will be called on every explicit span *)
-let add_auto_enrich_span (f : Trace.explicit_span -> unit) : unit =
+let add_auto_enrich_span (f : Trace.span -> unit) : unit =
   while
     let l = Atomic.get auto_enrich_span_l_ in
     not (Atomic.compare_and_set auto_enrich_span_l_ l (f :: l))

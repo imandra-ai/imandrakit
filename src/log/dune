@@ -15,4 +15,5 @@
   uuidm
   unix
   trace.core
-  yojson))
+  yojson
+  opentelemetry.trace))
