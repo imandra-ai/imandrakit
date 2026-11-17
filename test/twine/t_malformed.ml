@@ -58,6 +58,15 @@ include struct
   let decode_as_raw_value src_kind bytes =
     run_decoder src_kind (fun dec off -> D.Value.show (D.read dec off)) bytes
 
+  let decode_as_int_array src_kind bytes =
+    run_decoder src_kind
+      (fun dec off ->
+        D.array dec off
+        |> D.Array_cursor.to_array_of (D.int_truncate dec)
+        |> Array.to_list |> List.map string_of_int |> String.concat "; "
+        |> Printf.sprintf "[|%s|]")
+      bytes
+
   (* with the ppx-generated decoder for [t] *)
   let decode_as_t src_kind bytes =
     match run_decoder src_kind of_twine bytes with
@@ -135,6 +144,26 @@ let cases :
       From_string,
       decode_as_raw_value,
       "\x15\xef" ^ repeat_byte 9 '\x80' ^ "\x01\x0a" );
+    (* 00: entry 1. e5: ref with n = 5, target 1 - 5 - 1 = -5. A ref is
+       returned without being followed, so nothing reads at -5 *)
+    ( "ref pointing before the start of the input",
+      From_string,
+      decode_as_raw_value,
+      "\x15\xe5\x00" );
+    (* af: constructor without arguments, index from a varint at 1 of
+       2^62 - 15, so 2^62: fits in int64 but not in OCaml's 63-bit int.
+       09: entry 0 *)
+    ( "constructor index 2^62, too large for int",
+      From_string,
+      decode_as_raw_value,
+      "\xaf\xf1" ^ repeat_byte 7 '\xff' ^ "\x3f\x09" );
+    (* 6f: array with a count from a varint at 1 of 2^60 - 15, so 2^60
+       elements in an 11-byte input. 15: element 0, int 5 (it is decoded
+       before the array is allocated). 0a: entry 0 *)
+    ( "array claiming 2^60 elements",
+      From_string,
+      decode_as_int_array,
+      "\x6f\xf1" ^ repeat_byte 7 '\xff' ^ "\x0f\x15\x0a" );
     (* 00: entry 1. f5: pointer with n = 5, target 1 - 5 - 1 = -5 *)
     ( "pointer at offset 1 with n=5",
       From_string,

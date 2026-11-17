@@ -4,17 +4,20 @@ control: int 5 (channel)                         OK     5
 int read as string                               Error  Twine: decode: expected string at offset=0x0
 reserved tag 9                                   Error  Decode: invalid first byte 9/0 at 0: type is reserved
 unknown constructor index                        Error  expected value of type t (defined in at File "test/twine/t_malformed.ml", line 22, characters 0-52), got (Cstor0 5)
-entrypoint byte larger than input                Error  Twine: decode: out-of-bounds read at offset -255 (1 bytes, input length 2)
-empty input                                      OTHER  File "src/twine/decode.ml", line 587, characters 2-8: Assertion failed
+entrypoint byte larger than input                Error  Twine: decode: entrypoint byte 255 at offset 1 points before the start of the input
+empty input                                      Error  Twine: decode: empty input
 truncated float64                                Error  Twine: decode: out-of-bounds read at offset 1 (8 bytes, input length 2)
 truncated float64 (channel)                      Error  Twine: decode: out-of-bounds read at offset 1 (8 bytes, input length 2)
 LEB128 longer than 64 bits                       Error  Twine: decode: invalid LEB128 at offset 1: leb128 varint is too long
 LEB128 with 11 bytes                             Error  Twine: decode: invalid LEB128 at offset 1: leb128 varint is too long
-float with low nibble 7                          OK     0.
+float with low nibble 7                          Error  Decode: invalid first byte 3/7 at 0: expected low nibble 0 (f32) or 1 (f64)
 string of length 5 with 3 bytes left             Error  Twine: decode: out-of-bounds read at offset 1 (5 bytes, input length 4)
 string of length 5 with 3 bytes left (channel)   Error  Twine: decode: out-of-bounds read at offset 1 (5 bytes, input length 4)
-LEB128 encoding of 2^64-1                        OK     14
-ref distance truncated by Int64.to_int           OK     (Ref -15)
-pointer at offset 1 with n=5                     Error  Twine: decode: out-of-bounds read at offset -5 (1 bytes, input length 3)
-pointer with n=2^40                              Error  Twine: decode: out-of-bounds read at offset -1099511627791 (1 bytes, input length 9)
+LEB128 encoding of 2^64-1                        Error  Twine: decode: integer at offset 0 does not fit in int64
+ref distance truncated by Int64.to_int           Error  Twine: decode: integer at offset 1 does not fit in int64
+ref pointing before the start of the input       Error  Twine: decode: ref or pointer at offset 1 points to offset -5, before the start of the input
+constructor index 2^62, too large for int        Error  Twine: decode: integer at offset 0 does not fit in int
+array claiming 2^60 elements                     Error  Twine: decode: value at offset 0 claims 1152921504606846976 items, more than the input can hold
+pointer at offset 1 with n=5                     Error  Twine: decode: ref or pointer at offset 1 points to offset -5, before the start of the input
+pointer with n=2^40                              Error  Twine: decode: ref or pointer at offset 1 points to offset -1099511627791, before the start of the input
 constructor with 3 args, arity 2                 OK     A (1, 2)
