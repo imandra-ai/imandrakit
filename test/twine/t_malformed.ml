@@ -18,10 +18,22 @@
 
 module D = Imandrakit_twine.Decode
 
-(* Constructor indices: A is 0, B is 1. *)
+(* Constructor indices: A is 0, B is 1, C is 2, D is 3. *)
 type t =
   | A of int * int
   | B
+  | C of int
+  | D of {
+      x: int;
+      y: int;
+    }
+[@@deriving twine]
+
+(* Encoded as an array of its fields. *)
+type r = {
+  a: int;
+  b: int;
+}
 [@@deriving twine]
 
 let repeat_byte n c = String.make n c
@@ -72,10 +84,18 @@ include struct
     match run_decoder src_kind of_twine bytes with
     | A (x, y) -> Printf.sprintf "A (%d, %d)" x y
     | B -> "B"
+    | C x -> Printf.sprintf "C %d" x
+    | D { x; y } -> Printf.sprintf "D { x = %d; y = %d }" x y
+
+  (* with the ppx-generated decoder for [r] *)
+  let decode_as_r src_kind bytes =
+    let { a; b } = run_decoder src_kind r_of_twine bytes in
+    Printf.sprintf "{ a = %d; b = %d }" a b
 end
 
 (** Two valid controls, then inputs the decoder must reject: malformed bytes, or
-    valid bytes read with the wrong decoder.
+    valid bytes read with the wrong decoder. Last, extra trailing items, which
+    the decoder accepts by design.
 
     Each case is:
     - [name]
@@ -175,12 +195,35 @@ let cases :
       From_string,
       decode_as_raw_value,
       "\x15\xff" ^ repeat_byte 5 '\x80' ^ "\x20\x06" );
+    (* Extra trailing items, accepted by design: a constructor or record with
+       more items than its type declares decodes, and the extra items are
+       ignored. This lets a program built with an older type read data from a
+       newer one that added items at the end (commit 2f9b86f2). These cases
+       pin that behaviour. *)
+
     (* c0: constructor 0 (A). 03: 3 arguments, 11 12 13: ints 1, 2, 3; A takes
        2. 04: entry 0 *)
-    ( "constructor with 3 args, arity 2",
+    ( "extra arg ignored: 3 args, arity 2",
       From_string,
       decode_as_t,
       "\xc0\x03\x11\x12\x13\x04" );
+    (* c2: constructor 2 (C) with a count. 02: 2 arguments, 11 12: ints 1, 2;
+       C takes 1. 03: entry 0 *)
+    ( "extra arg ignored: 2 args, arity 1",
+      From_string,
+      decode_as_t,
+      "\xc2\x02\x11\x12\x03" );
+    (* c3: constructor 3 (D, an inline record). 03: 3 arguments, 11 12 13:
+       ints 1, 2, 3; D has 2 fields. 04: entry 0 *)
+    ( "extra arg ignored: inline record, 3 for 2",
+      From_string,
+      decode_as_t,
+      "\xc3\x03\x11\x12\x13\x04" );
+    (* 63: array of 3. 11 12 13: ints 1, 2, 3; r has 2 fields. 03: entry 0 *)
+    ( "extra field ignored: record, 3 for 2",
+      From_string,
+      decode_as_r,
+      "\x63\x11\x12\x13\x03" );
   ]
 
 let run_case (name, src_kind, decode_and_show, bytes) =
