@@ -1,0 +1,4 @@
+(test
+ (name t_leb128)
+ (package imandrakit)
+ (libraries imandrakit.leb128 imandrakit.bytes))

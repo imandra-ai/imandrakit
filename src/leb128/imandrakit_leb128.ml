@@ -7,16 +7,19 @@ module Decode = struct
     let shift = ref 0 in
     let continue = ref true in
 
-    let off = ref off in
+    let off = ref (sl.off + off) in
     let n_consumed = ref 0 in
 
     while !continue do
-      if sl.len <= 0 then invalid_arg "out of bound";
+      if !off < sl.off || !off >= sl.off + sl.len then
+        invalid_arg "out of bound";
       incr n_consumed;
       let b = Char.code (Bytes.get sl.bs !off) in
       let cur = b land 0x7f in
       if cur <> b then (
-        (* at least one byte follows this one *)
+        (* at least one byte follows this one, but a u64 fits in 10 bytes
+           and this is the 10th (bits 63..69) *)
+        if !shift >= 63 then invalid_arg "leb128 varint is too long";
         incr off;
         shift := !shift + 7
       ) else if !shift < 63 || b land 0x7f <= 1 then
@@ -36,12 +39,15 @@ module Decode = struct
     let n_consumed = ref 0 in
 
     while !continue do
-      if sl.len <= 0 then invalid_arg "out of bound";
+      if !off < sl.off || !off >= sl.off + sl.len then
+        invalid_arg "out of bound";
       incr n_consumed;
       let b = Char.code (Bytes.get sl.bs !off) in
       let cur = b land 0x7f in
       if cur <> b then (
-        (* at least one byte follows this one *)
+        (* at least one byte follows this one, but a u64 fits in 10 bytes
+           and this is the 10th (bits 63..69) *)
+        if !shift >= 63 then invalid_arg "leb128 varint is too long";
         (res := Int64.(logor !res (shift_left (of_int cur) !shift)));
         incr off;
         shift := !shift + 7
@@ -59,7 +65,7 @@ module Decode = struct
     Int64.to_int v, n_consumed
 
   let[@inline] decode_zigzag (v : int64) : int64 =
-    Int64.(logxor (shift_right v 1) (neg (logand v Int64.one)))
+    Int64.(logxor (shift_right_logical v 1) (neg (logand v Int64.one)))
 
   let[@inline] i64 sl off : int64 * int =
     let v, n_consumed = u64 sl off in
