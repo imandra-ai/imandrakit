@@ -20,6 +20,7 @@ constructor index 2^62, too large for int        Error  Twine: decode: integer a
 array claiming 2^60 elements                     Error  Twine: decode: value at offset 0 claims 1152921504606846976 items, more than the input can hold
 pointer at offset 1 with n=5                     Error  Twine: decode: ref or pointer at offset 1 points to offset -5, before the start of the input
 pointer with n=2^40                              Error  Twine: decode: ref or pointer at offset 1 points to offset -1099511627791, before the start of the input
+char field given 256                             Error  Twine: decode: malformed input: Invalid_argument("Char.chr")
 extra arg ignored: 3 args, arity 2               OK     A (1, 2)
 extra arg ignored: 2 args, arity 1               OK     C 1
 extra arg ignored: inline record, 3 for 2        OK     D { x = 1; y = 2 }

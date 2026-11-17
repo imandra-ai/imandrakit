@@ -36,6 +36,9 @@ type r = {
 }
 [@@deriving twine]
 
+(* Encoded as an int; the generated decoder converts it with [Char.chr]. *)
+type c = char [@@deriving twine]
+
 let repeat_byte n c = String.make n c
 
 (* Decode from a string, or from a file through [D.of_in_channel]. *)
@@ -86,6 +89,10 @@ include struct
     | B -> "B"
     | C x -> Printf.sprintf "C %d" x
     | D { x; y } -> Printf.sprintf "D { x = %d; y = %d }" x y
+
+  (* with the ppx-generated decoder for [c] *)
+  let decode_as_c src_kind bytes =
+    Printf.sprintf "%C" (run_decoder src_kind c_of_twine bytes)
 
   (* with the ppx-generated decoder for [r] *)
   let decode_as_r src_kind bytes =
@@ -195,6 +202,9 @@ let cases :
       From_string,
       decode_as_raw_value,
       "\x15\xff" ^ repeat_byte 5 '\x80' ^ "\x20\x06" );
+    (* 1f: int with a varint at 1 of f1 01 = 241, so 241 + 15 = 256, one
+       more than a char can hold. 02: entry 0 *)
+    "char field given 256", From_string, decode_as_c, "\x1f\xf1\x01\x02";
     (* Extra trailing items, accepted by design: a constructor or record with
        more items than its type declares decodes, and the extra items are
        ignored. This lets a program built with an older type read data from a

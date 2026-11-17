@@ -623,12 +623,26 @@ let get_entrypoint (self : t) : offset =
       c last;
   entry
 
+(** Run [f], turning the standard exceptions that malformed input can still
+    raise into [Error]. The decoder's own checks raise [Error] directly; this
+    catches the rest, e.g. [Char.chr] in a generated decoder or [failwith] in a
+    user-provided one. [Out_of_memory] and [Stack_overflow] are not caught. *)
+let guard_malformed_ (f : unit -> 'a) : 'a =
+  try f ()
+  with
+  | ( Invalid_argument _ | Failure _ | Not_found | Assert_failure _
+    | End_of_file | Division_by_zero ) as exn
+  ->
+    failf "Twine: decode: malformed input: %s" (Printexc.to_string exn)
+
 let read_entrypoint (self : t) : Value.t =
+  guard_malformed_ @@ fun () ->
   read self @@ deref_rec self @@ get_entrypoint self
 
 let decode_string ?(init = ignore) (d : 'a decoder) (s : string) : 'a =
   let self = of_string s in
   init self;
+  guard_malformed_ @@ fun () ->
   let off = deref_rec self @@ get_entrypoint self in
   d self off
 
