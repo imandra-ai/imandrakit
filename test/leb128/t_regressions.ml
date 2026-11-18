@@ -64,9 +64,9 @@ let () =
   assert (out_of_bound (fun () -> D.u64 sl 0));
   assert (out_of_bound (fun () -> D.skip sl 0))
 
-(* {1 skip starts at the window}
+(** {1 skip starts at the window}
 
-   [u64] started at [sl.off + off], but [skip] started at [off]. *)
+    [u64] started at [sl.off + off], but [skip] started at [off]. *)
 
 (* A window starting at buffer byte 1: the window is the 05, and the ff
    before it is a continuation byte.
