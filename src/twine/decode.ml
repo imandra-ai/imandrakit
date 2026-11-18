@@ -255,11 +255,9 @@ let[@inline] get_int_ self offset ~low : int * num_bytes_consumed =
     int_of_int64_ ~offset i, n_bytes
   )
 
-(** The target of a ref or pointer at [offset] with distance [n], which is
-    [offset - n - 1]. [n] comes from [get_int_] so it is non-negative, and the
-    target always comes before [offset]; it must also not be before the start of
-    the input. *)
-let[@inline] back_ref_target_ ~offset (n : int) : offset =
+(** Target [offset - n - 1] of the ref or pointer at [offset]. Fails if it is
+    before the start of the input. *)
+let[@inline] ref_target_ ~offset (n : int) : offset =
   let p = offset - n - 1 in
   if p < 0 then
     failf
@@ -313,7 +311,7 @@ let[@inline never] deref_rec_ self off : offset =
     if high = 15 then (
       let low = get_low c in
       let n, _ = get_int_ self !off ~low in
-      off := back_ref_target_ ~offset:!off n;
+      off := ref_target_ ~offset:!off n;
       true
     ) else
       false
@@ -429,11 +427,11 @@ let read ?(auto_deref = true) (self : t) (offset : offset) : Value.t =
   | 13 -> invalid_first_byte_ ~offset ~high ~low "type is reserved"
   | 14 ->
     let n, _ = get_int_ self offset ~low in
-    let p = back_ref_target_ ~offset n in
+    let p = ref_target_ ~offset n in
     Value.Ref p
   | 15 ->
     let n, _ = get_int_ self offset ~low in
-    let p = back_ref_target_ ~offset n in
+    let p = ref_target_ ~offset n in
     Value.Pointer p
   | _ -> assert false
 
@@ -608,7 +606,7 @@ let ref_ (self : t) offset : offset =
   if high <> 14 then fail_decode_type_ ~what:"ref" offset;
   let low = get_low c in
   let n, _ = get_int_ self offset ~low in
-  back_ref_target_ ~offset n
+  ref_target_ ~offset n
 
 let[@inline] ref_for (self : t) offset : _ offset_for =
   Offset_for (ref_ self offset)
