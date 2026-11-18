@@ -66,6 +66,12 @@ let rec dump_primitive (self : state) (v : Decode.Value.t) =
   | Dict c -> spf "{…[%d omitted]}" (Decode.Dict_cursor.length c)
   | Cstor0 idx -> spf "C_%d" idx
   | CstorN (idx, c) ->
+    (* TODO: this loops forever (until Stack_overflow) on a malformed input
+       where an argument is a pointer back to this constructor, e.g. a
+       top-level ref to a cstor whose argument points to the cstor itself:
+       [Array_cursor.to_list] follows pointers, and unlike [dump_rec] there is
+       no [p < off] check here. Fix by not following pointers in arguments
+       (changes the output for valid data) or by bounding the depth. *)
     spf "C_%d(%s)" idx
       (String.concat ","
       @@ List.map (dump_primitive self)
@@ -80,7 +86,11 @@ let rec dump_rec (self : state) (off : offset) : unit =
     match v with
     | Pointer p | Ref p ->
       (* sanity check: can only read values before [off] *)
-      assert (p < off);
+      if p >= off then
+        Decode.failf
+          "Twine: dump: ref or pointer at offset %d points to offset %d, not \
+           before the enclosing value at %d"
+          sub_off p off;
       dump_rec self p;
       v
     | _ -> v

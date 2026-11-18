@@ -1,0 +1,8 @@
+(tests
+ (names t_regressions t_properties)
+ (package imandrakit)
+ (libraries
+  imandrakit.leb128
+  imandrakit.bytes
+  qcheck-core
+  qcheck-core.runner))

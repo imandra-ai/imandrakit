@@ -1,0 +1,103 @@
+From a string
+==============
+control: int 5
+  OK: 5
+
+control: 3 nested nodes
+  OK: depth 3
+
+wrong type: int read as string
+  Error: Twine: decode: expected string at offset=0x0
+
+bad tag: reserved type 9
+  Error: Decode: invalid first byte 9/0 at 0: type is reserved
+
+bad tag: float with low nibble 7
+  Error: Decode: invalid first byte 3/7 at 0: expected low nibble 0 (f32) or 1 (f64)
+
+bad tag: unknown constructor index
+  Error: expected value of type t (defined in at File "test/twine/t_malformed.ml", line 44, characters 0-110), got (Cstor0 5)
+
+out of bounds: empty input
+  Error: Twine: decode: empty input
+
+out of bounds: entrypoint byte larger than input
+  Error: Twine: decode: entrypoint byte 255 at offset 1 points before the start of the input
+
+out of bounds: truncated float64
+  Error: Twine: decode: out-of-bounds read at offset 1 (8 bytes, input length 2)
+
+out of bounds: string of length 5 with 3 bytes left
+  Error: Twine: decode: out-of-bounds read at offset 1 (5 bytes, input length 4)
+
+out of bounds: ref before the start of the input
+  Error: Twine: decode: ref or pointer at offset 1 points to offset -5, before the start of the input
+
+out of bounds: pointer at offset 1 with n=5
+  Error: Twine: decode: ref or pointer at offset 1 points to offset -5, before the start of the input
+
+out of bounds: pointer with n=2^40
+  Error: Twine: decode: ref or pointer at offset 1 points to offset -1099511627791, before the start of the input
+
+bad integer: LEB128 longer than 64 bits
+  Error: Twine: decode: invalid LEB128 at offset 1: leb128 varint is too long
+
+bad integer: LEB128 with 11 bytes
+  Error: Twine: decode: invalid LEB128 at offset 1: leb128 varint is too long
+
+bad integer: int of 2^64 - 1 + 15
+  Error: Twine: decode: integer at offset 0 does not fit in int64
+
+bad integer: ref distance of 2^63 + 15
+  Error: Twine: decode: integer at offset 1 does not fit in int64
+
+bad integer: constructor index 2^62
+  Error: Twine: decode: integer at offset 0 does not fit in int
+
+bad integer: array of 2^60 elements
+  Error: Twine: decode: value at offset 0 claims 1152921504606846976 items, more than the input can hold
+
+bad integer: char field given 256
+  Error: Twine: decode: malformed input: Invalid_argument("Char.chr")
+
+too deep: 1M nested nodes
+  OTHER: Stack overflow
+
+accepted: 3 args for a constructor of arity 2
+  OK: A (1, 2)
+
+accepted: 2 args for a constructor of arity 1
+  OK: C 1
+
+accepted: 3 fields for an inline record of 2
+  OK: D { x = 1; y = 2 }
+
+accepted: 3 fields for a record of 2
+  OK: { a = 1; b = 2 }
+
+From a channel
+==============
+control: int 5
+  OK: 5
+
+out of bounds: empty input
+  Error: Twine: decode: empty input
+
+out of bounds: array element past the end
+  Error: Twine: decode: out-of-bounds read at offset 5 (1 bytes, input length 5)
+
+out of bounds: truncated float32
+  Error: Twine: decode: out-of-bounds read at offset 1 (4 bytes, input length 2)
+
+out of bounds: truncated float64
+  Error: Twine: decode: out-of-bounds read at offset 1 (8 bytes, input length 2)
+
+out of bounds: string of length 5 with 3 bytes left
+  Error: Twine: decode: out-of-bounds read at offset 1 (5 bytes, input length 4)
+
+out of bounds: varint running past the end
+  Error: Twine: decode: invalid LEB128 at offset 127: out of bound
+
+bad integer: char field given 256
+  OTHER: Invalid_argument("Char.chr")
+

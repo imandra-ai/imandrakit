@@ -27,15 +27,16 @@ let[@inline] clear self =
   self.off <- 0
 
 let[@inline] get self i : char =
-  if i >= self.len then invalid_arg "Bslice: out of bound access";
+  if i < 0 || i >= self.len then invalid_arg "Bslice: out of bound access";
   Bytes.unsafe_get self.bs (self.off + i)
 
 let[@inline] set self i c : unit =
-  if i >= self.len then invalid_arg "Bslice: out of bound access";
+  if i < 0 || i >= self.len then invalid_arg "Bslice: out of bound access";
   Bytes.unsafe_set self.bs (self.off + i) c
 
 let sub self off len =
-  if off + len > self.len then invalid_arg "Bslice: invalid length";
+  if off < 0 || len < 0 || off > self.len - len then
+    invalid_arg "Bslice: invalid length";
   { bs = self.bs; off = self.off + off; len }
 
 let[@inline] consume self n : unit =

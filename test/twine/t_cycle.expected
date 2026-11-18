@@ -1,1 +1,1 @@
-failed: File "src/twine/dump.ml", line 83, characters 6-12: Assertion failed
+failed: Imandrakit_twine__Types.Error("Twine: dump: ref or pointer at offset 1 points to offset 0, not before the enclosing value at 0")

@@ -50,58 +50,79 @@ let read_blob t offset length =
 
 let read_leb128 t offset =
   let (Decode { st; ops; _ }) = t in
-  ops.read_leb128 st offset
+  try ops.read_leb128 st offset
+  with Invalid_argument msg ->
+    failf "Twine: decode: invalid LEB128 at offset %d: %s" offset msg
+
+(** Fail unless [[offset, offset+n)] lies within an input of length [len].
+    Every read in [slice_ops] and [in_channel_ops] goes through this. *)
+let[@inline] check_range ~len offset n : unit =
+  if offset < 0 || n < 0 || offset > len - n then
+    failf
+      "Twine: decode: out-of-bounds read at offset %d (%d bytes, input length \
+       %d)"
+      offset n len
 
 let slice_ops : slice ops =
   {
     length = (fun (st : slice) -> Slice.len st);
-    read_char = (fun (st : slice) (offset : int) -> Slice.get st offset);
+    read_char =
+      (fun (st : slice) (offset : int) ->
+        check_range ~len:(Slice.len st) offset 1;
+        Bytes.unsafe_get st.bs (st.off + offset));
     read_int32 =
       (fun (st : slice) (offset : int) ->
+        check_range ~len:(Slice.len st) offset 4;
         Bytes.get_int32_le st.bs (st.off + offset));
     read_int64 =
       (fun (st : slice) (offset : int) ->
+        check_range ~len:(Slice.len st) offset 8;
         Bytes.get_int64_le st.bs (st.off + offset));
     read_blob =
       (fun (st : slice) (offset : int) (length : int) ->
-        Slice.sub st offset (min length (Slice.len st - st.off - offset)));
-    read_leb128 = (fun (st : slice) (offset : int) -> LEB128.u64 st offset);
+        check_range ~len:(Slice.len st) offset length;
+        Slice.sub st offset length);
+    read_leb128 =
+      (fun (st : slice) (offset : int) ->
+        check_range ~len:(Slice.len st) offset 1;
+        LEB128.u64 st offset);
   }
 
-let in_channel_ops : in_channel ops =
+(** Read [n] bytes at [offset] from a channel of length [len], failing if they
+    are not all there. *)
+let channel_read_exact ~len (st : in_channel) (offset : int) (n : int) : bytes =
+  check_range ~len offset n;
+  let bs = Bytes.create n in
+  In_channel.seek st (Int64.of_int offset);
+  match In_channel.really_input st bs 0 n with
+  | Some () -> bs
+  | None ->
+    failf "Twine: decode: unexpected end of channel at offset %d (%d bytes)"
+      offset n
+
+(** [len] is the channel's length, read once by [of_in_channel] rather than on
+    every read ([In_channel.length] costs two [lseek] calls). *)
+let in_channel_ops ~(len : int) : in_channel ops =
   {
-    length = (fun (st : in_channel) -> Int64.to_int (In_channel.length st));
+    length = (fun (_st : in_channel) -> len);
     read_char =
       (fun (st : in_channel) (offset : int) ->
-        In_channel.seek st (Int64.of_int offset);
-        Option.get (In_channel.input_char st));
+        Bytes.get (channel_read_exact ~len st offset 1) 0);
     read_int32 =
       (fun (st : in_channel) (offset : int) ->
-        let bs = Bytes.create 4 in
-        In_channel.seek st (Int64.of_int offset);
-        let _ = In_channel.really_input st bs 0 4 in
-        Bytes.get_int32_le bs 0);
+        Bytes.get_int32_le (channel_read_exact ~len st offset 4) 0);
     read_int64 =
       (fun (st : in_channel) (offset : int) ->
-        let bs = Bytes.create 8 in
-        In_channel.seek st (Int64.of_int offset);
-        let _ = In_channel.really_input st bs 0 8 in
-        Bytes.get_int64_le bs 0);
+        Bytes.get_int64_le (channel_read_exact ~len st offset 8) 0);
     read_blob =
       (fun (st : in_channel) (offset : int) (length : int) ->
-        let remaining = Int64.to_int (In_channel.length st) - offset in
-        let length = min length remaining in
-        let bs = Bytes.create length in
-        In_channel.seek st (Int64.of_int offset);
-        let _ = In_channel.really_input st bs 0 length in
-        Slice.create bs);
+        Slice.create (channel_read_exact ~len st offset length));
     read_leb128 =
       (fun (st : in_channel) (offset : int) ->
-        let remaining = Int64.to_int (In_channel.length st) - offset in
-        let length = min 16 remaining in
-        let bs = Bytes.create length in
-        In_channel.seek st (Int64.of_int offset);
-        let _ = In_channel.really_input st bs 0 length in
+        (* a varint is at most 10 bytes; read up to 16 of what is there, and
+           LEB128 fails if the varint runs past it *)
+        check_range ~len offset 1;
+        let bs = channel_read_exact ~len st offset (min 16 (len - offset)) in
         LEB128.u64 (Slice.create bs) 0);
   }
 
@@ -123,7 +144,9 @@ let[@inline] create (st : 'st) (ops : 'st ops) : t =
 
 let[@inline] of_slice s : t = create s slice_ops
 let[@inline] of_string s : t = create (Slice.of_string s) slice_ops
-let[@inline] of_in_channel c : t = create c in_channel_ops
+
+let[@inline] of_in_channel c : t =
+  create c (in_channel_ops ~len:(Int64.to_int (In_channel.length c)))
 
 let[@inline] hmap_set self k v =
   match self with
@@ -192,34 +215,68 @@ let failf = failf
 let invalid_first_byte_ msg ~offset ~high ~low =
   failf "Decode: invalid first byte %d/%d at %d: %s" high low offset msg
 
-let fail_check_comes_before ~offset ~new_offset () : 'a =
-  failf
-    "invalid twine: reading value at 0x%x: refer to address 0x%x which doesn't \
-     come before"
-    offset new_offset
-
-(** sanity check: can only read values before [off] *)
-let[@inline] check_comes_before ~offset ~new_offset () : unit =
-  if new_offset >= offset then fail_check_comes_before ~offset ~new_offset ()
-
 let[@inline] get_char_ (self : t) (offset : offset) : int =
   Char.code @@ read_char self offset
 
 let[@inline] get_high (c : int) : int = (c land 0b1111_0000) lsr 4
 let[@inline] get_low (c : int) : int = c land 0b0000_1111
 
-(** Read a int64 value starting at [offset] *)
+(** Largest varint that still fits in an int64 once 15 is added to it. *)
+let max_varint_for_int64 = Int64.(sub max_int 15L)
+
+(** Read the non-negative int64 stored in the low nibble of the value at
+    [offset], or in the varint after it. Fails if it does not fit in int64. *)
 let[@inline] get_int64_ self offset ~low : int64 * num_bytes_consumed =
   if low < 15 then
     Int64.of_int low, 0
   else (
     let i, n = read_leb128 self (offset + 1) in
+    (* [i] is unsigned: a negative int64 here means 2^63 or more *)
+    if i < 0L || i > max_varint_for_int64 then
+      failf "Twine: decode: integer at offset %d does not fit in int64" offset;
     Int64.add i 15L, n
   )
 
-let[@inline] get_int_truncate_ self offset ~low : int * num_bytes_consumed =
-  let i, n_bytes = get_int64_ self offset ~low in
-  Int64.to_int i, n_bytes
+(** Convert the int64 read at [offset] to an int, failing if it does not fit
+    (OCaml's int has 63 bits). *)
+let[@inline] int_of_int64_ ~offset (i : int64) : int =
+  let x = Int64.to_int i in
+  if Int64.of_int x <> i then
+    failf "Twine: decode: integer at offset %d does not fit in int" offset;
+  x
+
+(** Like [get_int64_], as a non-negative int. *)
+let[@inline] get_int_ self offset ~low : int * num_bytes_consumed =
+  if low < 15 then
+    (* fast path: most lengths, indices and refs fit in the low nibble *)
+    low, 0
+  else (
+    let i, n_bytes = get_int64_ self offset ~low in
+    int_of_int64_ ~offset i, n_bytes
+  )
+
+(** Target [offset - n - 1] of the ref or pointer at [offset]. Fails if it is
+    before the start of the input. *)
+let[@inline] ref_target_ ~offset (n : int) : offset =
+  let p = offset - n - 1 in
+  if p < 0 then
+    failf
+      "Twine: decode: ref or pointer at offset %d points to offset %d, before \
+       the start of the input"
+      offset p;
+  p
+
+(** A cursor over [n] items starting at [start], for the array, dict or
+    constructor at [offset]. Fails unless [n] items of at least [min_size] bytes
+    each fit between [start] and the end of the input, so that a corrupt count
+    cannot allocate a huge array or list before any item is read. *)
+let mk_cursor_ self ~offset ~start ~min_size (n : int) : cursor =
+  if n < 0 || n > (st_len self - start) / min_size then
+    failf
+      "Twine: decode: value at offset %d claims %d items, more than the input \
+       can hold"
+      offset n;
+  { c_dec = self; c_num_items = n; c_offset = start }
 
 let get_special_ offset ~high ~low : Value.t =
   match low with
@@ -230,19 +287,21 @@ let get_special_ offset ~high ~low : Value.t =
 
 (** Read a float value starting at [offset]. *)
 let[@inline] get_float_ (self : t) offset ~low : float * num_bytes_consumed =
-  let isf32 = low = 0 in
-  if isf32 then
-    read_int32 self (offset + 1) |> Int32.float_of_bits, 4
-  else
-    read_int64 self (offset + 1) |> Int64.float_of_bits, 8
+  match low with
+  | 0 -> read_int32 self (offset + 1) |> Int32.float_of_bits, 4
+  | 1 -> read_int64 self (offset + 1) |> Int64.float_of_bits, 8
+  | _ ->
+    invalid_first_byte_ ~offset ~high:3 ~low
+      "expected low nibble 0 (f32) or 1 (f64)"
 
 (** Number of bytes to skip *)
-let skip_float_ ~low : int =
-  let isf32 = low = 0 in
-  if isf32 then
-    5
-  else
-    9
+let skip_float_ ~offset ~low : int =
+  match low with
+  | 0 -> 5
+  | 1 -> 9
+  | _ ->
+    invalid_first_byte_ ~offset ~high:3 ~low
+      "expected low nibble 0 (f32) or 1 (f64)"
 
 let[@inline never] deref_rec_ self off : offset =
   let off = ref off in
@@ -251,10 +310,8 @@ let[@inline never] deref_rec_ self off : offset =
     let high = get_high c in
     if high = 15 then (
       let low = get_low c in
-      let p, _ = get_int_truncate_ self !off ~low in
-      let p = !off - p - 1 in
-      check_comes_before ~offset:!off ~new_offset:p ();
-      off := p;
+      let n, _ = get_int_ self !off ~low in
+      off := ref_target_ ~offset:!off n;
       true
     ) else
       false
@@ -322,63 +379,59 @@ let read ?(auto_deref = true) (self : t) (offset : offset) : Value.t =
     let f, _ = get_float_ self offset ~low in
     Value.Float f
   | 4 ->
-    let len, size_len = get_int_truncate_ self offset ~low in
+    let len, size_len = get_int_ self offset ~low in
     let s = read_blob self (offset + 1 + size_len) len in
     Value.String s
   | 5 ->
-    let len, size_len = get_int_truncate_ self offset ~low in
+    let len, size_len = get_int_ self offset ~low in
     let s = read_blob self (offset + 1 + size_len) len in
     Value.Blob s
   | 6 ->
-    let len, size_len = get_int_truncate_ self offset ~low in
-    let c : cursor =
-      { c_offset = offset + 1 + size_len; c_num_items = len; c_dec = self }
+    let len, size_len = get_int_ self offset ~low in
+    let c =
+      mk_cursor_ self ~offset ~start:(offset + 1 + size_len) ~min_size:1 len
     in
     Value.Array c
   | 7 ->
-    let len, size_len = get_int_truncate_ self offset ~low in
-    let c : cursor =
-      { c_offset = offset + 1 + size_len; c_num_items = len; c_dec = self }
+    let len, size_len = get_int_ self offset ~low in
+    let c =
+      mk_cursor_ self ~offset ~start:(offset + 1 + size_len) ~min_size:2 len
     in
     Value.Dict c
   | 8 ->
-    let n, size_n = get_int_truncate_ self offset ~low in
+    let n, size_n = get_int_ self offset ~low in
     Value.Tag (n, offset + 1 + size_n)
   | 9 -> invalid_first_byte_ ~offset ~high ~low "type is reserved"
   | 10 ->
-    let idx_cstor, _ = get_int_truncate_ self offset ~low in
+    let idx_cstor, _ = get_int_ self offset ~low in
     Value.Cstor0 idx_cstor
   | 11 ->
-    let idx_cstor, size_idx_cstor = get_int_truncate_ self offset ~low in
+    let idx_cstor, size_idx_cstor = get_int_ self offset ~low in
     let c : cursor =
       { c_dec = self; c_num_items = 1; c_offset = offset + 1 + size_idx_cstor }
     in
     Value.CstorN (idx_cstor, c)
   | 12 ->
-    let idx_cstor, size_idx_cstor = get_int_truncate_ self offset ~low in
+    let idx_cstor, size_idx_cstor = get_int_ self offset ~low in
     let offset_after_n = offset + 1 + size_idx_cstor in
     let num_items, size_num_items =
-      let sl = read_blob self offset_after_n 16 in
-      LEB128.uint_truncate sl 0
+      let n, size = read_leb128 self offset_after_n in
+      int_of_int64_ ~offset:offset_after_n n, size
     in
-    let c : cursor =
-      {
-        c_dec = self;
-        c_num_items = num_items;
-        c_offset = offset_after_n + size_num_items;
-      }
+    let c =
+      mk_cursor_ self ~offset
+        ~start:(offset_after_n + size_num_items)
+        ~min_size:1 num_items
     in
     Value.CstorN (idx_cstor, c)
   | 13 -> invalid_first_byte_ ~offset ~high ~low "type is reserved"
   | 14 ->
-    let n, _ = get_int_truncate_ self offset ~low in
-    let p = offset - n - 1 in
-    check_comes_before ~offset ~new_offset:p ();
+    let n, _ = get_int_ self offset ~low in
+    let p = ref_target_ ~offset n in
     Value.Ref p
   | 15 ->
-    let n, _ = get_int_truncate_ self offset ~low in
-    let p = offset - n - 1 in
-    check_comes_before ~offset ~new_offset:p ();
+    let n, _ = get_int_ self offset ~low in
+    let p = ref_target_ ~offset n in
     Value.Pointer p
   | _ -> assert false
 
@@ -392,22 +445,22 @@ let skip_ (self : t) (offset : offset) : num_bytes_consumed =
   | 1 | 2 ->
     let _, n = get_int64_ self offset ~low in
     n + 1
-  | 3 -> skip_float_ ~low
+  | 3 -> skip_float_ ~offset ~low
   | 4 | 5 ->
-    let len, size_len = get_int_truncate_ self offset ~low in
+    let len, size_len = get_int_ self offset ~low in
     1 + size_len + len
   | 6 -> fail "Twine: decode.skip: cannot skip over array"
   | 7 -> fail "Twine: decode.skip: cannot skip over dict"
   | 8 -> fail "Twine: decode.skip: cannot skip over tag"
   | 9 -> invalid_first_byte_ ~offset ~high ~low "type is reserved"
   | 10 ->
-    let _, n = get_int_truncate_ self offset ~low in
+    let _, n = get_int_ self offset ~low in
     1 + n
   | 11 -> fail "Twine: decode.skip: cannot skip over cstor1"
   | 12 -> fail "Twine: decode.skip: cannot skip over cstorN"
   | 13 -> invalid_first_byte_ ~offset ~high ~low "type is reserved"
   | 14 | 15 ->
-    let _, size_n = get_int_truncate_ self offset ~low in
+    let _, size_n = get_int_ self offset ~low in
     size_n + 1
   | _ -> assert false
 
@@ -468,7 +521,7 @@ let string_slice self offset =
   let high = get_high c in
   let low = get_low c in
   if high <> 4 then fail_decode_type_ ~what:"string" offset;
-  let len, size_len = get_int_truncate_ self offset ~low in
+  let len, size_len = get_int_ self offset ~low in
   read_blob self (offset + 1 + size_len) len
 
 let string self offset = Slice.contents @@ string_slice self offset
@@ -479,7 +532,7 @@ let blob_slice self offset =
   let high = get_high c in
   let low = get_low c in
   if high <> 5 then fail_decode_type_ ~what:"blob" offset;
-  let len, size_len = get_int_truncate_ self offset ~low in
+  let len, size_len = get_int_ self offset ~low in
   read_blob self (offset + 1 + size_len) len
 
 let blob self offset = Slice.contents @@ blob_slice self offset
@@ -490,9 +543,9 @@ let array self offset =
   let high = get_high c in
   let low = get_low c in
   if high <> 6 then fail_decode_type_ ~what:"array" offset;
-  let len, size_len = get_int_truncate_ self offset ~low in
-  let c : cursor =
-    { c_offset = offset + 1 + size_len; c_num_items = len; c_dec = self }
+  let len, size_len = get_int_ self offset ~low in
+  let c =
+    mk_cursor_ self ~offset ~start:(offset + 1 + size_len) ~min_size:1 len
   in
   c
 
@@ -502,9 +555,9 @@ let dict self offset =
   let high = get_high c in
   let low = get_low c in
   if high <> 7 then fail_decode_type_ ~what:"dict" offset;
-  let len, size_len = get_int_truncate_ self offset ~low in
-  let c : cursor =
-    { c_offset = offset + 1 + size_len; c_num_items = len; c_dec = self }
+  let len, size_len = get_int_ self offset ~low in
+  let c =
+    mk_cursor_ self ~offset ~start:(offset + 1 + size_len) ~min_size:2 len
   in
   c
 
@@ -514,7 +567,7 @@ let tag self offset =
   let high = get_high c in
   let low = get_low c in
   if high <> 8 then fail_decode_type_ ~what:"tag" offset;
-  let n, size_n = get_int_truncate_ self offset ~low in
+  let n, size_n = get_int_ self offset ~low in
   n, offset + 1 + size_n
 
 let cstor self offset =
@@ -524,26 +577,24 @@ let cstor self offset =
   let low = get_low c in
   match high with
   | 10 ->
-    let idx_cstor, _size_idx_cstor = get_int_truncate_ self offset ~low in
+    let idx_cstor, _size_idx_cstor = get_int_ self offset ~low in
     idx_cstor, { c_offset = offset; c_num_items = 0; c_dec = self }
   | 11 ->
-    let idx_cstor, size_idx_cstor = get_int_truncate_ self offset ~low in
+    let idx_cstor, size_idx_cstor = get_int_ self offset ~low in
     ( idx_cstor,
       { c_offset = offset + 1 + size_idx_cstor; c_num_items = 1; c_dec = self }
     )
   | 12 ->
-    let idx_cstor, size_idx_cstor = get_int_truncate_ self offset ~low in
+    let idx_cstor, size_idx_cstor = get_int_ self offset ~low in
     let offset_after_n = offset + 1 + size_idx_cstor in
     let num_items, size_num_items =
-      let sl = read_blob self offset_after_n 16 in
-      LEB128.uint_truncate sl 0
+      let n, size = read_leb128 self offset_after_n in
+      int_of_int64_ ~offset:offset_after_n n, size
     in
-    let c : cursor =
-      {
-        c_dec = self;
-        c_num_items = num_items;
-        c_offset = offset_after_n + size_num_items;
-      }
+    let c =
+      mk_cursor_ self ~offset
+        ~start:(offset_after_n + size_num_items)
+        ~min_size:1 num_items
     in
     idx_cstor, c
   | _ -> fail_decode_type_ ~what:"cstor" offset
@@ -554,27 +605,51 @@ let ref_ (self : t) offset : offset =
   let high = get_high c in
   if high <> 14 then fail_decode_type_ ~what:"ref" offset;
   let low = get_low c in
-  let p, _ = get_int_truncate_ self offset ~low in
-  let p = offset - p - 1 in
-  check_comes_before ~offset ~new_offset:p ();
-  p
+  let n, _ = get_int_ self offset ~low in
+  ref_target_ ~offset n
 
 let[@inline] ref_for (self : t) offset : _ offset_for =
   Offset_for (ref_ self offset)
 
 let get_entrypoint (self : t) : offset =
   let len = st_len self in
-  assert (len > 0);
+  if len = 0 then fail "Twine: decode: empty input";
   let last = len - 1 in
-  let offset = Char.code @@ read_char self last in
-  last - offset - 1
+  let c = Char.code @@ read_char self last in
+  let entry = last - c - 1 in
+  if entry < 0 then
+    failf
+      "Twine: decode: entrypoint byte %d at offset %d points before the start \
+       of the input"
+      c last;
+  entry
+
+(** Run [f], turning the standard exceptions that malformed input can still
+    raise into [Error]. The decoder's own checks raise [Error] directly; this
+    catches the rest, e.g. [Char.chr] in a generated decoder or [failwith] in a
+    user-provided one. [Out_of_memory] and [Stack_overflow] are not caught. The
+    original backtrace is kept, since the exception may come from a bug in a
+    user-provided decoder rather than from the input. *)
+let guard_malformed_ (f : unit -> 'a) : 'a =
+  try f ()
+  with
+  | ( Invalid_argument _ | Failure _ | Not_found | Assert_failure _
+    | End_of_file | Division_by_zero ) as exn
+  ->
+    let bt = Printexc.get_raw_backtrace () in
+    Printexc.raise_with_backtrace
+      (Types.Error
+         (spf "Twine: decode: malformed input: %s" (Printexc.to_string exn)))
+      bt
 
 let read_entrypoint (self : t) : Value.t =
+  guard_malformed_ @@ fun () ->
   read self @@ deref_rec self @@ get_entrypoint self
 
 let decode_string ?(init = ignore) (d : 'a decoder) (s : string) : 'a =
   let self = of_string s in
   init self;
+  guard_malformed_ @@ fun () ->
   let off = deref_rec self @@ get_entrypoint self in
   d self off
 
