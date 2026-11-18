@@ -69,7 +69,7 @@ let slice_ops : slice ops =
     read_char =
       (fun (st : slice) (offset : int) ->
         check_range ~len:(Slice.len st) offset 1;
-        Slice.get st offset);
+        Bytes.unsafe_get st.bs (st.off + offset));
     read_int32 =
       (fun (st : slice) (offset : int) ->
         check_range ~len:(Slice.len st) offset 4;
@@ -88,10 +88,10 @@ let slice_ops : slice ops =
         LEB128.u64 st offset);
   }
 
-(** Read [n] bytes at [offset] from the channel, failing if they are not all
-    there. *)
-let channel_read_exact (st : in_channel) (offset : int) (n : int) : bytes =
-  check_range ~len:(Int64.to_int (In_channel.length st)) offset n;
+(** Read [n] bytes at [offset] from a channel of length [len], failing if they
+    are not all there. *)
+let channel_read_exact ~len (st : in_channel) (offset : int) (n : int) : bytes =
+  check_range ~len offset n;
   let bs = Bytes.create n in
   In_channel.seek st (Int64.of_int offset);
   match In_channel.really_input st bs 0 n with
@@ -100,28 +100,29 @@ let channel_read_exact (st : in_channel) (offset : int) (n : int) : bytes =
     failf "Twine: decode: unexpected end of channel at offset %d (%d bytes)"
       offset n
 
-let in_channel_ops : in_channel ops =
+(** [len] is the channel's length, read once by [of_in_channel] rather than on
+    every read ([In_channel.length] costs two [lseek] calls). *)
+let in_channel_ops ~(len : int) : in_channel ops =
   {
-    length = (fun (st : in_channel) -> Int64.to_int (In_channel.length st));
+    length = (fun (_st : in_channel) -> len);
     read_char =
       (fun (st : in_channel) (offset : int) ->
-        Bytes.get (channel_read_exact st offset 1) 0);
+        Bytes.get (channel_read_exact ~len st offset 1) 0);
     read_int32 =
       (fun (st : in_channel) (offset : int) ->
-        Bytes.get_int32_le (channel_read_exact st offset 4) 0);
+        Bytes.get_int32_le (channel_read_exact ~len st offset 4) 0);
     read_int64 =
       (fun (st : in_channel) (offset : int) ->
-        Bytes.get_int64_le (channel_read_exact st offset 8) 0);
+        Bytes.get_int64_le (channel_read_exact ~len st offset 8) 0);
     read_blob =
       (fun (st : in_channel) (offset : int) (length : int) ->
-        Slice.create (channel_read_exact st offset length));
+        Slice.create (channel_read_exact ~len st offset length));
     read_leb128 =
       (fun (st : in_channel) (offset : int) ->
         (* a varint is at most 10 bytes; read up to 16 of what is there, and
            LEB128 fails if the varint runs past it *)
-        let len = Int64.to_int (In_channel.length st) in
         check_range ~len offset 1;
-        let bs = channel_read_exact st offset (min 16 (len - offset)) in
+        let bs = channel_read_exact ~len st offset (min 16 (len - offset)) in
         LEB128.u64 (Slice.create bs) 0);
   }
 
@@ -143,7 +144,9 @@ let[@inline] create (st : 'st) (ops : 'st ops) : t =
 
 let[@inline] of_slice s : t = create s slice_ops
 let[@inline] of_string s : t = create (Slice.of_string s) slice_ops
-let[@inline] of_in_channel c : t = create c in_channel_ops
+
+let[@inline] of_in_channel c : t =
+  create c (in_channel_ops ~len:(Int64.to_int (In_channel.length c)))
 
 let[@inline] hmap_set self k v =
   match self with
